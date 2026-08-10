@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,7 +10,7 @@ import { AuthService } from '../../services/auth.service';
   imports: [CommonModule, FormsModule],
   templateUrl: './login.component.html'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
 
@@ -27,6 +27,12 @@ export class LoginComponent {
     { label: 'Estudiante', user: 'estudiante1', pass: 'Estudiante2026!', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300' },
   ];
 
+  ngOnInit(): void {
+    // Si ya está autenticado, redirige automáticamente al Dashboard General
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/dashboard']);
+    }
+  }
 
 
   fillTestAccount(account: { user: string; pass: string }) {
@@ -55,10 +61,10 @@ export class LoginComponent {
         this.errorMessage.set(msg);
       }
     });
+
   }
 
   onSsoLogin() {
-    // Simula o redirige al inicio de sesión institucional de Auth0
     alert('Redirigiendo al portal seguro de Auth0 Institucional...');
   }
 }
