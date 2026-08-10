@@ -1,0 +1,108 @@
+<div class="min-h-screen bg-slate-100 flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
+  <!-- Fondo decorativo con gradientes suaves -->
+  <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#FFB800]/20 blur-[120px] rounded-full pointer-events-none"></div>
+
+  <div class="w-full max-w-md relative z-10">
+    <!-- Header de Branding -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FFB800] to-[#E6A600] text-slate-950 text-3xl font-extrabold shadow-lg shadow-[#FFB800]/30 mb-4">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Campus Seguro</h1>
+      <p class="text-slate-500 font-mono text-sm mt-1">Plataforma ERP de Gestión de Campus</p>
+    </div>
+
+    <!-- Tarjeta Principal de Login (Modo Claro) -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-8 shadow-xl">
+      
+      <!-- Mensaje de Error con Sintaxis @if de Angular 22 -->
+      @if (errorMessage()) {
+        <div class="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-3">
+          <i class="fa-solid fa-triangle-exclamation text-lg flex-shrink-0 text-rose-500"></i>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      <!-- Opción 1: Acceso Institucional Auth0 / SSO -->
+      <div class="mb-6">
+        <button (click)="onSsoLogin()" 
+                type="button" 
+                class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#FFB800] to-[#f59e0b] hover:from-[#e6a600] hover:to-[#d97706] text-slate-950 font-bold text-sm shadow-md shadow-[#FFB800]/30 transition-all transform active:scale-[0.98] flex items-center justify-center gap-3">
+          <i class="fa-solid fa-building-columns text-base"></i>
+          <span>Iniciar Sesión Institucional (Auth0)</span>
+        </button>
+        <p class="text-xs text-center text-slate-400 mt-2">Para Estudiantes, Docentes y Personal con correo institucional</p>
+      </div>
+
+      <div class="relative flex items-center justify-center my-6">
+        <div class="border-t border-slate-200 w-full"></div>
+        <span class="bg-white px-3 text-xs text-slate-400 font-mono uppercase tracking-wider relative z-10">O credenciales de prueba</span>
+      </div>
+
+      <!-- Formulario de Acceso Directo / Cuentas de Prueba -->
+      <form (ngSubmit)="onSubmit()" class="space-y-5">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Usuario / Correo</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+              <i class="fa-solid fa-user text-sm"></i>
+            </span>
+            <input [(ngModel)]="username" 
+                   name="username" 
+                   type="text" 
+                   required
+                   placeholder="ej: gestor1"
+                   class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/30 transition-colors text-sm font-mono" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Contraseña</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+              <i class="fa-solid fa-lock text-sm"></i>
+            </span>
+            <input [(ngModel)]="password" 
+                   name="password" 
+                   type="password" 
+                   required
+                   placeholder="••••••••"
+                   class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/30 transition-colors text-sm" />
+          </div>
+        </div>
+
+        <button [disabled]="loading()" 
+                type="submit" 
+                class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-md">
+          @if (loading()) {
+            <i class="fa-solid fa-circle-notch fa-spin text-sm"></i>
+          }
+          <span>{{ loading() ? 'Iniciando sesión...' : 'Ingresar con cuenta local' }}</span>
+        </button>
+      </form>
+
+      <!-- Botones Rápidos 1-Click Test Accounts con Sintaxis @for de Angular 22 -->
+      <div class="mt-8 pt-6 border-t border-slate-100">
+        <p class="text-xs font-bold text-slate-500 mb-3">
+          Cuentas de Prueba Rápida (1-Click):
+        </p>
+        <div class="grid grid-cols-2 gap-2">
+          @for (acc of testAccounts; track acc.user) {
+            <button (click)="fillTestAccount(acc)" 
+                    type="button" 
+                    [class]="'px-4 py-3 rounded-xl border font-bold text-sm transition-all flex items-center justify-between shadow-xs cursor-pointer font-sans ' + acc.badge">
+              <span>{{ acc.label }}</span>
+              <i class="fa-solid fa-arrow-right text-xs opacity-70"></i>
+            </button>
+          }
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Pie de página -->
+    <div class="text-center mt-8 text-xs text-slate-400 font-mono">
+      Campus Seguro &copy; 2026 · Versión 2.0 (Angular 22 + Django 5 REST)
+    </div>
+  </div>
+</div>

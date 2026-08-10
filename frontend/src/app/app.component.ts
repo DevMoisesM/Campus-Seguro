@@ -1,41 +1,13 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
-
-import { ApiService, HealthResponse } from './services/api.service';
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [],
+  imports: [RouterOutlet],
   templateUrl: './app.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.component.css'
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
   title = 'Campus-Seguro';
-  private apiService = inject(ApiService);
-  
-  backendStatus: 'loading' | 'online' | 'offline' = 'loading';
-  healthData: HealthResponse | null = null;
-  errorMessage: string | null = null;
-
-  ngOnInit(): void {
-    this.checkBackendConnection();
-  }
-
-  checkBackendConnection(): void {
-    this.backendStatus = 'loading';
-    this.errorMessage = null;
-
-    this.apiService.getHealthCheck().subscribe({
-      next: (data) => {
-        this.healthData = data;
-        this.backendStatus = 'online';
-      },
-      error: (err) => {
-        console.error('Error al conectar con el backend:', err);
-        this.backendStatus = 'offline';
-        this.errorMessage = 'No se pudo conectar con la API Django en http://127.0.0.1:8000/api/health/. Asegúrate de tener el backend ejecutándose.';
-      }
-    });
-  }
 }
