@@ -82,7 +82,7 @@
             </a>
           </li>
           <li>
-            <a routerLink="/tickets" 
+            <a routerLink="/estudiante/mis-tickets" 
                routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
                (click)="closeMobileMenu()"
                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
@@ -100,7 +100,7 @@
           <!-- Opciones para Guardia -->
           @if (authService.hasRole(['guardia', 'gestor'])) {
             <li>
-              <a routerLink="/inspecciones" 
+              <a routerLink="/guardia/inspecciones" 
                  routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
                  (click)="closeMobileMenu()"
                  class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
@@ -113,7 +113,7 @@
           <!-- Opciones para Mantención -->
           @if (authService.hasRole(['mantencion', 'gestor'])) {
             <li>
-              <a routerLink="/ordenes-trabajo" 
+              <a routerLink="/mantencion/ordenes" 
                  routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
                  (click)="closeMobileMenu()"
                  class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
@@ -131,7 +131,7 @@
           <p class="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-2">Gestión & BI</p>
           <ul class="space-y-1">
             <li>
-              <a routerLink="/gestion-usuarios" 
+              <a routerLink="/gestor/usuarios" 
                  routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
                  (click)="closeMobileMenu()"
                  class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
@@ -140,7 +140,7 @@
               </a>
             </li>
             <li>
-              <a routerLink="/reportes-bi" 
+              <a routerLink="/gestor/reportes-bi" 
                  routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
                  (click)="closeMobileMenu()"
                  class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">

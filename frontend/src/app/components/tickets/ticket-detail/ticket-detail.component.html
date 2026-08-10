@@ -1,0 +1,199 @@
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <!-- Header y Botón Volver -->
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-sm font-bold text-slate-900 bg-slate-200 px-3 py-1 rounded-lg">
+          {{ ticket()?.folio || 'TICK-...' }}
+        </span>
+        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">{{ ticket()?.titulo || 'Cargando...' }}</h2>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Detalle completo de trazabilidad e historial del incidente</p>
+    </div>
+    <a routerLink="/tickets" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-2">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Volver a Incidentes</span>
+    </a>
+  </div>
+
+  @if (loading()) {
+    <div class="py-12 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">
+      <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-[#FFB800]"></i>
+      <p class="text-xs font-mono">Cargando trazabilidad del incidente...</p>
+    </div>
+  }
+
+  @if (!loading() && ticket()) {
+    
+    <!-- 1. LÍNEA DE TIEMPO VISUAL DE ESTADOS -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest font-mono mb-6">
+        📍 Flujo y Línea de Tiempo de Estados
+      </h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 relative">
+        @for (step of timelineSteps; track step.code) {
+          <div [class]="'p-4 rounded-xl border transition-all relative text-center flex flex-col items-center ' + 
+                       (isStepCompleted(step.code) ? 'bg-emerald-50/60 border-emerald-300 text-emerald-900 shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-400')">
+            <div [class]="'w-10 h-10 rounded-full flex items-center justify-center text-base mb-2 font-bold ' + 
+                         (isStepCompleted(step.code) ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-200 text-slate-500')">
+              <i [class]="'fa-solid ' + step.icon"></i>
+            </div>
+            <span class="text-xs font-bold">{{ step.label }}</span>
+            <span class="text-[10px] font-mono mt-1 font-semibold">
+              {{ isStepCompleted(step.code) ? '✓ Completado' : 'Pendiente' }}
+            </span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- 2. TARJETA DE DETALLES DEL INCIDENTE Y UBICACIÓN -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Detalle Principal (2 Columnas) -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3">
+            Descripción del Incidente
+          </h3>
+          <p class="text-sm text-slate-700 leading-relaxed font-medium">
+            {{ ticket()?.descripcion }}
+          </p>
+
+          <!-- Badges de Evaluación de Riesgo -->
+          <div class="pt-4 border-t border-slate-100">
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 font-mono">Evaluación de Riesgos Creada:</p>
+            <div class="flex flex-wrap gap-2">
+              @if (ticket()?.afecta_clase) {
+                <span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold">
+                  ⚠️ Afecta clases o uso de sala
+                </span>
+              }
+              @if (ticket()?.riesgo_electrico) {
+                <span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold">
+                  ⚡ Riesgo Eléctrico
+                </span>
+              }
+              @if (ticket()?.riesgo_estructural) {
+                <span class="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 text-xs font-semibold">
+                  🧱 Riesgo Estructural
+                </span>
+              }
+              @if (ticket()?.riesgo_accesibilidad) {
+                <span class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
+                  ♿ Problema de Accesibilidad
+                </span>
+              }
+              @if (!ticket()?.afecta_clase && !ticket()?.riesgo_electrico && !ticket()?.riesgo_estructural && !ticket()?.riesgo_accesibilidad) {
+                <span class="text-xs text-slate-400 font-mono">Sin riesgos críticos reportados.</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Registro de Inspección de Guardia -->
+        @if (ticket()?.validacion_guardia) {
+          <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-3">
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center gap-2 text-amber-600">
+              <i class="fa-solid fa-user-shield"></i>
+              <span>Inspección en Terreno por Guardia</span>
+            </h3>
+            <p class="text-xs text-slate-700">
+              <span class="font-bold">Guardia Inspector:</span> {{ ticket()?.validacion_guardia?.guardia_nombre || 'Guardia de Turno' }}
+            </p>
+            <p class="text-xs text-slate-700">
+              <span class="font-bold">Observaciones:</span> {{ ticket()?.validacion_guardia?.observacion }}
+            </p>
+            <div class="flex flex-wrap gap-2 pt-2">
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold" [ngClass]="ticket()?.validacion_guardia?.checklist_electrico ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'">
+                Checklist Eléctrico {{ ticket()?.validacion_guardia?.checklist_electrico ? '✓' : '✗' }}
+              </span>
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold" [ngClass]="ticket()?.validacion_guardia?.checklist_estructural ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'">
+                Checklist Estructural {{ ticket()?.validacion_guardia?.checklist_estructural ? '✓' : '✗' }}
+              </span>
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold" [ngClass]="ticket()?.validacion_guardia?.checklist_accesibilidad ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'">
+                Checklist Accesibilidad {{ ticket()?.validacion_guardia?.checklist_accesibilidad ? '✓' : '✗' }}
+              </span>
+            </div>
+          </div>
+        }
+
+        <!-- Materiales Consumidos del Pañol (Si hay) -->
+        @if (ticket()?.materiales_utilizados && ticket()?.materiales_utilizados!.length > 0) {
+          <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-3">
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center gap-2 text-blue-600">
+              <i class="fa-solid fa-boxes-stacked"></i>
+              <span>Insumos y Materiales Utilizados del Pañol</span>
+            </h3>
+            <ul class="divide-y divide-slate-100 text-xs">
+              @for (m of ticket()?.materiales_utilizados; track m.id) {
+                <li class="py-2 flex items-center justify-between">
+                  <span class="font-semibold text-slate-800">{{ m.nombre_material }}</span>
+                  <span class="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                    {{ m.cantidad }} {{ m.unidad }}
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+      </div>
+
+      <!-- Barra Lateral de Datos del Ticket (1 Columna) -->
+      <div class="space-y-6">
+        
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4 text-xs">
+          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest font-mono border-b border-slate-100 pb-3">
+            Información General
+          </h3>
+
+          <div>
+            <p class="text-slate-400 font-mono uppercase text-[10px]">Ubicación Específica</p>
+            <p class="font-bold text-slate-900 text-sm mt-0.5">{{ ticket()?.ubicacion?.nombre }}</p>
+            <p class="text-slate-500 font-medium">{{ ticket()?.ubicacion?.edificio_nombre }} · {{ ticket()?.ubicacion?.sede_nombre }}</p>
+          </div>
+
+          <div>
+            <p class="text-slate-400 font-mono uppercase text-[10px]">Urgencia</p>
+            <span [class]="'inline-block px-2.5 py-1 rounded-full border font-bold uppercase mt-1 ' + getUrgenciaBadgeClass(ticket()?.urgencia)">
+              {{ ticket()?.urgencia }}
+            </span>
+          </div>
+
+          <div>
+            <p class="text-slate-400 font-mono uppercase text-[10px]">Categoría</p>
+            <p class="font-semibold text-slate-800 mt-0.5">{{ ticket()?.categoria?.nombre_display || 'General' }}</p>
+          </div>
+
+          <div>
+            <p class="text-slate-400 font-mono uppercase text-[10px]">Reportado Por</p>
+            <p class="font-semibold text-slate-800 mt-0.5">{{ ticket()?.creado_por?.first_name }} {{ ticket()?.creado_por?.last_name }}</p>
+            <p class="text-slate-400 font-mono text-[11px]">{{ ticket()?.creado_por?.correo_institucional }}</p>
+          </div>
+
+          @if (ticket()?.asignado_a) {
+            <div class="pt-3 border-t border-slate-100">
+              <p class="text-slate-400 font-mono uppercase text-[10px]">Mantenedor Asignado</p>
+              <p class="font-bold text-indigo-600 text-sm mt-0.5">{{ ticket()?.asignado_a?.first_name }} {{ ticket()?.asignado_a?.last_name }}</p>
+            </div>
+          }
+
+          <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-400 font-mono space-y-1">
+            <p>Fecha Creación: {{ ticket()?.created_at | date:'dd/MM/yyyy HH:mm' }}</p>
+            @if (ticket()?.cerrado_at) {
+              <p class="text-emerald-600 font-bold">Cierre: {{ ticket()?.cerrado_at | date:'dd/MM/yyyy HH:mm' }}</p>
+            }
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  }
+
+</div>
