@@ -117,13 +117,13 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 class RolViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Rol.objects.all()
     serializer_class = RolSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 
 class EspecialidadViewSet(viewsets.ModelViewSet):
     queryset = Especialidad.objects.all()
     serializer_class = EspecialidadSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 
 # ═══════════════════════════════════════════════════════════════
