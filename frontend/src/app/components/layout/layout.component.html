@@ -73,12 +73,12 @@
         <p class="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-2">Navegación</p>
         <ul class="space-y-1">
           <li>
-            <a routerLink="/dashboard" 
+            <a [routerLink]="authService.userRole() === 'gestor' ? '/gestor/dashboard' : authService.userRole() === 'guardia' ? '/guardia/dashboard' : authService.userRole() === 'mantencion' ? '/mantencion/dashboard' : '/estudiante/dashboard'" 
                routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
                (click)="closeMobileMenu()"
                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
               <i class="fa-solid fa-chart-pie text-base w-5 text-center text-[#FFB800]"></i>
-              <span>Dashboard Global</span>
+              <span>Dashboard Principal</span>
             </a>
           </li>
           <li>
@@ -100,7 +100,7 @@
           <!-- Opciones para Guardia -->
           @if (authService.hasRole(['guardia', 'gestor'])) {
             <li>
-              <a routerLink="/guardia/inspecciones" 
+              <a routerLink="/guardia/dashboard" 
                  routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
                  (click)="closeMobileMenu()"
                  class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
@@ -113,7 +113,7 @@
           <!-- Opciones para Mantención -->
           @if (authService.hasRole(['mantencion', 'gestor'])) {
             <li>
-              <a routerLink="/mantencion/ordenes" 
+              <a routerLink="/mantencion/dashboard" 
                  routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
                  (click)="closeMobileMenu()"
                  class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">

@@ -28,12 +28,11 @@ export class LoginComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    // Si ya está autenticado, redirige automáticamente al Dashboard General
+    // Si ya está autenticado, redirige a la URL prefijada de su rol
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/dashboard']);
+      this.redirectUserByRole(this.authService.userRole());
     }
   }
-
 
   fillTestAccount(account: { user: string; pass: string }) {
     this.username = account.user;
@@ -51,9 +50,10 @@ export class LoginComponent implements OnInit {
     this.errorMessage.set(null);
 
     this.authService.login({ username: this.username, password: this.password }).subscribe({
-      next: () => {
+      next: (res) => {
         this.loading.set(false);
-        this.router.navigate(['/dashboard']);
+        const role = res.user.rol_codigo || 'usuario';
+        this.redirectUserByRole(role);
       },
       error: (err) => {
         this.loading.set(false);
@@ -61,10 +61,26 @@ export class LoginComponent implements OnInit {
         this.errorMessage.set(msg);
       }
     });
-
   }
 
   onSsoLogin() {
     alert('Redirigiendo al portal seguro de Auth0 Institucional...');
+  }
+
+  private redirectUserByRole(role: string) {
+    switch (role) {
+      case 'gestor':
+        this.router.navigate(['/gestor/dashboard']);
+        break;
+      case 'guardia':
+        this.router.navigate(['/guardia/dashboard']);
+        break;
+      case 'mantencion':
+        this.router.navigate(['/mantencion/dashboard']);
+        break;
+      default:
+        this.router.navigate(['/estudiante/dashboard']);
+        break;
+    }
   }
 }

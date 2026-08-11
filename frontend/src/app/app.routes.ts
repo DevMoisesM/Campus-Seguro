@@ -1,7 +1,10 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './components/login/login.component';
 import { LayoutComponent } from './components/layout/layout.component';
-import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { EstudianteDashboardComponent } from './components/roles/estudiante-dashboard/estudiante-dashboard.component';
+import { GuardiaDashboardComponent } from './components/roles/guardia-dashboard/guardia-dashboard.component';
+import { MantencionDashboardComponent } from './components/roles/mantencion-dashboard/mantencion-dashboard.component';
+import { GestorDashboardComponent } from './components/roles/gestor-dashboard/gestor-dashboard.component';
 import { TicketCreateComponent } from './components/tickets/ticket-create/ticket-create.component';
 import { TicketListComponent } from './components/tickets/ticket-list/ticket-list.component';
 import { TicketDetailComponent } from './components/tickets/ticket-detail/ticket-detail.component';
@@ -24,15 +27,16 @@ export const routes: Routes = [
       },
       {
         path: 'dashboard',
-        component: DashboardComponent
+        component: EstudianteDashboardComponent
       },
       
       // ════════════════════════════════════════════════
-      // 1. RUTAS DE ESTUDIANTE / USUARIO BASE
+      // 1. RUTAS PREFIJADAS DE ESTUDIANTE / USUARIO BASE
       // ════════════════════════════════════════════════
       {
         path: 'estudiante',
         children: [
+          { path: 'dashboard', component: EstudianteDashboardComponent },
           { path: 'mis-tickets', component: TicketListComponent },
           { path: 'nuevo-ticket', component: TicketCreateComponent }
         ]
@@ -51,45 +55,47 @@ export const routes: Routes = [
       },
 
       // ════════════════════════════════════════════════
-      // 3. RUTAS DE GUARDIA DE SEGURIDAD
+      // 3. RUTAS PREFIJADAS DE GUARDIA DE SEGURIDAD
       // ════════════════════════════════════════════════
       {
         path: 'guardia',
         data: { roles: ['guardia', 'gestor'] },
         children: [
-          { path: 'inspecciones', component: TicketListComponent }
+          { path: 'dashboard', component: GuardiaDashboardComponent },
+          { path: 'inspecciones', component: GuardiaDashboardComponent }
         ]
       },
 
       // ════════════════════════════════════════════════
-      // 4. RUTAS DE MANTENEDOR
+      // 4. RUTAS PREFIJADAS DE MANTENEDOR
       // ════════════════════════════════════════════════
       {
         path: 'mantencion',
         data: { roles: ['mantencion', 'gestor'] },
         children: [
-          { path: 'ordenes', component: TicketListComponent }
+          { path: 'dashboard', component: MantencionDashboardComponent },
+          { path: 'ordenes', component: MantencionDashboardComponent }
         ]
       },
 
       // ════════════════════════════════════════════════
-      // 5. RUTAS DE GESTOR / ADMINISTRADOR
+      // 5. RUTAS PREFIJADAS DE GESTOR / ADMINISTRADOR
       // ════════════════════════════════════════════════
       {
         path: 'gestor',
         data: { roles: ['gestor'] },
         children: [
-          { path: 'dashboard', component: DashboardComponent },
-          { path: 'usuarios', component: DashboardComponent },
-          { path: 'reportes-bi', component: DashboardComponent }
+          { path: 'dashboard', component: GestorDashboardComponent },
+          { path: 'usuarios', component: GestorDashboardComponent },
+          { path: 'reportes-bi', component: GestorDashboardComponent }
         ]
       },
 
       // Compatibilidad con enlaces directos anteriores
-      { path: 'inspecciones', component: TicketListComponent },
-      { path: 'ordenes-trabajo', component: TicketListComponent },
-      { path: 'gestion-usuarios', component: DashboardComponent },
-      { path: 'reportes-bi', component: DashboardComponent }
+      { path: 'inspecciones', component: GuardiaDashboardComponent },
+      { path: 'ordenes-trabajo', component: MantencionDashboardComponent },
+      { path: 'gestion-usuarios', component: GestorDashboardComponent },
+      { path: 'reportes-bi', component: GestorDashboardComponent }
     ]
   },
   {

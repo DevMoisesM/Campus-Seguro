@@ -1,0 +1,201 @@
+<div class="space-y-6">
+
+  <!-- Banner Hero Guardia -->
+  <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 rounded-2xl p-6 lg:p-8 relative overflow-hidden shadow-md text-white">
+    <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-amber-500/20 blur-[80px] rounded-full pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <h2 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
+            Panel de Inspección de Guardia
+          </h2>
+          <span class="px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border-amber-500/30">
+            Guardia de Seguridad
+          </span>
+        </div>
+        <p class="text-slate-300 text-sm max-w-xl">
+          Validación e inspección en terreno de incidentes reportados en la infraestructura del campus.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Métricas Guardia -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">Pendientes de Inspección</p>
+        <h3 class="text-3xl font-black text-amber-600 mt-1">{{ pendientesInspeccion() }}</h3>
+        <p class="text-[11px] text-slate-400 mt-1">Requieren chequeo en terreno</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold border border-amber-100">
+        <i class="fa-solid fa-user-shield"></i>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">Inspeccionados / Validados</p>
+        <h3 class="text-3xl font-black text-emerald-600 mt-1">{{ validadosHoy() }}</h3>
+        <p class="text-[11px] text-slate-400 mt-1">Incidentes derivados a mantención</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold border border-emerald-100">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Incidentes para Inspeccionar -->
+  <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h3 class="text-lg font-extrabold text-slate-900 tracking-tight">Incidentes Pendientes de Inspección</h3>
+        <p class="text-xs text-slate-500">Revisa la sala y ejecuta el checklist de seguridad antes de derivar a mantenimiento</p>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="py-12 text-center text-slate-500">
+        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-[#FFB800]"></i>
+        <p class="text-xs font-mono">Cargando incidentes...</p>
+      </div>
+    }
+
+    @if (!loading() && tickets().length === 0) {
+      <div class="py-12 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+        <i class="fa-solid fa-shield-check text-4xl mb-3 text-emerald-500"></i>
+        <p class="text-sm font-semibold text-slate-700">No hay incidentes pendientes de inspección</p>
+        <p class="text-xs text-slate-400 mt-1">Todas las zonas del campus se encuentran validadas.</p>
+      </div>
+    }
+
+    @if (!loading() && tickets().length > 0) {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-700">
+          <thead class="text-xs font-mono uppercase bg-slate-100 text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="px-4 py-3">Folio</th>
+              <th class="px-4 py-3">Título / Detalle</th>
+              <th class="px-4 py-3">Ubicación a Inspeccionar</th>
+              <th class="px-4 py-3">Urgencia</th>
+              <th class="px-4 py-3">Estado</th>
+              <th class="px-4 py-3 text-right">Acción Guardia</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (t of tickets(); track t.id) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3.5 font-mono text-xs font-bold text-slate-900">{{ t.folio }}</td>
+                <td class="px-4 py-3.5 font-semibold text-slate-900">{{ t.titulo }}</td>
+                <td class="px-4 py-3.5 text-xs text-slate-700 font-bold">
+                  {{ t.ubicacion.nombre }}
+                  <span class="block text-[11px] font-normal text-slate-400">{{ t.ubicacion.edificio_nombre }}</span>
+                </td>
+                <td class="px-4 py-3.5">
+                  <span [class]="'px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
+                    {{ t.urgencia }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 border border-slate-200 text-slate-800">
+                    <span class="w-2 h-2 rounded-full" [style.background-color]="t.estado.color_hex || '#3b82f6'"></span>
+                    {{ t.estado.nombre_display }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5 text-right">
+                  @if (t.estado.codigo === 'enviado') {
+                    <button (click)="openValidationModal(t)" 
+                            type="button" 
+                            class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer">
+                      <i class="fa-solid fa-user-shield"></i>
+                      <span>Ejecutar Inspección</span>
+                    </button>
+                  } @else {
+                    <span class="text-xs text-emerald-600 font-bold flex items-center justify-end gap-1">
+                      <i class="fa-solid fa-circle-check"></i>
+                      <span>Validado</span>
+                    </span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+  </div>
+
+  <!-- MODAL DE INSPECCIÓN Y CHECKLIST DE GUARDIA -->
+  @if (selectedTicket()) {
+    <div class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2 text-amber-600 font-bold text-base">
+            <i class="fa-solid fa-user-shield text-lg"></i>
+            <span>Inspección en Terreno: {{ selectedTicket()?.folio }}</span>
+          </div>
+          <button (click)="closeValidationModal()" class="text-slate-400 hover:text-slate-700 text-lg">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+          <p><span class="font-bold text-slate-800">Incidente:</span> {{ selectedTicket()?.titulo }}</p>
+          <p><span class="font-bold text-slate-800">Ubicación:</span> {{ selectedTicket()?.ubicacion?.nombre }} ({{ selectedTicket()?.ubicacion?.edificio_nombre }})</p>
+        </div>
+
+        <!-- Checklist de Seguridad en Terreno -->
+        <div class="space-y-3">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
+            Checklist de Verificación de Guardia:
+          </label>
+
+          <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer text-xs font-semibold text-slate-800">
+            <input type="checkbox" [(ngModel)]="checklistElectrico" class="rounded text-amber-500 focus:ring-amber-500" />
+            <span>Verificación Eléctrica (Cables/Tableros sin tensión expuesta)</span>
+          </label>
+
+          <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer text-xs font-semibold text-slate-800">
+            <input type="checkbox" [(ngModel)]="checklistEstructural" class="rounded text-amber-500 focus:ring-amber-500" />
+            <span>Verificación Estructural (Zona acordonada o segura)</span>
+          </label>
+
+          <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer text-xs font-semibold text-slate-800">
+            <input type="checkbox" [(ngModel)]="checklistAccesibilidad" class="rounded text-amber-500 focus:ring-amber-500" />
+            <span>Verificación Accesibilidad (Pasillos despejados)</span>
+          </label>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono mb-1.5">
+              Observaciones de Inspección:
+            </label>
+            <textarea [(ngModel)]="observacion" 
+                      rows="3" 
+                      placeholder="Detalla lo verificado en la inspección física..."
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-amber-500"></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button (click)="closeValidationModal()" type="button" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200">
+            Cancelar
+          </button>
+          <button [disabled]="submitting()" 
+                  (click)="submitValidation()" 
+                  type="button" 
+                  class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-all shadow-md flex items-center gap-2">
+            @if (submitting()) {
+              <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+            }
+            <span>Aprobar y Validar Incidente</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

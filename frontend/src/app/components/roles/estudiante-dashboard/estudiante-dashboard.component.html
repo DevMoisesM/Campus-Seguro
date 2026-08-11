@@ -1,0 +1,151 @@
+<div class="space-y-6">
+
+  <!-- Banner Hero de Bienvenida para Estudiante / Usuario Base -->
+  <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 rounded-2xl p-6 lg:p-8 relative overflow-hidden shadow-md text-white">
+    <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-[#FFB800]/20 blur-[80px] rounded-full pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <h2 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
+            Hola, {{ authService.currentUser()?.first_name || authService.currentUser()?.username }}
+          </h2>
+          <span class="px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
+            Estudiante / Usuario Base
+          </span>
+        </div>
+        <p class="text-slate-300 text-sm max-w-xl">
+          Panel personal de seguimiento de incidentes e infraestructura del campus.
+        </p>
+      </div>
+
+      <!-- Acciones Rápidas -->
+      <div class="flex items-center gap-3">
+        <a routerLink="/estudiante/nuevo-ticket" 
+           class="py-3 px-5 rounded-xl bg-gradient-to-r from-[#FFB800] to-[#f59e0b] hover:from-[#e6a600] hover:to-[#d97706] text-slate-950 font-bold text-sm shadow-md shadow-[#FFB800]/30 transition-all flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i>
+          <span>Reportar Incidente</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tarjetas KPI del Estudiante -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">Mis Reportes</p>
+        <h3 class="text-3xl font-black text-slate-900 mt-1">{{ totalReportados() }}</h3>
+        <p class="text-[11px] text-slate-400 mt-1">Incidentes creados por ti</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-xl font-bold border border-slate-200">
+        <i class="fa-solid fa-clipboard-list"></i>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">En Revisión</p>
+        <h3 class="text-3xl font-black text-amber-600 mt-1">{{ enRevision() }}</h3>
+        <p class="text-[11px] text-slate-400 mt-1">Inspección de Guardia</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold border border-amber-100">
+        <i class="fa-solid fa-user-shield"></i>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">En Reparación</p>
+        <h3 class="text-3xl font-black text-indigo-600 mt-1">{{ enMantenimiento() }}</h3>
+        <p class="text-[11px] text-slate-400 mt-1">Mantenedor trabajando</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold border border-indigo-100">
+        <i class="fa-solid fa-wrench"></i>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">Resueltos</p>
+        <h3 class="text-3xl font-black text-emerald-600 mt-1">{{ resueltos() }}</h3>
+        <p class="text-[11px] text-slate-400 mt-1">Reparados exitosamente</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold border border-emerald-100">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Mis Incidentes Reportados -->
+  <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h3 class="text-lg font-extrabold text-slate-900 tracking-tight">Mis Solicitudes de Reparación</h3>
+        <p class="text-xs text-slate-500">Estado de avance de tus reportes de infraestructura</p>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="py-12 text-center text-slate-500">
+        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-[#FFB800]"></i>
+        <p class="text-xs font-mono">Cargando tus reportes...</p>
+      </div>
+    }
+
+    @if (!loading() && tickets().length === 0) {
+      <div class="py-12 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+        <i class="fa-solid fa-clipboard-check text-4xl mb-3 text-slate-400"></i>
+        <p class="text-sm font-semibold text-slate-700">Aún no has reportado ningún incidente</p>
+        <p class="text-xs text-slate-400 mt-1">Usa el botón "Reportar Incidente" cuando veas algo que reparar en el campus.</p>
+      </div>
+    }
+
+    @if (!loading() && tickets().length > 0) {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-700">
+          <thead class="text-xs font-mono uppercase bg-slate-100 text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="px-4 py-3">Folio</th>
+              <th class="px-4 py-3">Título / Problema</th>
+              <th class="px-4 py-3">Ubicación</th>
+              <th class="px-4 py-3">Urgencia</th>
+              <th class="px-4 py-3">Estado</th>
+              <th class="px-4 py-3 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (t of tickets(); track t.id) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3.5 font-mono text-xs font-bold text-slate-900">{{ t.folio }}</td>
+                <td class="px-4 py-3.5 font-semibold text-slate-900">{{ t.titulo }}</td>
+                <td class="px-4 py-3.5 text-xs text-slate-500">{{ t.ubicacion.nombre }} ({{ t.ubicacion.edificio_nombre }})</td>
+                <td class="px-4 py-3.5">
+                  <span [class]="'px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
+                    {{ t.urgencia }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 border border-slate-200 text-slate-800">
+                    <span class="w-2 h-2 rounded-full" [style.background-color]="t.estado.color_hex || '#3b82f6'"></span>
+                    {{ t.estado.nombre_display }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5 text-right">
+                  <a [routerLink]="['/tickets', t.id]" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-white transition-colors inline-flex items-center gap-1">
+                    <span>Ver Línea de Tiempo</span>
+                    <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+  </div>
+
+</div>

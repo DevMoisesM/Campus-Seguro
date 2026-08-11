@@ -1,0 +1,141 @@
+<div class="space-y-6">
+
+  <!-- Banner Hero Gestor BI -->
+  <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 rounded-2xl p-6 lg:p-8 relative overflow-hidden shadow-md text-white">
+    <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-purple-500/20 blur-[80px] rounded-full pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <h2 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
+            Panel de Control BI & Gestión Global
+          </h2>
+          <span class="px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border-purple-500/30">
+            Gestor / Administrador
+          </span>
+        </div>
+        <p class="text-slate-300 text-sm max-w-xl">
+          Supervisión en tiempo real de operaciones del campus, asignación de personal y analítica BI.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a routerLink="/estudiante/nuevo-ticket" 
+           class="py-3 px-4 rounded-xl bg-gradient-to-r from-[#FFB800] to-[#f59e0b] text-slate-950 font-bold text-xs shadow-md flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i>
+          <span>Nuevo Incidente</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Métricas BI Globales -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+      <p class="text-[11px] font-bold text-slate-500 uppercase font-mono">Enviados</p>
+      <h3 class="text-2xl font-black text-blue-600 mt-1">{{ metrics().enviados }}</h3>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+      <p class="text-[11px] font-bold text-slate-500 uppercase font-mono">Validados</p>
+      <h3 class="text-2xl font-black text-amber-600 mt-1">{{ metrics().validados }}</h3>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+      <p class="text-[11px] font-bold text-slate-500 uppercase font-mono">En Mantención</p>
+      <h3 class="text-2xl font-black text-indigo-600 mt-1">{{ metrics().en_mantencion }}</h3>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+      <p class="text-[11px] font-bold text-slate-500 uppercase font-mono">Reparados</p>
+      <h3 class="text-2xl font-black text-emerald-600 mt-1">{{ metrics().reparados }}</h3>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+      <p class="text-[11px] font-bold text-slate-500 uppercase font-mono">Cerrados</p>
+      <h3 class="text-2xl font-black text-slate-900 mt-1">{{ metrics().cerrados }}</h3>
+    </div>
+  </div>
+
+  <!-- Gestión de Asignaciones e Incidentes del Campus -->
+  <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-extrabold text-slate-900 tracking-tight">Supervisión & Asignación de Incidentes</h3>
+        <p class="text-xs text-slate-500">Asigna especialistas de mantenimiento y aprueba cierres de incidentes</p>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="py-12 text-center text-slate-500">
+        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-[#FFB800]"></i>
+        <p class="text-xs font-mono">Cargando datos BI...</p>
+      </div>
+    }
+
+    @if (!loading() && tickets().length > 0) {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-700">
+          <thead class="text-xs font-mono uppercase bg-slate-100 text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="px-4 py-3">Folio</th>
+              <th class="px-4 py-3">Problema / Reportado Por</th>
+              <th class="px-4 py-3">Ubicación</th>
+              <th class="px-4 py-3">Urgencia</th>
+              <th class="px-4 py-3">Asignado a</th>
+              <th class="px-4 py-3 text-right">Acción Gestor</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (t of tickets(); track t.id) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3.5 font-mono text-xs font-bold text-slate-900">{{ t.folio }}</td>
+                <td class="px-4 py-3.5">
+                  <p class="font-semibold text-slate-900">{{ t.titulo }}</p>
+                  <p class="text-xs text-slate-400 font-mono">Por: {{ t.creado_por.first_name }} {{ t.creado_por.last_name }}</p>
+                </td>
+                <td class="px-4 py-3.5 text-xs text-slate-700">
+                  {{ t.ubicacion.nombre }}
+                  <span class="block text-[11px] text-slate-400">{{ t.ubicacion.edificio_nombre }}</span>
+                </td>
+                <td class="px-4 py-3.5">
+                  <span [class]="'px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
+                    {{ t.urgencia }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5 text-xs">
+                  @if (t.asignado_a) {
+                    <span class="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                      {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
+                    </span>
+                  } @else {
+                    <select (change)="assignMantenedor(t.id, $any($event.target).value)" 
+                            class="px-2.5 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700">
+                      <option value="">-- Asignar Mantenedor --</option>
+                      @for (m of mantenedores(); track m.id) {
+                        <option [value]="m.id">{{ m.first_name }} {{ m.last_name }}</option>
+                      }
+                    </select>
+                  }
+                </td>
+                <td class="px-4 py-3.5 text-right">
+                  @if (t.estado.codigo === 'reparado') {
+                    <button (click)="cerrarTicket(t.id)" 
+                            [disabled]="submitting()" 
+                            type="button" 
+                            class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1 cursor-pointer">
+                      <i class="fa-solid fa-circle-check"></i>
+                      <span>Aprobar Cierre Final</span>
+                    </button>
+                  } @else {
+                    <a [routerLink]="['/tickets', t.id]" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors inline-flex items-center gap-1">
+                      <span>Ver Trazabilidad</span>
+                    </a>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+  </div>
+
+</div>

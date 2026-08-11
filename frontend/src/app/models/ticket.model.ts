@@ -122,7 +122,7 @@ export interface TicketCreateData {
 }
 
 export interface TicketMetrics {
-  total: number;
+  total?: number;
   enviados: number;
   validados: number;
   en_mantencion: number;

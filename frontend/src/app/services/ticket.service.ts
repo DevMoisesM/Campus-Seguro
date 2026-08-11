@@ -1,7 +1,19 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Ticket, TicketCreateData, TicketMetrics, CategoriaTicket } from '../models/ticket.model';
+import { Ticket, CategoriaTicket, TicketMetrics } from '../models/ticket.model';
+
+export interface TicketCreateData {
+  titulo: string;
+  descripcion: string;
+  ubicacion: number;
+  categoria?: number;
+  urgencia?: 'baja' | 'media' | 'alta' | 'critica';
+  afecta_clase?: boolean;
+  riesgo_electrico?: boolean;
+  riesgo_estructural?: boolean;
+  riesgo_accesibilidad?: boolean;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -10,8 +22,13 @@ export class TicketService {
   private http = inject(HttpClient);
   private apiUrl = 'http://127.0.0.1:8000/api';
 
-  getTickets(): Observable<Ticket[]> {
-    return this.http.get<Ticket[]>(`${this.apiUrl}/tickets/`);
+  getTickets(params?: { estado?: string; urgencia?: string; search?: string }): Observable<Ticket[]> {
+    let httpParams = new HttpParams();
+    if (params?.estado) httpParams = httpParams.set('estado', params.estado);
+    if (params?.urgencia) httpParams = httpParams.set('urgencia', params.urgencia);
+    if (params?.search) httpParams = httpParams.set('search', params.search);
+
+    return this.http.get<Ticket[]>(`${this.apiUrl}/tickets/`, { params: httpParams });
   }
 
   getTicketById(id: number): Observable<Ticket> {
@@ -23,27 +40,37 @@ export class TicketService {
   }
 
   validarGuardia(ticketId: number, data: {
-    observacion: string;
+    observacion?: string;
     checklist_electrico?: boolean;
     checklist_estructural?: boolean;
     checklist_accesibilidad?: boolean;
-    valido: boolean;
+    valido?: boolean;
   }): Observable<{ status: string; estado: string }> {
+    const payload = {
+      valido: data.valido ?? true,
+      ...data
+    };
     return this.http.post<{ status: string; estado: string }>(
       `${this.apiUrl}/tickets/${ticketId}/validar_guardia/`,
-      data
+      payload
     );
   }
 
-  derivarMantencion(ticketId: number, mantenedorId: number): Observable<{ status: string; asignado_a: string }> {
-    return this.http.post<{ status: string; asignado_a: string }>(
+  derivarMantencion(ticketId: number, mantenedorId?: number): Observable<{ status: string; asignado_a?: string }> {
+    return this.http.post<{ status: string; asignado_a?: string }>(
       `${this.apiUrl}/tickets/${ticketId}/derivar_mantencion/`,
-      { mantenedor_id: mantenedorId }
+      mantenedorId ? { mantenedor_id: mantenedorId } : {}
     );
+  }
+
+  assignMantencion(ticketId: number, mantenedorId: number): Observable<{ status: string; asignado_a?: string }> {
+    return this.derivarMantencion(ticketId, mantenedorId);
   }
 
   registrarMantencion(ticketId: number, data: {
+    observaciones_tecnicas?: string;
     observacion?: string;
+    horas_trabajadas?: number;
     materiales?: Array<{ nombre: string; cantidad: number; unidad: string }>;
     imagen_url?: string;
   }): Observable<{ status: string }> {
