@@ -260,6 +260,22 @@ class CategoriaMaterial(models.Model):
         return self.nombre_display
 
 
+class Material(models.Model):
+    nombre = models.CharField(max_length=150, unique=True)
+    categoria = models.ForeignKey(CategoriaMaterial, on_delete=models.SET_NULL, null=True, blank=True)
+    unidad_defecto = models.CharField(max_length=30, default="unidades")
+    stock_disponible = models.PositiveIntegerField(default=100)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Material de Pañol'
+        verbose_name_plural = 'Materiales de Pañol'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+
 # ═══════════════════════════════════════════════════════════════
 # 5. TICKETS Y PROCESO DE MANTENIMIENTO
 # ═══════════════════════════════════════════════════════════════

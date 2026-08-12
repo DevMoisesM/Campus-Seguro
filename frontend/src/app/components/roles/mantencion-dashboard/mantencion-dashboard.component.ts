@@ -2,7 +2,7 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { TicketService } from '../../../services/ticket.service';
+import { TicketService, MaterialCatalog } from '../../../services/ticket.service';
 import { AuthService } from '../../../services/auth.service';
 import { Ticket } from '../../../models/ticket.model';
 
@@ -19,6 +19,8 @@ export class MantencionDashboardComponent implements OnInit {
   tickets = signal<Ticket[]>([]);
   loading = signal(true);
   submitting = signal(false);
+
+  catalogoMateriales = signal<MaterialCatalog[]>([]);
 
   // Modal de Registro de Mantenimiento y Pañol
   selectedTicket = signal<Ticket | null>(null);
@@ -37,6 +39,7 @@ export class MantencionDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadTickets();
+    this.loadMaterialesCatalog();
   }
 
   loadTickets(): void {
@@ -48,6 +51,20 @@ export class MantencionDashboardComponent implements OnInit {
       },
       error: () => this.loading.set(false)
     });
+  }
+
+  loadMaterialesCatalog(): void {
+    this.ticketService.getMateriales().subscribe({
+      next: (data) => this.catalogoMateriales.set(data),
+      error: () => {}
+    });
+  }
+
+  onMaterialSelect(m: { nombre_material: string; cantidad: number; unidad: string }): void {
+    const selected = this.catalogoMateriales().find(item => item.nombre === m.nombre_material);
+    if (selected) {
+      m.unidad = selected.unidad_defecto;
+    }
   }
 
   iniciarTrabajo(ticket: Ticket): void {

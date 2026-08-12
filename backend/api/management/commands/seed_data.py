@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from api.models import (
     Rol, EstadoCatalogo, Especialidad, TipoUbicacion, 
-    CategoriaTicket, CategoriaMaterial, Sede, Edificio, Piso, Ubicacion
+    CategoriaTicket, CategoriaMaterial, Material, Sede, Edificio, Piso, Ubicacion
 )
 
 class Command(BaseCommand):
@@ -41,25 +41,24 @@ class Command(BaseCommand):
 
         # 3. ESPECIALIDADES
         especialidades = [
-            ('Electricidad SEC', 'Instalaciones eléctricas y tableros'),
-            ('Cerrajero', 'Chapas, candados y accesos'),
-            ('Gasfitería', 'Cañerías, sanitarios y llaves de agua'),
-            ('Climatización / HVAC', 'Aire acondicionado y ventilación'),
-            ('Pintura y Albañilería', 'Paredes, yeso y retoques estructurales'),
-            ('Mobiliario', 'Sillas, mesas, proyectores y soportes'),
+            'Electricidad',
+            'Gasfitería / Plomería',
+            'Climatización',
+            'Cerrajería / Estructura',
+            'Pintura y Aseo',
         ]
-        for nombre, desc in especialidades:
-            Especialidad.objects.get_or_create(nombre=nombre, defaults={'descripcion': desc})
+        for nombre in especialidades:
+            Especialidad.objects.get_or_create(nombre=nombre)
         self.stdout.write(self.style.SUCCESS('[OK] Especialidades cargadas'))
 
         # 4. TIPOS DE UBICACIÓN
         tipos_ub = [
             ('aula', 'Aula / Sala de Clases'),
-            ('laboratorio', 'Laboratorio Computacional / Técnico'),
-            ('bano', 'Baño Damas / Varones / Accesible'),
-            ('pasillo', 'Pasillo / Zonas Comunes'),
+            ('laboratorio', 'Laboratorio'),
+            ('bano', 'Baño / Servicio Higiénico'),
+            ('auditorio', 'Auditorio / Eventos'),
             ('oficina', 'Oficina Administrativa'),
-            ('exterior', 'Patio / Exterior'),
+            ('pasillo', 'Pasillo / Área Común'),
         ]
         tipos_obj = {}
         for codigo, nombre in tipos_ub:
@@ -78,6 +77,43 @@ class Command(BaseCommand):
         for codigo, nombre, desc in categorias:
             CategoriaTicket.objects.get_or_create(codigo=codigo, defaults={'nombre_display': nombre, 'descripcion': desc})
         self.stdout.write(self.style.SUCCESS('[OK] Categorías de Tickets cargadas'))
+
+        # 5.1 CATÁLOGO MAESTRO DE MATERIALES DEL PAÑOL
+        cat_electrica, _ = CategoriaMaterial.objects.get_or_create(codigo='electrica', defaults={'nombre_display': 'Eléctrico'})
+        cat_sanitaria, _ = CategoriaMaterial.objects.get_or_create(codigo='sanitaria', defaults={'nombre_display': 'Gasfitería / Sanitaria'})
+        cat_cerrajeria, _ = CategoriaMaterial.objects.get_or_create(codigo='cerrajeria', defaults={'nombre_display': 'Cerrajería / Estructura'})
+        cat_pintura, _ = CategoriaMaterial.objects.get_or_create(codigo='pintura', defaults={'nombre_display': 'Pintura y Aseo'})
+
+        materiales_catalogo = [
+            ('Enchufe Hembra 16A Embutir', cat_electrica, 'unidades', 150),
+            ('Interruptor Simple Blanco', cat_electrica, 'unidades', 120),
+            ('Tubo LED 18W T8 120cm', cat_electrica, 'unidades', 200),
+            ('Cable Cobre 2.5mm Eva Azul', cat_electrica, 'metros', 500),
+            ('Breaker Termomagnético 16A', cat_electrica, 'unidades', 80),
+            ('Portalámparas Plástico E27', cat_electrica, 'unidades', 100),
+
+            ('Llave de Paso 1/2" Bronce', cat_sanitaria, 'unidades', 60),
+            ('Sifón Flexible Lavamanos 1 1/2"', cat_sanitaria, 'unidades', 90),
+            ('Flexible 1/2" x 1/2" 30cm Inox', cat_sanitaria, 'unidades', 150),
+            ('Goma de Estanque WC Estándar', cat_sanitaria, 'unidades', 200),
+            ('Válvula de Descarga Doble Pulsador', cat_sanitaria, 'unidades', 40),
+
+            ('Cerradura Cilíndrica Pomo Acero', cat_cerrajeria, 'unidades', 50),
+            ('Bisagra 3" x 3" Acero Inox', cat_cerrajeria, 'unidades', 120),
+            ('Cerradura Embutir Cerrojo Cuadrado', cat_cerrajeria, 'unidades', 35),
+            ('Picaporte Inox 4"', cat_cerrajeria, 'unidades', 80),
+
+            ('Pintura Esmalte al Agua Blanco (Galón)', cat_pintura, 'galones', 30),
+            ('Lija Madera/Metal N°120', cat_pintura, 'pliegos', 300),
+            ('Silicona Neutra Transparente 300ml', cat_pintura, 'tubos', 100),
+            ('Cinta Enmascarar Masking 24mm', cat_pintura, 'rollos', 150),
+        ]
+        for nombre, cat_obj, unidad, stock in materiales_catalogo:
+            Material.objects.get_or_create(
+                nombre=nombre,
+                defaults={'categoria': cat_obj, 'unidad_defecto': unidad, 'stock_disponible': stock}
+            )
+        self.stdout.write(self.style.SUCCESS('[OK] Catálogo Maestro de Materiales cargado'))
 
         # 6. INFRAESTRUCTURA (Sedes, Edificios, Pisos, Salas)
         sedes_data = [

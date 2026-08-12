@@ -173,22 +173,28 @@
             </button>
           </div>
 
-          <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
+          <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
             @for (m of materiales(); track $index) {
               <div class="flex items-center gap-2">
-                <input [(ngModel)]="m.nombre_material" 
-                       type="text" 
-                       placeholder="ej: Enchufe hembra 16A o Cable 2.5mm"
-                       class="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500" />
+                <select [(ngModel)]="m.nombre_material" 
+                        (change)="onMaterialSelect(m)"
+                        class="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500">
+                  <option value="">-- Seleccionar Material del Pañol --</option>
+                  @for (mat of catalogoMateriales(); track mat.id) {
+                    <option [value]="mat.nombre">{{ mat.nombre }} ({{ mat.unidad_defecto }})</option>
+                  }
+                </select>
                 
                 <input [(ngModel)]="m.cantidad" 
                        type="number" 
                        min="1" 
+                       title="Cantidad"
                        class="w-16 px-2 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 text-center" />
 
                 <input [(ngModel)]="m.unidad" 
                        type="text" 
-                       placeholder="unidades/metros"
+                       placeholder="unidad"
+                       title="Unidad de medida"
                        class="w-24 px-2 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900" />
 
                 <button (click)="removeMaterialRow($index)" type="button" class="text-rose-500 hover:text-rose-700 p-2">

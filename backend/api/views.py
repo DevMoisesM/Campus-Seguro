@@ -10,14 +10,14 @@ from django.shortcuts import get_object_or_404
 from .models import (
     Rol, Escuela, Departamento, Carrera, Usuario,
     EstadoCatalogo, Sede, Edificio, Piso, TipoUbicacion, Ubicacion,
-    Especialidad, CategoriaTicket, CategoriaMaterial, Ticket,
+    Especialidad, CategoriaTicket, CategoriaMaterial, Material, Ticket,
     ValidacionGuardia, SesionTrabajo, MaterialUtilizado, EvidenciaFotografica, LogAuditoria
 )
 from .serializers import (
     CustomTokenObtainPairSerializer, UsuarioSerializer, UsuarioCreateUpdateSerializer,
     RolSerializer, EscuelaSerializer, DepartamentoSerializer, CarreraSerializer, EspecialidadSerializer,
     SedeSerializer, EdificioSerializer, PisoSerializer, TipoUbicacionSerializer, UbicacionSerializer,
-    CategoriaTicketSerializer, CategoriaMaterialSerializer, EstadoCatalogoSerializer,
+    CategoriaTicketSerializer, CategoriaMaterialSerializer, MaterialSerializer, EstadoCatalogoSerializer,
     TicketCreateUpdateSerializer, TicketDetailSerializer, ValidacionGuardiaSerializer,
     SesionTrabajoSerializer, MaterialUtilizadoSerializer, EvidenciaFotograficaSerializer, LogAuditoriaSerializer
 )
@@ -178,6 +178,12 @@ class UbicacionViewSet(viewsets.ReadOnlyModelViewSet):
 class CategoriaTicketViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = CategoriaTicket.objects.filter(activa=True)
     serializer_class = CategoriaTicketSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class MaterialViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Material.objects.filter(activo=True)
+    serializer_class = MaterialSerializer
     permission_classes = [permissions.AllowAny]
 
 

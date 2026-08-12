@@ -3,7 +3,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import (
     Rol, Escuela, Departamento, Carrera, Usuario,
     EstadoCatalogo, TransicionEstado, Sede, Edificio, Piso, TipoUbicacion, Ubicacion,
-    Especialidad, CategoriaTicket, CategoriaMaterial, Ticket,
+    Especialidad, CategoriaTicket, CategoriaMaterial, Material, Ticket,
     ValidacionGuardia, SesionTrabajo, MaterialUtilizado, EvidenciaFotografica, LogAuditoria
 )
 
@@ -174,6 +174,14 @@ class CategoriaMaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = CategoriaMaterial
         fields = ['id', 'codigo', 'nombre_display', 'descripcion']
+
+
+class MaterialSerializer(serializers.ModelSerializer):
+    categoria_nombre = serializers.ReadOnlyField(source='categoria.nombre_display')
+
+    class Meta:
+        model = Material
+        fields = ['id', 'nombre', 'categoria', 'categoria_nombre', 'unidad_defecto', 'stock_disponible', 'activo']
 
 
 class EvidenciaFotograficaSerializer(serializers.ModelSerializer):

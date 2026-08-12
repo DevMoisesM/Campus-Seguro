@@ -16,6 +16,14 @@ export interface TicketCreateData {
   imagen_url?: string;
 }
 
+export interface MaterialCatalog {
+  id: number;
+  nombre: string;
+  categoria_nombre?: string;
+  unidad_defecto: string;
+  stock_disponible: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -90,6 +98,10 @@ export class TicketService {
 
   getCategorias(): Observable<CategoriaTicket[]> {
     return this.http.get<CategoriaTicket[]>(`${this.apiUrl}/categorias-ticket/`);
+  }
+
+  getMateriales(): Observable<MaterialCatalog[]> {
+    return this.http.get<MaterialCatalog[]>(`${this.apiUrl}/materiales/`);
   }
 
   getMetrics(): Observable<TicketMetrics> {
