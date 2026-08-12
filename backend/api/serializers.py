@@ -228,14 +228,17 @@ class TicketCreateUpdateSerializer(serializers.ModelSerializer):
     """
     Serializador para crear o editar tickets.
     """
+    imagen_url = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
     class Meta:
         model = Ticket
         fields = [
             'id', 'folio', 'titulo', 'descripcion', 'categoria', 'especialidad_requerida',
             'ubicacion', 'urgencia', 'afecta_clase', 'riesgo_electrico',
-            'riesgo_estructural', 'riesgo_accesibilidad'
+            'riesgo_estructural', 'riesgo_accesibilidad', 'imagen_url'
         ]
         read_only_fields = ['folio']
+
 
 
 class TicketDetailSerializer(serializers.ModelSerializer):

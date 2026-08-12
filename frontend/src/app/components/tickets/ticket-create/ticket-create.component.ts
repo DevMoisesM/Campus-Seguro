@@ -21,6 +21,7 @@ export class TicketCreateComponent implements OnInit {
   // Form Fields
   titulo = '';
   descripcion = '';
+  imagenUrl = '';
   selectedSedeId: number | null = null;
   selectedEdificioId: number | null = null;
   selectedPisoId: number | null = null;
@@ -57,6 +58,22 @@ export class TicketCreateComponent implements OnInit {
       next: (data) => this.categorias.set(data),
       error: () => {}
     });
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.imagenUrl = e.target?.result as string || '';
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removeFile(): void {
+    this.imagenUrl = '';
   }
 
   onSedeChange(sedeIdStr: string): void {
@@ -122,7 +139,8 @@ export class TicketCreateComponent implements OnInit {
       afecta_clase: this.afectaClase,
       riesgo_electrico: this.riesgoElectrico,
       riesgo_estructural: this.riesgoEstructural,
-      riesgo_accesibilidad: this.riesgoAccesibilidad
+      riesgo_accesibilidad: this.riesgoAccesibilidad,
+      imagen_url: this.imagenUrl.trim() || undefined
     }).subscribe({
       next: (ticket) => {
         this.loading.set(false);

@@ -24,6 +24,7 @@ export class MantencionDashboardComponent implements OnInit {
   selectedTicket = signal<Ticket | null>(null);
   horasTrabajadas = 1;
   observacionesTecnicas = '';
+  imagenUrl = '';
   
   // Lista dinámica de materiales consumidos del pañol
   materiales = signal<Array<{ nombre_material: string; cantidad: number; unidad: string }>>([
@@ -64,6 +65,7 @@ export class MantencionDashboardComponent implements OnInit {
     this.selectedTicket.set(ticket);
     this.horasTrabajadas = 1;
     this.observacionesTecnicas = '';
+    this.imagenUrl = '';
     this.materiales.set([{ nombre_material: '', cantidad: 1, unidad: 'unidades' }]);
   }
 
@@ -72,11 +74,27 @@ export class MantencionDashboardComponent implements OnInit {
   }
 
   addMaterialRow(): void {
-    this.materiales.update(list => [...list, { nombre_material: '', cantidad: 1, unidad: 'unidades' }]);
+    this.materiales.update(m => [...m, { nombre_material: '', cantidad: 1, unidad: 'unidades' }]);
   }
 
   removeMaterialRow(index: number): void {
-    this.materiales.update(list => list.filter((_, i) => i !== index));
+    this.materiales.update(m => m.filter((_, i) => i !== index));
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.imagenUrl = e.target?.result as string || '';
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removeFile(): void {
+    this.imagenUrl = '';
   }
 
   submitRegistro(): void {
@@ -91,7 +109,8 @@ export class MantencionDashboardComponent implements OnInit {
     this.ticketService.registrarMantencion(ticket.id, {
       horas_trabajadas: this.horasTrabajadas,
       observaciones_tecnicas: this.observacionesTecnicas || 'Mantenimiento preventivo/correctivo ejecutado exitosamente.',
-      materiales: validMateriales
+      materiales: validMateriales,
+      imagen_url: this.imagenUrl.trim() || undefined
     }).subscribe({
       next: () => {
         this.submitting.set(false);

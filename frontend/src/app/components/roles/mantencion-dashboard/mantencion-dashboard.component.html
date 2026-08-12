@@ -210,6 +210,34 @@
             </div>
           </div>
 
+          <!-- Evidencia Fotográfica de Reparación -->
+          <div class="pt-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">
+              Adjuntar Foto de Reparación Finalizada (Opcional)
+            </label>
+            <div class="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-3 bg-slate-50 text-center relative group">
+              <input type="file" 
+                     accept="image/*" 
+                     (change)="onFileSelected($event)" 
+                     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+              <div class="flex items-center justify-center gap-2 pointer-events-none text-xs text-slate-600">
+                <i class="fa-solid fa-camera text-indigo-500 text-sm"></i>
+                <span class="font-semibold">Seleccionar foto desde tu equipo</span>
+              </div>
+            </div>
+            @if (imagenUrl) {
+              <div class="mt-2 p-2 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-2 shadow-xs">
+                <div class="flex items-center gap-2 overflow-hidden">
+                  <img [src]="imagenUrl" alt="Foto reparación" class="w-12 h-12 object-cover rounded-lg border border-slate-300 flex-shrink-0" />
+                  <span class="text-xs font-bold text-emerald-700">Foto de reparación adjunta</span>
+                </div>
+                <button (click)="removeFile()" type="button" class="text-rose-600 hover:text-rose-800 text-xs font-bold px-2 py-1 bg-rose-50 rounded border border-rose-200">
+                  <i class="fa-solid fa-trash mr-1"></i> Quitar
+                </button>
+              </div>
+            }
+          </div>
+
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">

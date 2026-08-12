@@ -229,10 +229,20 @@ class TicketViewSet(viewsets.ModelViewSet):
         if not estado_enviado:
             estado_enviado = EstadoCatalogo.objects.first()
 
+        imagen_url = serializer.validated_data.pop('imagen_url', None)
+
         ticket = serializer.save(
             creado_por=self.request.user,
             estado=estado_enviado
         )
+
+        if imagen_url:
+            EvidenciaFotografica.objects.create(
+                ticket=ticket,
+                fase='reporte',
+                imagen_url=imagen_url,
+                creado_por=self.request.user
+            )
 
         LogAuditoria.objects.create(
             ticket=ticket,

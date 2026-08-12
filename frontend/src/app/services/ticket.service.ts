@@ -13,6 +13,7 @@ export interface TicketCreateData {
   riesgo_electrico?: boolean;
   riesgo_estructural?: boolean;
   riesgo_accesibilidad?: boolean;
+  imagen_url?: string;
 }
 
 @Injectable({

@@ -361,7 +361,7 @@ class EvidenciaFotografica(models.Model):
 
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="evidencias")
     fase = models.CharField(max_length=20, choices=FASE_CHOICES, default='reporte')
-    imagen_url = models.URLField(max_length=500, verbose_name="URL de Imagen o Evidencia")
+    imagen_url = models.TextField(blank=True, null=True, verbose_name="URL o Data Base64 de Imagen")
     creado_por = models.ForeignKey(Usuario, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
 
