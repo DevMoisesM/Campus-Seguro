@@ -5,6 +5,12 @@
   <!-- ═══════════════════════════════════════════════════════════ -->
   <header class="lg:hidden sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-xs">
     <div class="flex items-center gap-3">
+      <button (click)="toggleMobileMenu()" 
+              type="button" 
+              class="-ml-1 p-2 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none">
+        <i class="fa-solid" [ngClass]="mobileMenuOpen() ? 'fa-xmark text-xl' : 'fa-bars text-xl'"></i>
+      </button>
+
       <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FFB800] to-[#E6A600] text-slate-950 flex items-center justify-center font-black text-lg shadow-md shadow-[#FFB800]/20">
         <i class="fa-solid fa-shield-halved"></i>
       </div>
@@ -13,12 +19,6 @@
         <span class="text-[10px] font-mono text-slate-500 font-bold uppercase ml-1">ERP</span>
       </div>
     </div>
-
-    <button (click)="toggleMobileMenu()" 
-            type="button" 
-            class="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none">
-      <i class="fa-solid" [ngClass]="mobileMenuOpen() ? 'fa-xmark text-xl' : 'fa-bars text-xl'"></i>
-    </button>
   </header>
 
   <!-- ═══════════════════════════════════════════════════════════ -->
