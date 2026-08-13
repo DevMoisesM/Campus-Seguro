@@ -1,19 +1,26 @@
 <div class="space-y-6">
 
-  <!-- Header Módulo de Administración de Usuarios -->
+  <!-- Header Módulo de Gestión de Usuarios y Personal -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
       <div class="flex items-center gap-2">
         <span class="px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-bold text-xs uppercase font-mono">
-          Administración de Acceso
+          Directorio Institucional
         </span>
-        <span class="text-xs text-slate-400 font-mono">Gestión de Cuentas</span>
+        <span class="text-xs text-slate-400 font-mono">Control de Cuentas</span>
       </div>
-      <h1 class="text-2xl font-black text-slate-900 font-sora mt-1 tracking-tight">Administración de Usuarios y Roles</h1>
-      <p class="text-xs text-slate-500 font-medium">Aprobar solicitudes de cuenta, asignar roles operativos y activar/desactivar accesos.</p>
+      <h1 class="text-2xl font-black text-slate-900 font-sora mt-1 tracking-tight">Usuarios & Personal Institucional</h1>
+      <p class="text-xs text-slate-500 font-medium">Crear nuevos usuarios, asignar roles (*Estudiante, Guardia, Mantenedor, Gestor*) y activar o desactivar accesos.</p>
     </div>
 
     <div class="flex items-center gap-3">
+      <button (click)="openCreateModal()" 
+              type="button" 
+              class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>Crear Nuevo Usuario</span>
+      </button>
+
       <a routerLink="/gestor/dashboard" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors inline-flex items-center gap-1.5">
         <i class="fa-solid fa-arrow-left"></i>
         <span>Volver a Dashboard</span>
@@ -21,131 +28,149 @@
     </div>
   </div>
 
-  <!-- Pestañas de Solicitudes y Usuarios -->
-  <div class="flex items-center gap-2 border-b border-slate-200">
-    <button (click)="setTab('solicitudes')" 
-            type="button" 
-            [class]="activeTab() === 'solicitudes' ? 'px-4 py-2.5 border-b-2 border-[#FFB800] text-slate-900 font-bold text-xs flex items-center gap-2 transition-colors' : 'px-4 py-2.5 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center gap-2 transition-colors'">
-      <i class="fa-solid fa-user-clock text-amber-500"></i>
-      <span>Solicitudes de Cuenta ({{ solicitudesPendientes().length }})</span>
-    </button>
-
-    <button (click)="setTab('usuarios')" 
-            type="button" 
-            [class]="activeTab() === 'usuarios' ? 'px-4 py-2.5 border-b-2 border-purple-500 text-slate-900 font-bold text-xs flex items-center gap-2 transition-colors' : 'px-4 py-2.5 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center gap-2 transition-colors'">
-      <i class="fa-solid fa-users text-purple-500"></i>
-      <span>Usuarios Registrados ({{ usuariosFiltrados().length }})</span>
-    </button>
-  </div>
-
   @if (loading()) {
     <div class="flex items-center justify-center py-20 text-slate-400 gap-3">
       <i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#FFB800]"></i>
-      <span class="font-bold text-sm">Cargando directorio de usuarios...</span>
+      <span class="font-bold text-sm">Cargando directorio institucional...</span>
     </div>
   } @else {
 
-    <!-- PESTAÑA 1: SOLICITUDES DE CUENTA PENDIENTES -->
-    @if (activeTab() === 'solicitudes') {
-      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center justify-between">
-          <span>Solicitudes de Registro Pendientes de Aprobación</span>
-          <span class="text-xs text-slate-400 font-normal">Nuevos usuarios institucionales</span>
-        </h3>
-
-        @if (solicitudesPendientes().length > 0) {
-          <div class="space-y-3">
-            @for (u of solicitudesPendientes(); track u.id) {
-              <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="font-bold text-slate-900 text-sm">{{ u.first_name }} {{ u.last_name }}</span>
-                    <span class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 font-bold text-[10px] uppercase font-mono border border-amber-200">Pendiente</span>
-                  </div>
-                  <p class="text-xs text-slate-500 font-mono mt-0.5">{{ u.correo_institucional }}</p>
-                </div>
-
-                <div class="flex items-center gap-2 self-end md:self-center">
-                  <select #rolSelect class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800">
-                    <option value="usuario">Asignar: Estudiante / Base</option>
-                    <option value="guardia">Asignar: Guardia de Seguridad</option>
-                    <option value="mantencion">Asignar: Mantenedor Técnico</option>
-                    <option value="gestor">Asignar: Gestor / Administrador</option>
-                  </select>
-
-                  <button (click)="aprobarCuenta(u, rolSelect.value)" 
-                          type="button" 
-                          class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center gap-1">
-                    <i class="fa-solid fa-check"></i>
-                    <span>Aprobar Cuenta</span>
-                  </button>
-                </div>
-              </div>
-            }
-          </div>
-        } @else {
-          <p class="text-xs text-slate-400 italic py-8 text-center">No hay solicitudes de cuenta pendientes por aprobar en este momento.</p>
-        }
-      </div>
-    }
-
-    <!-- PESTAÑA 2: USUARIOS REGISTRADOS -->
-    @if (activeTab() === 'usuarios') {
-      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-        
-        <!-- Buscador -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4">
-          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono">Directorio de Usuarios</h3>
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+      
+      <!-- Buscador y Filtro por Rol -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4">
+        <div class="flex items-center gap-3 w-full sm:w-auto">
           <input [(ngModel)]="searchTerm" 
                  type="text" 
-                 placeholder="Buscar por nombre o correo..." 
-                 class="w-full sm:w-64 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-[#FFB800]" />
+                 placeholder="Buscar por nombre, usuario o correo..." 
+                 class="w-full sm:w-80 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-[#FFB800]" />
         </div>
 
-        <div class="table-wrap">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase font-mono">
-                <th class="py-3 px-4">Usuario</th>
-                <th class="py-3 px-4">Correo</th>
-                <th class="py-3 px-4 text-center">Rol Asignado</th>
-                <th class="py-3 px-4 text-center">Estado</th>
-                <th class="py-3 px-4 text-right">Acción</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 text-xs font-medium">
-              @for (u of usuariosFiltrados(); track u.id) {
-                <tr>
-                  <td class="py-3 px-4 font-bold text-slate-900">{{ u.first_name }} {{ u.last_name }}</td>
-                  <td class="py-3 px-4 font-mono text-slate-500">{{ u.correo_institucional }}</td>
-                  <td class="py-3 px-4 text-center">
-                    <select [value]="u.rol_codigo || 'usuario'" (change)="cambiarRol(u, $event)" class="px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800">
-                      <option value="usuario">Estudiante / Base</option>
-                      <option value="guardia">Guardia</option>
-                      <option value="mantencion">Mantenedor</option>
-                      <option value="gestor">Gestor</option>
-                    </select>
-                  </td>
-                  <td class="py-3 px-4 text-center">
-                    <span [class]="u.is_active ? 'px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold font-mono border border-emerald-200' : 'px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-bold font-mono border border-rose-200'">
-                      {{ u.is_active ? 'Activo' : 'Inactivo' }}
-                    </span>
-                  </td>
-                  <td class="py-3 px-4 text-right">
-                    <button (click)="toggleActivo(u)" 
-                            type="button" 
-                            [class]="u.is_active ? 'text-rose-600 hover:text-rose-800 font-bold text-xs' : 'text-emerald-600 hover:text-emerald-800 font-bold text-xs'">
-                      {{ u.is_active ? 'Desactivar' : 'Activar' }}
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+        <div class="flex items-center gap-2 self-end sm:self-center">
+          <span class="text-xs font-bold text-slate-400 font-mono uppercase">Filtrar por Rol:</span>
+          <select [(ngModel)]="filterRol" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800">
+            <option value="todos">Todos los Roles ({{ usuarios().length }})</option>
+            <option value="usuario">Estudiantes / Base</option>
+            <option value="guardia">Guardias de Seguridad</option>
+            <option value="mantencion">Mantenedores Técnicos</option>
+            <option value="gestor">Gestores / Administradores</option>
+          </select>
         </div>
       </div>
-    }
 
+      <!-- Tabla de Usuarios -->
+      <div class="table-wrap">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase font-mono">
+              <th class="py-3 px-4">Usuario</th>
+              <th class="py-3 px-4">Correo Institucional</th>
+              <th class="py-3 px-4 text-center">Rol Asignado</th>
+              <th class="py-3 px-4 text-center">Estado de Cuenta</th>
+              <th class="py-3 px-4 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-xs font-medium">
+            @for (u of usuariosFiltrados(); track u.id) {
+              <tr>
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center font-mono">
+                      {{ (u.first_name || 'U').charAt(0) }}{{ (u.last_name || '').charAt(0) }}
+                    </div>
+                    <div>
+                      <p class="font-bold text-slate-900">{{ u.first_name }} {{ u.last_name }}</p>
+                      <p class="text-[10px] text-slate-400 font-mono">&#64;{{ u.username }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-4 font-mono text-slate-600">{{ u.correo_institucional }}</td>
+                <td class="py-3 px-4 text-center">
+                  <select [value]="u.rol_codigo || 'usuario'" (change)="cambiarRol(u, $event)" class="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 shadow-2xs">
+                    <option value="usuario">Estudiante / Base</option>
+                    <option value="guardia">Guardia de Seguridad</option>
+                    <option value="mantencion">Mantenedor Técnico</option>
+                    <option value="gestor">Gestor / Admin</option>
+                  </select>
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <span [class]="u.is_active ? 'px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold font-mono border border-emerald-200 text-[10px] uppercase' : 'px-2.5 py-0.5 rounded bg-rose-50 text-rose-700 font-bold font-mono border border-rose-200 text-[10px] uppercase'">
+                    {{ u.is_active ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-right">
+                  <button (click)="toggleActivo(u)" 
+                          type="button" 
+                          [class]="u.is_active ? 'px-3 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors' : 'px-3 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200 transition-colors'">
+                    {{ u.is_active ? 'Desactivar Acceso' : 'Activar Acceso' }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  }
+
+  <!-- MODAL PARA CREAR NUEVO USUARIO -->
+  @if (showCreateModal()) {
+    <div class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-sm font-bold text-slate-900 uppercase font-mono tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-user-plus text-purple-600"></i>
+            <span>Crear Nuevo Usuario Institucional</span>
+          </h3>
+          <button (click)="closeCreateModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Nombre *</label>
+              <input [(ngModel)]="newUser.first_name" type="text" placeholder="ej: Carlos" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-[#FFB800]" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Apellido *</label>
+              <input [(ngModel)]="newUser.last_name" type="text" placeholder="ej: Morales" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-[#FFB800]" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Correo Institucional *</label>
+            <input [(ngModel)]="newUser.correo_institucional" type="email" placeholder="c.morales@duocuc.cl" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-[#FFB800]" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Contraseña Inicial *</label>
+            <input [(ngModel)]="newUser.password" type="password" placeholder="••••••••" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-[#FFB800]" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Rol a Asignar *</label>
+            <select [(ngModel)]="newUser.rol_codigo" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900">
+              <option value="usuario">Estudiante / Usuario Base</option>
+              <option value="guardia">Guardia de Seguridad</option>
+              <option value="mantencion">Mantenedor Técnico</option>
+              <option value="gestor">Gestor / Administrador</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button (click)="closeCreateModal()" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs">
+            Cancelar
+          </button>
+          <button (click)="submitCreateUser()" type="button" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs">
+            Guardar Usuario
+          </button>
+        </div>
+      </div>
+    </div>
   }
 
 </div>

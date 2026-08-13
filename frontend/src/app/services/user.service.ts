@@ -29,7 +29,7 @@ export class UserService {
     return this.http.get<Especialidad[]>(`${this.apiUrl}/especialidades/`);
   }
 
-  createInternalStaff(userData: Partial<User> & { password?: string }): Observable<User> {
+  createInternalStaff(userData: any): Observable<User> {
     return this.http.post<User>(`${this.apiUrl}/usuarios/`, userData);
   }
 

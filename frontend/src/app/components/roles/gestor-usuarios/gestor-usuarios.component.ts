@@ -18,24 +18,35 @@ export class GestorUsuariosComponent implements OnInit {
   usuarios = signal<User[]>([]);
   roles = signal<Rol[]>([]);
 
-  activeTab = signal<'solicitudes' | 'usuarios'>('solicitudes');
   searchTerm = signal('');
+  filterRol = signal<string>('todos');
 
-  // Solicitudes pendientes (estado_cuenta == 'pendiente')
-  solicitudesPendientes = computed(() => 
-    this.usuarios().filter(u => u.estado_cuenta === 'pendiente' || !u.is_active)
-  );
+  // Modal para Crear Usuario
+  showCreateModal = signal(false);
+  newUser = {
+    first_name: '',
+    last_name: '',
+    correo_institucional: '',
+    username: '',
+    password: '',
+    rol_codigo: 'usuario' as RolCodigo
+  };
 
-  // Usuarios activos filtrados
+  // Usuarios filtrados por término y rol
   usuariosFiltrados = computed(() => {
     const term = this.searchTerm().toLowerCase();
-    return this.usuarios().filter(u => 
-      u.estado_cuenta !== 'pendiente' &&
-      ((u.first_name || '').toLowerCase().includes(term) ||
-       (u.last_name || '').toLowerCase().includes(term) ||
-       (u.correo_institucional || '').toLowerCase().includes(term) ||
-       (u.username || '').toLowerCase().includes(term))
-    );
+    const rolFiltro = this.filterRol();
+
+    return this.usuarios().filter(u => {
+      const matchSearch = (u.first_name || '').toLowerCase().includes(term) ||
+                          (u.last_name || '').toLowerCase().includes(term) ||
+                          (u.correo_institucional || '').toLowerCase().includes(term) ||
+                          (u.username || '').toLowerCase().includes(term);
+
+      const matchRol = rolFiltro === 'todos' || u.rol_codigo === rolFiltro;
+
+      return matchSearch && matchRol;
+    });
   });
 
   ngOnInit(): void {
@@ -58,10 +69,48 @@ export class GestorUsuariosComponent implements OnInit {
     });
   }
 
-  aprobarCuenta(user: User, rolCodigo: string): void {
-    this.userService.aprobarCuenta(user.id, rolCodigo as RolCodigo).subscribe({
-      next: () => this.loadData(),
-      error: () => alert('Error al aprobar cuenta')
+  openCreateModal(): void {
+    this.newUser = {
+      first_name: '',
+      last_name: '',
+      correo_institucional: '',
+      username: '',
+      password: '',
+      rol_codigo: 'usuario'
+    };
+    this.showCreateModal.set(true);
+  }
+
+  closeCreateModal(): void {
+    this.showCreateModal.set(false);
+  }
+
+  submitCreateUser(): void {
+    if (!this.newUser.first_name || !this.newUser.last_name || !this.newUser.correo_institucional || !this.newUser.password) {
+      alert('Por favor complete los campos obligatorios.');
+      return;
+    }
+
+    if (!this.newUser.username) {
+      this.newUser.username = this.newUser.correo_institucional.split('@')[0];
+    }
+
+    const rolObj = this.roles().find(r => r.codigo === this.newUser.rol_codigo);
+
+    this.userService.createInternalStaff({
+      first_name: this.newUser.first_name,
+      last_name: this.newUser.last_name,
+      correo_institucional: this.newUser.correo_institucional,
+      username: this.newUser.username,
+      password: this.newUser.password,
+      rol: rolObj?.id
+    }).subscribe({
+      next: () => {
+        alert('Usuario creado exitosamente.');
+        this.closeCreateModal();
+        this.loadData();
+      },
+      error: (err) => alert('Error al crear el usuario: ' + (err.error?.detail || 'Verifique los datos.'))
     });
   }
 
@@ -79,9 +128,5 @@ export class GestorUsuariosComponent implements OnInit {
       next: () => this.loadData(),
       error: () => alert('Error al cambiar estado del usuario')
     });
-  }
-
-  setTab(tab: 'solicitudes' | 'usuarios'): void {
-    this.activeTab.set(tab);
   }
 }
