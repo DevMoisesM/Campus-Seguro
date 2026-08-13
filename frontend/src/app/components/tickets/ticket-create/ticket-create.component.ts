@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { LocationService } from '../../../services/location.service';
 import { TicketService } from '../../../services/ticket.service';
+import { AuthService } from '../../../services/auth.service';
 import { Sede, Edificio, Piso, Ubicacion } from '../../../models/location.model';
 import { CategoriaTicket, UrgenciaTicket } from '../../../models/ticket.model';
 
@@ -16,6 +17,7 @@ import { CategoriaTicket, UrgenciaTicket } from '../../../models/ticket.model';
 export class TicketCreateComponent implements OnInit {
   private locationService = inject(LocationService);
   private ticketService = inject(TicketService);
+  authService = inject(AuthService);
   private router = inject(Router);
 
   // Form Fields

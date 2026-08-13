@@ -11,9 +11,9 @@
       </div>
       <p class="text-xs text-slate-500 mt-1">Detalle completo de trazabilidad e historial del incidente</p>
     </div>
-    <a routerLink="/tickets" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-2">
+    <a [routerLink]="authService.userRole() === 'usuario' ? '/estudiante/mis-tickets' : authService.userRole() === 'guardia' ? '/guardia/dashboard' : authService.userRole() === 'mantencion' ? '/mantencion/dashboard' : '/gestor/dashboard'" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-2">
       <i class="fa-solid fa-arrow-left"></i>
-      <span>Volver a Incidentes</span>
+      <span>Volver a Dashboard / Incidentes</span>
     </a>
   </div>
 

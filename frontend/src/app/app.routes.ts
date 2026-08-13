@@ -63,7 +63,9 @@ export const routes: Routes = [
         data: { roles: ['guardia', 'gestor'] },
         children: [
           { path: 'dashboard', component: GuardiaDashboardComponent },
-          { path: 'inspecciones', component: GuardiaDashboardComponent }
+          { path: 'inspecciones', component: GuardiaDashboardComponent },
+          { path: 'mis-tickets', component: TicketListComponent },
+          { path: 'nuevo-ticket', component: TicketCreateComponent }
         ]
       },
 
@@ -75,7 +77,9 @@ export const routes: Routes = [
         data: { roles: ['mantencion', 'gestor'] },
         children: [
           { path: 'dashboard', component: MantencionDashboardComponent },
-          { path: 'ordenes', component: MantencionDashboardComponent }
+          { path: 'ordenes', component: MantencionDashboardComponent },
+          { path: 'mis-tickets', component: TicketListComponent },
+          { path: 'nuevo-ticket', component: TicketCreateComponent }
         ]
       },
 
@@ -88,7 +92,9 @@ export const routes: Routes = [
         children: [
           { path: 'dashboard', component: GestorDashboardComponent },
           { path: 'usuarios', component: GestorDashboardComponent },
-          { path: 'reportes-bi', component: GestorBiComponent }
+          { path: 'reportes-bi', component: GestorBiComponent },
+          { path: 'mis-tickets', component: TicketListComponent },
+          { path: 'nuevo-ticket', component: TicketCreateComponent }
         ]
       },
 

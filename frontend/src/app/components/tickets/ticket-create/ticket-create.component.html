@@ -6,7 +6,7 @@
       <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Reportar Nuevo Incidente</h2>
       <p class="text-xs text-slate-500">Ingresa la información detallada del problema detectado en el campus</p>
     </div>
-    <a routerLink="/tickets" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-2">
+    <a [routerLink]="authService.userRole() === 'usuario' ? '/estudiante/mis-tickets' : authService.userRole() === 'guardia' ? '/guardia/mis-tickets' : authService.userRole() === 'mantencion' ? '/mantencion/mis-tickets' : '/gestor/mis-tickets'" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-2">
       <i class="fa-solid fa-arrow-left"></i>
       <span>Volver a mis tickets</span>
     </a>
