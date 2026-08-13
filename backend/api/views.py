@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.utils import timezone
-from django.db.models import Count, Q
+from django.db.models import Count, Q, F
 from django.shortcuts import get_object_or_404
 
 from .models import (
@@ -402,26 +402,183 @@ class TicketViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def metrics(self, request):
         """
-        Métricas generales para el Dashboard BI del Gestor.
+        Métricas avanzadas y analítica para el módulo Business Intelligence (BI) del Gestor.
         """
         user = request.user
         if not (user.is_superuser or (user.rol and user.rol.codigo == 'gestor')):
             return Response({'error': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
 
-        total_tickets = Ticket.objects.filter(deleted_at__isnull=True).count()
-        enviados = Ticket.objects.filter(deleted_at__isnull=True, estado__codigo='enviado').count()
-        validados = Ticket.objects.filter(deleted_at__isnull=True, estado__codigo='validado').count()
-        en_mantencion = Ticket.objects.filter(deleted_at__isnull=True, estado__codigo='en_mantencion').count()
-        reparados = Ticket.objects.filter(deleted_at__isnull=True, estado__codigo='reparado').count()
-        cerrados = Ticket.objects.filter(deleted_at__isnull=True, estado__codigo='cerrado').count()
+        rango = request.query_params.get('rango', 'mes')
+        fecha_desde_param = request.query_params.get('fecha_desde')
+        fecha_hasta_param = request.query_params.get('fecha_hasta')
+        sede_id = request.query_params.get('sede')
+
+        now = timezone.now()
+        if rango == 'dia':
+            desde = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif rango == 'semana':
+            desde = now - timezone.timedelta(days=7)
+        elif rango == 'ano':
+            desde = now - timezone.timedelta(days=365)
+        else: # 'mes' por defecto
+            desde = now - timezone.timedelta(days=30)
+
+        if fecha_desde_param:
+            try:
+                desde = timezone.datetime.strptime(fecha_desde_param, '%Y-%m-%d')
+                if timezone.is_naive(desde):
+                    desde = timezone.make_aware(desde)
+            except ValueError:
+                pass
+
+        hasta = now
+        if fecha_hasta_param:
+            try:
+                hasta = timezone.datetime.strptime(fecha_hasta_param, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+                if timezone.is_naive(hasta):
+                    hasta = timezone.make_aware(hasta)
+            except ValueError:
+                pass
+
+        # Queryset base filtrado por fecha y sede opcional
+        qs = Ticket.objects.filter(deleted_at__isnull=True, created_at__gte=desde, created_at__lte=hasta)
+        if sede_id:
+            qs = qs.filter(ubicacion__piso__edificio__sede_id=sede_id)
+
+        total_periodo = qs.count()
+        enviados = qs.filter(estado__codigo='enviado').count()
+        validados = qs.filter(estado__codigo='validado').count()
+        en_mantencion = qs.filter(estado__codigo='en_mantencion').count()
+        reparados = qs.filter(estado__codigo='reparado').count()
+        cerrados = qs.filter(estado__codigo='cerrado').count()
+
+        cerrados_periodo = cerrados + reparados
+        tasa_cierre = round((cerrados_periodo / total_periodo * 100), 1) if total_periodo > 0 else 0.0
+
+        # Impacto académico y riesgos
+        afectan_clase = qs.filter(afecta_clase=True).count()
+        porc_impacto = round((afectan_clase / total_periodo * 100), 1) if total_periodo > 0 else 0.0
+
+        riesgos_elec = qs.filter(riesgo_electrico=True).count()
+        riesgos_est = qs.filter(riesgo_estructural=True).count()
+        riesgos_acc = qs.filter(riesgo_accesibilidad=True).count()
+
+        # Distribución por Urgencia
+        por_urgencia = {
+            'baja': qs.filter(urgencia='baja').count(),
+            'media': qs.filter(urgencia='media').count(),
+            'alta': qs.filter(urgencia='alta').count(),
+            'critica': qs.filter(urgencia='critica').count(),
+        }
+
+        # Distribución por Sede
+        sedes = Sede.objects.all()
+        por_sede = []
+        for s in sedes:
+            cnt = Ticket.objects.filter(
+                deleted_at__isnull=True,
+                created_at__gte=desde,
+                created_at__lte=hasta,
+                ubicacion__piso__edificio__sede=s
+            ).count()
+            por_sede.append({'id': s.id, 'nombre': s.nombre, 'total': cnt})
+
+        # Top 5 Materiales del Pañol consumidos
+        top_mats_qs = MaterialUtilizado.objects.filter(
+            ticket__created_at__gte=desde,
+            ticket__created_at__lte=hasta
+        ).values('nombre_material', 'unidad').annotate(total_cant=Count('id')).order_by('-total_cant')[:5]
+
+        top_materiales = [
+            {'nombre': m['nombre_material'], 'cantidad': m['total_cant'], 'unidad': m['unidad']}
+            for m in top_mats_qs
+        ]
+
+        # Rendimiento de Guardias
+        guardias_qs = ValidacionGuardia.objects.filter(
+            created_at__gte=desde,
+            created_at__lte=hasta
+        ).values('guardia__first_name', 'guardia__last_name').annotate(
+            total_val=Count('id'),
+            aprobados=Count('id', filter=Q(valido=True)),
+            rechazados=Count('id', filter=Q(valido=False))
+        )
+        rendimiento_guardias = [
+            {
+                'nombre': f"{g['guardia__first_name']} {g['guardia__last_name']}".strip() or 'Guardia',
+                'validaciones': g['total_val'],
+                'aprobados': g['aprobados'],
+                'rechazados': g['rechazados']
+            }
+            for g in guardias_qs
+        ]
+
+        # Rendimiento de Mantenedores
+        mantencion_qs = SesionTrabajo.objects.filter(
+            inicio__gte=desde,
+            inicio__lte=hasta
+        ).values('mantenedor__first_name', 'mantenedor__last_name').annotate(
+            total_ordenes=Count('ticket_id', distinct=True)
+        )
+        rendimiento_mantencion = [
+            {
+                'nombre': f"{m['mantenedor__first_name']} {m['mantenedor__last_name']}".strip() or 'Mantenedor',
+                'ordenes_completadas': m['total_ordenes'],
+                'hh_totales': m['total_ordenes'] * 1.5 # Estimación promedio
+            }
+            for m in mantencion_qs
+        ]
+
+        # Cruce Checklist Guardia vs Riesgos Declarados
+        val_qs = ValidacionGuardia.objects.filter(ticket__created_at__gte=desde, ticket__created_at__lte=hasta)
+        def calc_cruce(riesgo_field, check_field):
+            tot = val_qs.filter(**{f'ticket__{riesgo_field}': True}).count()
+            cub = val_qs.filter(**{f'ticket__{riesgo_field}': True, check_field: True}).count()
+            pct = round(cub / tot * 100, 1) if tot > 0 else 0.0
+            return {'total': tot, 'cubierto': cub, 'pct': pct}
+
+        cruce_checklist = {
+            'electrico': calc_cruce('riesgo_electrico', 'checklist_electrico'),
+            'estructural': calc_cruce('riesgo_estructural', 'checklist_estructural'),
+            'accesibilidad': calc_cruce('riesgo_accesibilidad', 'checklist_accesibilidad'),
+        }
+
+        # Distribución por Edificio (Top 6)
+        por_edificio_qs = qs.values(edificio=F('ubicacion__piso__edificio__nombre')).annotate(total=Count('id')).order_by('-total')[:6]
+        por_edificio = [{'edificio': e['edificio'] or 'Sin Edificio', 'total': e['total']} for e in por_edificio_qs]
+
+        # Distribución por Categoría
+        por_categoria_qs = qs.values(categoria_nombre=F('categoria__nombre_display')).annotate(total=Count('id')).order_by('-total')
+        por_categoria = [{'categoria': c['categoria_nombre'] or 'General', 'total': c['total']} for c in por_categoria_qs]
 
         return Response({
-            'total': total_tickets,
+            'total': total_periodo,
             'enviados': enviados,
             'validados': validados,
             'en_mantencion': en_mantencion,
             'reparados': reparados,
             'cerrados': cerrados,
+            'cerrados_periodo': cerrados_periodo,
+            'tasa_cierre': tasa_cierre,
+            'afectan_clase': afectan_clase,
+            'porc_impacto': porc_impacto,
+            'riesgos': {
+                'electricos': riesgos_elec,
+                'estructurales': riesgos_est,
+                'accesibilidad': riesgos_acc,
+                'total': riesgos_elec + riesgos_est + riesgos_acc
+            },
+            'cruce_checklist': cruce_checklist,
+            'por_urgencia': por_urgencia,
+            'por_sede': por_sede,
+            'por_edificio': por_edificio,
+            'por_categoria': por_categoria,
+            'top_materiales': top_materiales,
+            'rendimiento_guardias': rendimiento_guardias,
+            'rendimiento_mantencion': rendimiento_mantencion,
+            'rango': rango,
+            'desde': desde.strftime('%Y-%m-%d'),
+            'hasta': hasta.strftime('%Y-%m-%d')
         })
 
 

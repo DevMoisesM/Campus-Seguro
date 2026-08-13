@@ -5,6 +5,7 @@ import { EstudianteDashboardComponent } from './components/roles/estudiante-dash
 import { GuardiaDashboardComponent } from './components/roles/guardia-dashboard/guardia-dashboard.component';
 import { MantencionDashboardComponent } from './components/roles/mantencion-dashboard/mantencion-dashboard.component';
 import { GestorDashboardComponent } from './components/roles/gestor-dashboard/gestor-dashboard.component';
+import { GestorBiComponent } from './components/roles/gestor-bi/gestor-bi.component';
 import { TicketCreateComponent } from './components/tickets/ticket-create/ticket-create.component';
 import { TicketListComponent } from './components/tickets/ticket-list/ticket-list.component';
 import { TicketDetailComponent } from './components/tickets/ticket-detail/ticket-detail.component';
@@ -87,7 +88,7 @@ export const routes: Routes = [
         children: [
           { path: 'dashboard', component: GestorDashboardComponent },
           { path: 'usuarios', component: GestorDashboardComponent },
-          { path: 'reportes-bi', component: GestorDashboardComponent }
+          { path: 'reportes-bi', component: GestorBiComponent }
         ]
       },
 
@@ -95,7 +96,7 @@ export const routes: Routes = [
       { path: 'inspecciones', component: GuardiaDashboardComponent },
       { path: 'ordenes-trabajo', component: MantencionDashboardComponent },
       { path: 'gestion-usuarios', component: GestorDashboardComponent },
-      { path: 'reportes-bi', component: GestorDashboardComponent }
+      { path: 'reportes-bi', component: GestorBiComponent }
     ]
   },
   {

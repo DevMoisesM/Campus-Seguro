@@ -128,4 +128,34 @@ export interface TicketMetrics {
   en_mantencion: number;
   reparados: number;
   cerrados: number;
+  cerrados_periodo?: number;
+  tasa_cierre?: number;
+  afectan_clase?: number;
+  porc_impacto?: number;
+  riesgos?: {
+    electricos: number;
+    estructurales: number;
+    accesibilidad: number;
+    total: number;
+  };
+  por_urgencia?: {
+    baja: number;
+    media: number;
+    alta: number;
+    critica: number;
+  };
+  por_sede?: Array<{ id: number; nombre: string; total: number }>;
+  por_edificio?: Array<{ edificio: string; total: number }>;
+  por_categoria?: Array<{ categoria: string; total: number }>;
+  cruce_checklist?: {
+    electrico: { total: number; cubierto: number; pct: number };
+    estructural: { total: number; cubierto: number; pct: number };
+    accesibilidad: { total: number; cubierto: number; pct: number };
+  };
+  top_materiales?: Array<{ nombre: string; cantidad: number; unidad: string }>;
+  rendimiento_guardias?: Array<{ nombre: string; validaciones: number; aprobados: number; rechazados: number }>;
+  rendimiento_mantencion?: Array<{ nombre: string; ordenes_completadas: number; hh_totales: number }>;
+  rango?: string;
+  desde?: string;
+  hasta?: string;
 }

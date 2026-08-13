@@ -104,7 +104,13 @@ export class TicketService {
     return this.http.get<MaterialCatalog[]>(`${this.apiUrl}/materiales/`);
   }
 
-  getMetrics(): Observable<TicketMetrics> {
-    return this.http.get<TicketMetrics>(`${this.apiUrl}/tickets/metrics/`);
+  getMetrics(params?: { rango?: string; fecha_desde?: string; fecha_hasta?: string; sede?: number }): Observable<TicketMetrics> {
+    let httpParams = new HttpParams();
+    if (params?.rango) httpParams = httpParams.set('rango', params.rango);
+    if (params?.fecha_desde) httpParams = httpParams.set('fecha_desde', params.fecha_desde);
+    if (params?.fecha_hasta) httpParams = httpParams.set('fecha_hasta', params.fecha_hasta);
+    if (params?.sede) httpParams = httpParams.set('sede', params.sede);
+
+    return this.http.get<TicketMetrics>(`${this.apiUrl}/tickets/metrics/`, { params: httpParams });
   }
 }

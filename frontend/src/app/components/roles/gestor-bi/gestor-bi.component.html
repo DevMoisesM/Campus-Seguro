@@ -1,0 +1,463 @@
+<div class="space-y-6">
+
+  <!-- Header Módulo BI -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-bold text-xs uppercase font-mono">
+          Módulo de Inteligencia de Negocios
+        </span>
+        <span class="text-xs text-slate-400 font-mono">V2.0 Analytics</span>
+      </div>
+      <h1 class="text-2xl font-black text-slate-900 font-sora mt-1 tracking-tight">Reportes Analytics BI</h1>
+      <p class="text-xs text-slate-500 font-medium">Análisis operativo avanzado, métricas de pañol y rendimiento por equipo del campus.</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <a routerLink="/gestor/dashboard" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors inline-flex items-center gap-1.5">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Volver a Dashboard</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- BARRA DE FILTROS TEMPORALES Y SEDE -->
+  <div class="bg-white border border-slate-200 rounded-2xl p-4 lg:p-5 shadow-xs space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Selector de Período Rápido -->
+      <div class="space-y-1">
+        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Período Rápido</label>
+        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+          <button (click)="setRango('dia')" 
+                  type="button" 
+                  [class]="rango() === 'dia' ? 'px-3 py-1.5 rounded-lg bg-white text-slate-900 font-bold text-xs shadow-xs border border-slate-200 transition-all' : 'px-3 py-1.5 rounded-lg text-slate-600 font-medium text-xs hover:text-slate-900 transition-colors'">
+            Hoy
+          </button>
+          <button (click)="setRango('semana')" 
+                  type="button" 
+                  [class]="rango() === 'semana' ? 'px-3 py-1.5 rounded-lg bg-white text-slate-900 font-bold text-xs shadow-xs border border-slate-200 transition-all' : 'px-3 py-1.5 rounded-lg text-slate-600 font-medium text-xs hover:text-slate-900 transition-colors'">
+            Semana
+          </button>
+          <button (click)="setRango('mes')" 
+                  type="button" 
+                  [class]="rango() === 'mes' ? 'px-3 py-1.5 rounded-lg bg-[#FFB800] text-slate-900 font-bold text-xs shadow-xs transition-all' : 'px-3 py-1.5 rounded-lg text-slate-600 font-medium text-xs hover:text-slate-900 transition-colors'">
+            Mes
+          </button>
+          <button (click)="setRango('ano')" 
+                  type="button" 
+                  [class]="rango() === 'ano' ? 'px-3 py-1.5 rounded-lg bg-white text-slate-900 font-bold text-xs shadow-xs border border-slate-200 transition-all' : 'px-3 py-1.5 rounded-lg text-slate-600 font-medium text-xs hover:text-slate-900 transition-colors'">
+            Año
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtro por Sede -->
+      <div class="space-y-1 min-w-[200px]">
+        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Sede / Campus</label>
+        <select [(ngModel)]="selectedSedeId" (change)="onFilterSubmit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#FFB800]">
+          <option [ngValue]="null">Todas las Sedes</option>
+          @for (s of sedes(); track s.id) {
+            <option [ngValue]="s.id">{{ s.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Fechas Específicas -->
+      <div class="space-y-1">
+        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Rango de Fechas</label>
+        <div class="flex items-center gap-2">
+          <input [(ngModel)]="fechaDesde" type="date" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 font-mono" />
+          <span class="text-xs text-slate-400">al</span>
+          <input [(ngModel)]="fechaHasta" type="date" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 font-mono" />
+          <button (click)="onFilterSubmit()" type="button" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors">
+            Filtrar
+          </button>
+        </div>
+      </div>
+
+      <!-- Limpiar -->
+      <div class="self-end pb-0.5">
+        <button (click)="clearFilters()" type="button" class="text-xs text-slate-400 hover:text-slate-700 font-bold flex items-center gap-1">
+          <i class="fa-solid fa-xmark"></i> Limpiar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PESTAÑAS DE ANALÍTICA BI -->
+  <div class="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-1">
+    <button (click)="setTab('general')" 
+            type="button" 
+            [class]="activeTab() === 'general' ? 'px-4 py-2.5 border-b-2 border-[#FFB800] text-slate-900 font-bold text-xs flex items-center gap-2 transition-colors whitespace-nowrap' : 'px-4 py-2.5 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap'">
+      <i class="fa-solid fa-chart-pie text-amber-500"></i>
+      <span>📊 General</span>
+    </button>
+
+    <button (click)="setTab('guardias')" 
+            type="button" 
+            [class]="activeTab() === 'guardias' ? 'px-4 py-2.5 border-b-2 border-amber-500 text-slate-900 font-bold text-xs flex items-center gap-2 transition-colors whitespace-nowrap' : 'px-4 py-2.5 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap'">
+      <i class="fa-solid fa-shield-halved text-amber-600"></i>
+      <span>🛡️ Guardias</span>
+    </button>
+
+    <button (click)="setTab('mantencion')" 
+            type="button" 
+            [class]="activeTab() === 'mantencion' ? 'px-4 py-2.5 border-b-2 border-indigo-500 text-slate-900 font-bold text-xs flex items-center gap-2 transition-colors whitespace-nowrap' : 'px-4 py-2.5 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap'">
+      <i class="fa-solid fa-wrench text-indigo-500"></i>
+      <span>🔧 Mantención</span>
+    </button>
+
+    <button (click)="setTab('materiales')" 
+            type="button" 
+            [class]="activeTab() === 'materiales' ? 'px-4 py-2.5 border-b-2 border-emerald-500 text-slate-900 font-bold text-xs flex items-center gap-2 transition-colors whitespace-nowrap' : 'px-4 py-2.5 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap'">
+      <i class="fa-solid fa-boxes-stacked text-emerald-500"></i>
+      <span>📦 Materiales Pañol</span>
+    </button>
+
+    <button (click)="setTab('graficos')" 
+            type="button" 
+            [class]="activeTab() === 'graficos' ? 'px-4 py-2.5 border-b-2 border-purple-500 text-slate-900 font-bold text-xs flex items-center gap-2 transition-colors whitespace-nowrap' : 'px-4 py-2.5 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap'">
+      <i class="fa-solid fa-chart-column text-purple-500"></i>
+      <span>📈 Gráficos BI</span>
+    </button>
+  </div>
+
+  <!-- CONTENIDO DE LAS PESTAÑAS -->
+  @if (loading()) {
+    <div class="flex items-center justify-center py-20 text-slate-400 gap-3">
+      <i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#FFB800]"></i>
+      <span class="font-bold text-sm">Calculando analítica de datos...</span>
+    </div>
+  } @else {
+
+    <!-- PESTAÑA 1: GENERAL -->
+    @if (activeTab() === 'general') {
+      <div class="space-y-6">
+        
+        <!-- KPIs Principales BI -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-2">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Tickets en Período</span>
+            <div class="flex items-baseline justify-between">
+              <span class="text-3xl font-black text-slate-900 font-sora">{{ metrics()?.total || 0 }}</span>
+              <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold text-[10px] font-mono">Registrados</span>
+            </div>
+            <p class="text-[11px] text-slate-400">Total acumulado en el rango seleccionado</p>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-2">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Tasa de Cierre</span>
+            <div class="flex items-baseline justify-between">
+              <span class="text-3xl font-black text-emerald-600 font-sora">{{ metrics()?.tasa_cierre || 0 }}%</span>
+              <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold text-[10px] font-mono">{{ metrics()?.cerrados_periodo || 0 }} cerrados</span>
+            </div>
+            <p class="text-[11px] text-slate-400">Porcentaje de casos resueltos exitosamente</p>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-2">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Afectan Clases</span>
+            <div class="flex items-baseline justify-between">
+              <span class="text-3xl font-black text-amber-600 font-sora">{{ metrics()?.afectan_clase || 0 }}</span>
+              <span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 font-bold text-[10px] font-mono">{{ metrics()?.porc_impacto || 0 }}% impacto</span>
+            </div>
+            <p class="text-[11px] text-slate-400">Incidentes que comprometen docencia</p>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-2">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Riesgos Críticos</span>
+            <div class="flex items-baseline justify-between">
+              <span class="text-3xl font-black text-rose-600 font-sora">{{ metrics()?.riesgos?.total || 0 }}</span>
+              <span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 font-bold text-[10px] font-mono">Evaluados</span>
+            </div>
+            <div class="flex items-center gap-2 text-[10px] font-bold text-slate-500 font-mono">
+              <span>⚡ {{ metrics()?.riesgos?.electricos || 0 }}</span>
+              <span>🏗️ {{ metrics()?.riesgos?.estructurales || 0 }}</span>
+              <span>♿ {{ metrics()?.riesgos?.accesibilidad || 0 }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matriz de Urgencias -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center justify-between">
+            <span>Distribución de Incidentes por Urgencia</span>
+            <span class="text-xs text-slate-400 font-normal">Clasificación operativa</span>
+          </h3>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1 text-center">
+              <span class="text-xs font-bold text-slate-500 uppercase font-mono">Baja</span>
+              <p class="text-2xl font-black text-slate-800 font-sora">{{ metrics()?.por_urgencia?.baja || 0 }}</p>
+            </div>
+            <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200 space-y-1 text-center">
+              <span class="text-xs font-bold text-amber-700 uppercase font-mono">Media</span>
+              <p class="text-2xl font-black text-amber-700 font-sora">{{ metrics()?.por_urgencia?.media || 0 }}</p>
+            </div>
+            <div class="bg-orange-50/50 p-4 rounded-xl border border-orange-200 space-y-1 text-center">
+              <span class="text-xs font-bold text-orange-700 uppercase font-mono">Alta</span>
+              <p class="text-2xl font-black text-orange-700 font-sora">{{ metrics()?.por_urgencia?.alta || 0 }}</p>
+            </div>
+            <div class="bg-rose-50/50 p-4 rounded-xl border border-rose-200 space-y-1 text-center">
+              <span class="text-xs font-bold text-rose-700 uppercase font-mono">Crítica</span>
+              <p class="text-2xl font-black text-rose-700 font-sora">{{ metrics()?.por_urgencia?.critica || 0 }}</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    }
+
+    <!-- PESTAÑA 2: GUARDIAS -->
+    @if (activeTab() === 'guardias') {
+      <div class="space-y-6">
+        
+        <!-- Cruce de Checklist de Guardia vs Riesgos Declarados -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center justify-between text-amber-700">
+            <span>Cruce de Checklist de Guardia vs Riesgos Declarados</span>
+            <span class="text-xs text-slate-400 font-normal">% de verificación en terreno</span>
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200 space-y-1">
+              <span class="text-xs font-bold text-amber-800 uppercase font-mono">⚡ Riesgo Eléctrico</span>
+              <div class="flex items-baseline justify-between pt-1">
+                <span class="text-2xl font-black text-amber-900 font-sora">{{ metrics()?.cruce_checklist?.electrico?.pct || 0 }}%</span>
+                <span class="text-xs font-mono font-bold text-amber-700">
+                  {{ metrics()?.cruce_checklist?.electrico?.cubierto || 0 }} / {{ metrics()?.cruce_checklist?.electrico?.total || 0 }}
+                </span>
+              </div>
+              <p class="text-[11px] text-amber-700/80">Verificados con checklist en terreno</p>
+            </div>
+
+            <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-200 space-y-1">
+              <span class="text-xs font-bold text-blue-800 uppercase font-mono">🏗️ Riesgo Estructural</span>
+              <div class="flex items-baseline justify-between pt-1">
+                <span class="text-2xl font-black text-blue-900 font-sora">{{ metrics()?.cruce_checklist?.estructural?.pct || 0 }}%</span>
+                <span class="text-xs font-mono font-bold text-blue-700">
+                  {{ metrics()?.cruce_checklist?.estructural?.cubierto || 0 }} / {{ metrics()?.cruce_checklist?.estructural?.total || 0 }}
+                </span>
+              </div>
+              <p class="text-[11px] text-blue-700/80">Zonas acordonadas o delimitadas</p>
+            </div>
+
+            <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-200 space-y-1">
+              <span class="text-xs font-bold text-emerald-800 uppercase font-mono">♿ Riesgo Accesibilidad</span>
+              <div class="flex items-baseline justify-between pt-1">
+                <span class="text-2xl font-black text-emerald-900 font-sora">{{ metrics()?.cruce_checklist?.accesibilidad?.pct || 0 }}%</span>
+                <span class="text-xs font-mono font-bold text-emerald-700">
+                  {{ metrics()?.cruce_checklist?.accesibilidad?.cubierto || 0 }} / {{ metrics()?.cruce_checklist?.accesibilidad?.total || 0 }}
+                </span>
+              </div>
+              <p class="text-[11px] text-emerald-700/80">Pasillos y rampas comprobados</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center justify-between text-slate-800">
+            <span>Desempeño Operativo de Guardias en Terreno</span>
+            <span class="text-xs text-slate-400 font-normal">Validaciones ejecutadas</span>
+          </h3>
+
+          @if (metrics()?.rendimiento_guardias && metrics()?.rendimiento_guardias!.length > 0) {
+            <div class="table-wrap">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase font-mono">
+                    <th class="py-3 px-4">Guardia</th>
+                    <th class="py-3 px-4 text-center">Inspecciones Totales</th>
+                    <th class="py-3 px-4 text-center">Aprobados</th>
+                    <th class="py-3 px-4 text-center">Rechazados</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-xs font-medium">
+                  @for (g of metrics()?.rendimiento_guardias; track g.nombre) {
+                    <tr>
+                      <td class="py-3 px-4 font-bold text-slate-900">{{ g.nombre }}</td>
+                      <td class="py-3 px-4 text-center font-mono font-bold text-slate-700">{{ g.validaciones }}</td>
+                      <td class="py-3 px-4 text-center">
+                        <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold font-mono border border-emerald-100">{{ g.aprobados }}</span>
+                      </td>
+                      <td class="py-3 px-4 text-center">
+                        <span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-bold font-mono border border-rose-100">{{ g.rechazados }}</span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="text-xs text-slate-400 italic py-6 text-center">No hay registros de inspecciones de guardias en el período seleccionado.</p>
+          }
+        </div>
+
+      </div>
+    }
+
+    <!-- PESTAÑA 3: MANTENCIÓN -->
+    @if (activeTab() === 'mantencion') {
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center justify-between text-indigo-600">
+          <span>Rendimiento del Equipo Técnico de Mantenimiento</span>
+          <span class="text-xs text-slate-400 font-normal">Órdenes completadas</span>
+        </h3>
+
+        @if (metrics()?.rendimiento_mantencion && metrics()?.rendimiento_mantencion!.length > 0) {
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            @for (m of metrics()?.rendimiento_mantencion; track m.nombre) {
+              <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-slate-900 text-sm">{{ m.nombre }}</span>
+                  <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-bold text-xs font-mono border border-indigo-100">Técnico</span>
+                </div>
+                <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-200">
+                  <span class="text-slate-500">Órdenes Completadas:</span>
+                  <span class="font-bold text-slate-800 font-mono">{{ m.ordenes_completadas }}</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500">Horas-Hombre Invertidas (HH):</span>
+                  <span class="font-bold text-indigo-600 font-mono">{{ m.hh_totales }} hrs</span>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="text-xs text-slate-400 italic py-6 text-center">No hay trabajos registrados por los mantenedores en el período seleccionado.</p>
+        }
+      </div>
+    }
+
+    <!-- PESTAÑA 4: MATERIALES -->
+    @if (activeTab() === 'materiales') {
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center justify-between text-emerald-600">
+          <span>Ranking de Consumo de Insumos del Pañol</span>
+          <span class="text-xs text-slate-400 font-normal">Materiales más utilizados</span>
+        </h3>
+
+        @if (metrics()?.top_materiales && metrics()?.top_materiales!.length > 0) {
+          <div class="space-y-4">
+            @for (mat of metrics()?.top_materiales; track mat.nombre) {
+              <div class="space-y-1">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-800">{{ mat.nombre }}</span>
+                  <span class="font-mono font-bold text-emerald-600">{{ mat.cantidad }} {{ mat.unidad }}</span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                  <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" [style.width.%]="(mat.cantidad / maxMaterialTotal()) * 100"></div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="text-xs text-slate-400 italic py-6 text-center">No hay registros de consumo de insumos en el período seleccionado.</p>
+        }
+      </div>
+    }
+
+    <!-- PESTAÑA 5: GRÁFICOS BI -->
+    @if (activeTab() === 'graficos') {
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Gráfico 1: Tickets por Sede / Campus -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center gap-2 text-purple-600">
+            <i class="fa-solid fa-building-user"></i>
+            <span>Distribución de Incidentes por Sede</span>
+          </h3>
+
+          <div class="space-y-3 pt-2">
+            @for (s of metrics()?.por_sede; track s.id) {
+              <div class="space-y-1">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-semibold text-slate-800">{{ s.nombre }}</span>
+                  <span class="font-mono font-bold text-purple-700">{{ s.total }} tickets</span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                  <div class="bg-purple-600 h-full rounded-full transition-all duration-500" [style.width.%]="(s.total / maxSedeTotal()) * 100"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Gráfico 2: Desglose por Edificio (Top 6) -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center gap-2 text-blue-600">
+            <i class="fa-solid fa-building"></i>
+            <span>Top Edificios con Mayor Incidencia</span>
+          </h3>
+
+          <div class="space-y-3 pt-2">
+            @for (e of metrics()?.por_edificio; track e.edificio) {
+              <div class="space-y-1">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-semibold text-slate-800">{{ e.edificio }}</span>
+                  <span class="font-mono font-bold text-blue-700">{{ e.total }} reportes</span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                  <div class="bg-blue-500 h-full rounded-full transition-all duration-500" [style.width.%]="(e.total / maxEdificioTotal()) * 100"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Gráfico 3: Desglose por Categoría de Falla -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center gap-2 text-amber-600">
+            <i class="fa-solid fa-tags"></i>
+            <span>Incidentes por Categoría de Falla</span>
+          </h3>
+
+          <div class="space-y-3 pt-2">
+            @for (c of metrics()?.por_categoria; track c.categoria) {
+              <div class="space-y-1">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-semibold text-slate-800">{{ c.categoria }}</span>
+                  <span class="font-mono font-bold text-amber-700">{{ c.total }} reportes</span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                  <div class="bg-amber-500 h-full rounded-full transition-all duration-500" [style.width.%]="(c.total / maxCategoriaTotal()) * 100"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Gráfico 4: Desglose por Nivel de Urgencia -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center gap-2 text-indigo-600">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Proporción por Nivel de Urgencia</span>
+          </h3>
+
+          <div class="space-y-3 pt-2">
+            <div class="flex items-center justify-between text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl">
+              <span class="font-bold text-slate-600">Baja</span>
+              <span class="font-mono font-bold text-slate-800">{{ metrics()?.por_urgencia?.baja }}</span>
+            </div>
+            <div class="flex items-center justify-between text-xs p-3 bg-amber-50 border border-amber-200 rounded-xl">
+              <span class="font-bold text-amber-700">Media</span>
+              <span class="font-mono font-bold text-amber-800">{{ metrics()?.por_urgencia?.media }}</span>
+            </div>
+            <div class="flex items-center justify-between text-xs p-3 bg-orange-50 border border-orange-200 rounded-xl">
+              <span class="font-bold text-orange-700">Alta</span>
+              <span class="font-mono font-bold text-orange-800">{{ metrics()?.por_urgencia?.alta }}</span>
+            </div>
+            <div class="flex items-center justify-between text-xs p-3 bg-rose-50 border border-rose-200 rounded-xl">
+              <span class="font-bold text-rose-700">Crítica</span>
+              <span class="font-mono font-bold text-rose-800">{{ metrics()?.por_urgencia?.critica }}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    }
+
+  }
+
+</div>
