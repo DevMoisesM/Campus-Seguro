@@ -23,8 +23,8 @@ export class GestorBiComponent implements OnInit {
   sedes = signal<Sede[]>([]);
   selectedSedeId: number | null = null;
 
-  // Pestañas del módulo BI
-  activeTab = signal<'general' | 'guardias' | 'mantencion' | 'materiales' | 'graficos'>('general');
+  // Pestañas del módulo BI (6 Pestañas)
+  activeTab = signal<'general' | 'guardias' | 'mantencion' | 'materiales' | 'graficos' | 'comunidad'>('general');
 
   // Filtros de Período
   rango = signal<'dia' | 'semana' | 'mes' | 'ano'>('mes');
@@ -87,6 +87,11 @@ export class GestorBiComponent implements OnInit {
     this.loadMetrics();
   }
 
+  onSedeChange(sedeId: number | null): void {
+    this.selectedSedeId = sedeId;
+    this.loadMetrics();
+  }
+
   onFilterSubmit(): void {
     this.loadMetrics();
   }
@@ -99,7 +104,7 @@ export class GestorBiComponent implements OnInit {
     this.loadMetrics();
   }
 
-  setTab(tab: 'general' | 'guardias' | 'mantencion' | 'materiales' | 'graficos'): void {
+  setTab(tab: 'general' | 'guardias' | 'mantencion' | 'materiales' | 'graficos' | 'comunidad'): void {
     this.activeTab.set(tab);
   }
 }

@@ -155,6 +155,57 @@ export interface TicketMetrics {
   top_materiales?: Array<{ nombre: string; cantidad: number; unidad: string }>;
   rendimiento_guardias?: Array<{ nombre: string; validaciones: number; aprobados: number; rechazados: number }>;
   rendimiento_mantencion?: Array<{ nombre: string; ordenes_completadas: number; hh_totales: number }>;
+  ubicaciones_reincidentes?: Array<{ edificio: string; piso: number; sala: string; total: number }>;
+  guardias_metrics?: {
+    total_validaciones: number;
+    validas: number;
+    invalidas: number;
+    precision: number;
+    tiempo_prom_min: number;
+    calidad_foto: number;
+  };
+  mantencion_metrics?: {
+    completados: number;
+    hh_totales: number;
+    hh_promedio: number;
+    tasa_no_reparacion: number;
+    tiempo_prom_min: number;
+    requirio_apoyo: number;
+    escalados: number;
+    calidad_foto_final: number;
+    tablero_tecnicos: Array<{
+      id: number;
+      nombre: string;
+      reparados: number;
+      en_proceso: number;
+      no_reparables: number;
+      reasignados: number;
+      inasistencias: number;
+    }>;
+  };
+  materiales_metrics?: {
+    materiales_distintos: number;
+    categorias_consumidas: number;
+    top_compras_inteligentes: Array<{
+      id: number;
+      codigo: string;
+      nombre: string;
+      categoria: string;
+      veces_usado: number;
+      en_tickets: number;
+      total_consumido: number;
+      unidad: string;
+      demanda: string;
+    }>;
+  };
+  comunidad_metrics?: {
+    funcionarios_registrados: number;
+    alumnos_registrados: number;
+    tickets_por_vinculo: Array<{ vinculo: string; total: number }>;
+    tickets_por_jornada: Array<{ jornada: string; total: number }>;
+    escuela_tickets: Array<{ escuela: string; total: number }>;
+    clases_afectadas_escuela: Array<{ escuela: string; total: number }>;
+  };
   rango?: string;
   desde?: string;
   hasta?: string;
