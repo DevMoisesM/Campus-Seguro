@@ -400,3 +400,26 @@ class LogAuditoria(models.Model):
         verbose_name = "Log de Auditoría"
         verbose_name_plural = "Logs de Auditoría"
         ordering = ["-created_at"]
+
+
+class Inasistencia(models.Model):
+    ESTADO_CHOICES = (
+        ('pendiente', 'Pendiente'),
+        ('aprobada', 'Aprobada'),
+        ('rechazada', 'Rechazada'),
+    )
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='inasistencias')
+    motivo = models.TextField()
+    fecha_desde = models.DateField()
+    fecha_hasta = models.DateField()
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    observacion_gestor = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Inasistencia"
+        verbose_name_plural = "Inasistencias"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.usuario.get_full_name()} ({self.fecha_desde} a {self.fecha_hasta}) - {self.estado}"

@@ -36,4 +36,16 @@ export class UserService {
   updateUsuario(id: number, userData: Partial<User>): Observable<User> {
     return this.http.patch<User>(`${this.apiUrl}/usuarios/${id}/`, userData);
   }
+
+  aprobarCuenta(id: number, rol_codigo: RolCodigo): Observable<{ status: string; mensaje: string }> {
+    return this.http.post<{ status: string; mensaje: string }>(`${this.apiUrl}/usuarios/${id}/aprobar_cuenta/`, { rol_codigo });
+  }
+
+  cambiarRol(id: number, rol_codigo: RolCodigo): Observable<{ status: string; rol: string }> {
+    return this.http.post<{ status: string; rol: string }>(`${this.apiUrl}/usuarios/${id}/cambiar_rol/`, { rol_codigo });
+  }
+
+  toggleActivo(id: number): Observable<{ status: string; is_active: boolean }> {
+    return this.http.post<{ status: string; is_active: boolean }>(`${this.apiUrl}/usuarios/${id}/toggle_activo/`, {});
+  }
 }

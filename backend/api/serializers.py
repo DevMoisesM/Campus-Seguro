@@ -4,7 +4,7 @@ from .models import (
     Rol, Escuela, Departamento, Carrera, Usuario,
     EstadoCatalogo, TransicionEstado, Sede, Edificio, Piso, TipoUbicacion, Ubicacion,
     Especialidad, CategoriaTicket, CategoriaMaterial, Material, Ticket,
-    ValidacionGuardia, SesionTrabajo, MaterialUtilizado, EvidenciaFotografica, LogAuditoria
+    ValidacionGuardia, SesionTrabajo, MaterialUtilizado, EvidenciaFotografica, LogAuditoria, Inasistencia
 )
 
 # ═══════════════════════════════════════════════════════════════
@@ -273,4 +273,17 @@ class TicketDetailSerializer(serializers.ModelSerializer):
             'afecta_clase', 'riesgo_electrico', 'riesgo_estructural', 'riesgo_accesibilidad',
             'created_at', 'updated_at', 'cerrado_at', 'validacion_guardia',
             'evidencias', 'materiales_utilizados', 'sesiones_trabajo'
+        ]
+
+
+class InasistenciaSerializer(serializers.ModelSerializer):
+    usuario_nombre = serializers.ReadOnlyField(source='usuario.get_full_name')
+    usuario_rol = serializers.ReadOnlyField(source='usuario.rol.nombre')
+
+    class Meta:
+        model = Inasistencia
+        fields = [
+            'id', 'usuario', 'usuario_nombre', 'usuario_rol',
+            'motivo', 'fecha_desde', 'fecha_hasta', 'estado',
+            'observacion_gestor', 'created_at'
         ]

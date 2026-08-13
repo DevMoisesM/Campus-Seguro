@@ -1,0 +1,83 @@
+<div class="space-y-6">
+
+  <!-- Header Módulo de Licencias / Inasistencias -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold text-xs uppercase font-mono">
+          Control de Ausencias
+        </span>
+        <span class="text-xs text-slate-400 font-mono">Licencias y Permisos</span>
+      </div>
+      <h1 class="text-2xl font-black text-slate-900 font-sora mt-1 tracking-tight">Gestión de Inasistencias del Personal</h1>
+      <p class="text-xs text-slate-500 font-medium">Aprobación de ausencias, licencias médicas y permisos de guardias y mantenedores.</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <a routerLink="/gestor/dashboard" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors inline-flex items-center gap-1.5">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Volver a Dashboard</span>
+      </a>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-20 text-slate-400 gap-3">
+      <i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#FFB800]"></i>
+      <span class="font-bold text-sm">Cargando inasistencias...</span>
+    </div>
+  } @else {
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+      @if (inasistencias().length > 0) {
+        <div class="table-wrap">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase font-mono">
+                <th class="py-3 px-4">Trabajador</th>
+                <th class="py-3 px-4">Rol</th>
+                <th class="py-3 px-4">Motivo Declarado</th>
+                <th class="py-3 px-4 text-center">Período de Ausencia</th>
+                <th class="py-3 px-4 text-center">Estado</th>
+                <th class="py-3 px-4 text-right">Acción</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-xs font-medium">
+              @for (ina of inasistencias(); track ina.id) {
+                <tr>
+                  <td class="py-3 px-4 font-bold text-slate-900">{{ ina.usuario_nombre }}</td>
+                  <td class="py-3 px-4 text-slate-500 font-mono">{{ ina.usuario_rol }}</td>
+                  <td class="py-3 px-4 text-slate-700">{{ ina.motivo }}</td>
+                  <td class="py-3 px-4 text-center font-mono text-slate-600">
+                    {{ ina.fecha_desde }} al {{ ina.fecha_hasta }}
+                  </td>
+                  <td class="py-3 px-4 text-center">
+                    <span [class]="ina.estado === 'aprobada' ? 'px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold font-mono border border-emerald-200' : ina.estado === 'rechazada' ? 'px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-bold font-mono border border-rose-200' : 'px-2 py-0.5 rounded bg-amber-50 text-amber-700 font-bold font-mono border border-amber-200'">
+                      {{ ina.estado | uppercase }}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 text-right space-x-2">
+                    @if (ina.estado === 'pendiente') {
+                      <button (click)="aprobar(ina.id)" type="button" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs">
+                        Aprobar
+                      </button>
+                      <button (click)="rechazar(ina.id)" type="button" class="text-rose-600 hover:text-rose-800 font-bold text-xs">
+                        Rechazar
+                      </button>
+                    } @else {
+                      <span class="text-slate-400 text-[11px] italic">Procesado</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="text-xs text-slate-400 italic py-8 text-center">No hay solicitudes de inasistencia registradas por el personal.</p>
+      }
+    </div>
+
+  }
+
+</div>

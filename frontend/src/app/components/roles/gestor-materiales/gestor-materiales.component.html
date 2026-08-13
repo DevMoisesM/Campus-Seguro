@@ -1,0 +1,127 @@
+<div class="space-y-6">
+
+  <!-- Header Módulo de Administración de Pañol -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs uppercase font-mono">
+          Inventario & Pañol
+        </span>
+        <span class="text-xs text-slate-400 font-mono">Catálogo Maestro</span>
+      </div>
+      <h1 class="text-2xl font-black text-slate-900 font-sora mt-1 tracking-tight">Catálogo de Materiales del Pañol</h1>
+      <p class="text-xs text-slate-500 font-medium">Agregar nuevos insumos, definir stock disponible y editar unidades de medida.</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button (click)="openCreateModal()" type="button" class="px-4 py-2.5 rounded-xl bg-[#FFB800] hover:bg-[#E6A600] text-slate-950 font-bold text-xs shadow-md transition-all flex items-center gap-2">
+        <i class="fa-solid fa-plus font-black"></i>
+        <span>Agregar Nuevo Insumo</span>
+      </button>
+
+      <a routerLink="/gestor/dashboard" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors inline-flex items-center gap-1.5">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Volver a Dashboard</span>
+      </a>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-20 text-slate-400 gap-3">
+      <i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#FFB800]"></i>
+      <span class="font-bold text-sm">Cargando inventario del Pañol...</span>
+    </div>
+  } @else {
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+      <div class="table-wrap">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase font-mono">
+              <th class="py-3 px-4"># ID</th>
+              <th class="py-3 px-4">Nombre del Insumo / Repuesto</th>
+              <th class="py-3 px-4 text-center">Unidad por Defecto</th>
+              <th class="py-3 px-4 text-center">Stock Disponible</th>
+              <th class="py-3 px-4 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-xs font-medium">
+            @for (m of materiales(); track m.id) {
+              <tr>
+                <td class="py-3 px-4 font-mono text-slate-400">#{{ m.id }}</td>
+                <td class="py-3 px-4 font-bold text-slate-900">{{ m.nombre }}</td>
+                <td class="py-3 px-4 text-center font-mono font-bold text-slate-600">{{ m.unidad_defecto }}</td>
+                <td class="py-3 px-4 text-center">
+                  <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold font-mono border border-emerald-200">
+                    {{ m.stock_disponible }}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-right space-x-2">
+                  <button (click)="openEditModal(m)" type="button" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs">
+                    Editar
+                  </button>
+                  <button (click)="deleteMaterial(m.id)" type="button" class="text-rose-600 hover:text-rose-800 font-bold text-xs">
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  }
+
+  <!-- MODAL DE AGREGAR / EDITAR MATERIAL -->
+  @if (showModal()) {
+    <div class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-sm font-bold text-slate-900 uppercase font-mono tracking-wider">
+            {{ editingId() ? 'Editar Insumo del Pañol' : 'Agregar Nuevo Insumo al Pañol' }}
+          </h3>
+          <button (click)="closeModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Nombre del Material</label>
+            <input [(ngModel)]="nombre" type="text" placeholder="ej: Enchufe Doble 16A Embutir" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-[#FFB800]" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Unidad Medida</label>
+              <select [(ngModel)]="unidadDefecto" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900">
+                <option value="unidades">unidades</option>
+                <option value="metros">metros</option>
+                <option value="galones">galones</option>
+                <option value="pliegos">pliegos</option>
+                <option value="rollos">rollos</option>
+                <option value="tubos">tubos</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Stock Disponible</label>
+              <input [(ngModel)]="stockDisponible" type="number" min="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button (click)="closeModal()" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs">
+            Cancelar
+          </button>
+          <button (click)="saveMaterial()" type="button" class="px-4 py-2 rounded-xl bg-[#FFB800] hover:bg-[#E6A600] text-slate-950 font-bold text-xs shadow-xs">
+            Guardar Insumo
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

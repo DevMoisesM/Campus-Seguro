@@ -11,7 +11,7 @@ from .models import (
     Rol, Escuela, Departamento, Carrera, Usuario,
     EstadoCatalogo, Sede, Edificio, Piso, TipoUbicacion, Ubicacion,
     Especialidad, CategoriaTicket, CategoriaMaterial, Material, Ticket,
-    ValidacionGuardia, SesionTrabajo, MaterialUtilizado, EvidenciaFotografica, LogAuditoria
+    ValidacionGuardia, SesionTrabajo, MaterialUtilizado, EvidenciaFotografica, LogAuditoria, Inasistencia
 )
 from .serializers import (
     CustomTokenObtainPairSerializer, UsuarioSerializer, UsuarioCreateUpdateSerializer,
@@ -19,7 +19,7 @@ from .serializers import (
     SedeSerializer, EdificioSerializer, PisoSerializer, TipoUbicacionSerializer, UbicacionSerializer,
     CategoriaTicketSerializer, CategoriaMaterialSerializer, MaterialSerializer, EstadoCatalogoSerializer,
     TicketCreateUpdateSerializer, TicketDetailSerializer, ValidacionGuardiaSerializer,
-    SesionTrabajoSerializer, MaterialUtilizadoSerializer, EvidenciaFotograficaSerializer, LogAuditoriaSerializer
+    SesionTrabajoSerializer, MaterialUtilizadoSerializer, EvidenciaFotograficaSerializer, LogAuditoriaSerializer, InasistenciaSerializer
 )
 
 # ═══════════════════════════════════════════════════════════════
@@ -112,6 +112,44 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
         serializer = UsuarioSerializer(usuario)
         return Response(serializer.data, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def aprobar_cuenta(self, request, pk=None):
+        usuario = self.get_object()
+        rol_codigo = request.data.get('rol_codigo', 'usuario')
+        rol = Rol.objects.filter(codigo=rol_codigo).first()
+
+        usuario.estado_cuenta = 'activa'
+        usuario.is_active = True
+        if rol:
+            usuario.rol = rol
+        usuario.save()
+
+        return Response({'status': 'ok', 'mensaje': f'Cuenta aprobada con rol {rol.nombre if rol else rol_codigo}'})
+
+    @action(detail=True, methods=['post'])
+    def cambiar_rol(self, request, pk=None):
+        usuario = self.get_object()
+        rol_codigo = request.data.get('rol_codigo')
+        if not rol_codigo:
+            return Response({'error': 'rol_codigo es requerido'}, status=status.HTTP_400_BAD_REQUEST)
+
+        rol = Rol.objects.filter(codigo=rol_codigo).first()
+        if not rol:
+            return Response({'error': 'Rol no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+        usuario.rol = rol
+        usuario.save()
+
+        return Response({'status': 'ok', 'rol': rol.nombre, 'rol_codigo': rol.codigo})
+
+    @action(detail=True, methods=['post'])
+    def toggle_activo(self, request, pk=None):
+        usuario = self.get_object()
+        usuario.is_active = not usuario.is_active
+        usuario.save()
+
+        return Response({'status': 'ok', 'is_active': usuario.is_active})
 
 
 class RolViewSet(viewsets.ReadOnlyModelViewSet):
@@ -580,6 +618,31 @@ class TicketViewSet(viewsets.ModelViewSet):
             'desde': desde.strftime('%Y-%m-%d'),
             'hasta': hasta.strftime('%Y-%m-%d')
         })
+
+
+class InasistenciaViewSet(viewsets.ModelViewSet):
+    queryset = Inasistencia.objects.all().select_related('usuario', 'usuario__rol')
+    serializer_class = InasistenciaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(usuario=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def aprobar(self, request, pk=None):
+        inasistencia = self.get_object()
+        inasistencia.estado = 'aprobada'
+        inasistencia.observacion_gestor = request.data.get('observacion', '')
+        inasistencia.save()
+        return Response({'status': 'ok', 'estado': 'aprobada'})
+
+    @action(detail=True, methods=['post'])
+    def rechazar(self, request, pk=None):
+        inasistencia = self.get_object()
+        inasistencia.estado = 'rechazada'
+        inasistencia.observacion_gestor = request.data.get('observacion', '')
+        inasistencia.save()
+        return Response({'status': 'ok', 'estado': 'rechazada'})
 
 
 # ═══════════════════════════════════════════════════════════════

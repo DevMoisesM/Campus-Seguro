@@ -87,40 +87,41 @@
   </div>
 
   <!-- PESTAÑAS DE ANALÍTICA BI -->
+  <!-- PESTAÑAS DE ANALÍTICA BI -->
   <div class="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-1">
     <button (click)="setTab('general')" 
             type="button" 
             [class]="activeTab() === 'general' ? 'px-4 py-2.5 border-b-2 border-[#FFB800] text-slate-900 font-bold text-xs flex items-center gap-2 transition-colors whitespace-nowrap' : 'px-4 py-2.5 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap'">
       <i class="fa-solid fa-chart-pie text-amber-500"></i>
-      <span>📊 General</span>
+      <span>General</span>
     </button>
 
     <button (click)="setTab('guardias')" 
             type="button" 
             [class]="activeTab() === 'guardias' ? 'px-4 py-2.5 border-b-2 border-amber-500 text-slate-900 font-bold text-xs flex items-center gap-2 transition-colors whitespace-nowrap' : 'px-4 py-2.5 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap'">
       <i class="fa-solid fa-shield-halved text-amber-600"></i>
-      <span>🛡️ Guardias</span>
+      <span>Guardias</span>
     </button>
 
     <button (click)="setTab('mantencion')" 
             type="button" 
             [class]="activeTab() === 'mantencion' ? 'px-4 py-2.5 border-b-2 border-indigo-500 text-slate-900 font-bold text-xs flex items-center gap-2 transition-colors whitespace-nowrap' : 'px-4 py-2.5 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap'">
       <i class="fa-solid fa-wrench text-indigo-500"></i>
-      <span>🔧 Mantención</span>
+      <span>Mantención</span>
     </button>
 
     <button (click)="setTab('materiales')" 
             type="button" 
             [class]="activeTab() === 'materiales' ? 'px-4 py-2.5 border-b-2 border-emerald-500 text-slate-900 font-bold text-xs flex items-center gap-2 transition-colors whitespace-nowrap' : 'px-4 py-2.5 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap'">
       <i class="fa-solid fa-boxes-stacked text-emerald-500"></i>
-      <span>📦 Materiales Pañol</span>
+      <span>Materiales Pañol</span>
     </button>
 
     <button (click)="setTab('graficos')" 
             type="button" 
             [class]="activeTab() === 'graficos' ? 'px-4 py-2.5 border-b-2 border-purple-500 text-slate-900 font-bold text-xs flex items-center gap-2 transition-colors whitespace-nowrap' : 'px-4 py-2.5 text-slate-500 hover:text-slate-800 font-medium text-xs flex items-center gap-2 transition-colors whitespace-nowrap'">
       <i class="fa-solid fa-chart-column text-purple-500"></i>
-      <span>📈 Gráficos BI</span>
+      <span>Gráficos BI</span>
     </button>
   </div>
 

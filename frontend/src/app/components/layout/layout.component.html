@@ -68,84 +68,144 @@
     <!-- Menú de Navegación -->
     <nav class="flex-1 p-3 overflow-y-auto space-y-6">
       
-      <!-- Sección General -->
-      <div>
-        <p class="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-2">Navegación</p>
-        <ul class="space-y-1">
-          <li>
-            <a [routerLink]="authService.userRole() === 'gestor' ? '/gestor/dashboard' : authService.userRole() === 'guardia' ? '/guardia/dashboard' : authService.userRole() === 'mantencion' ? '/mantencion/dashboard' : '/estudiante/dashboard'" 
-               routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
-               (click)="closeMobileMenu()"
-               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
-              <i class="fa-solid fa-chart-pie text-base w-5 text-center text-[#FFB800]"></i>
-              <span>Dashboard Principal</span>
-            </a>
-          </li>
-          <li>
-            <a [routerLink]="authService.userRole() === 'usuario' ? '/estudiante/mis-tickets' : authService.userRole() === 'guardia' ? '/guardia/mis-tickets' : authService.userRole() === 'mantencion' ? '/mantencion/mis-tickets' : '/gestor/mis-tickets'" 
-               routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
-               (click)="closeMobileMenu()"
-               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
-              <i class="fa-solid fa-ticket text-base w-5 text-center text-slate-500"></i>
-              <span>Mis Incidentes</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Sección Operaciones por Rol -->
-      <div>
-        <p class="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-2">Operaciones</p>
-        <ul class="space-y-1">
-          <!-- Opciones para Guardia -->
-          @if (authService.hasRole(['guardia', 'gestor'])) {
-            <li>
-              <a routerLink="/guardia/dashboard" 
-                 routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
-                 (click)="closeMobileMenu()"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
-                <i class="fa-solid fa-user-shield text-base w-5 text-center text-amber-500"></i>
-                <span>Inspección de Guardia</span>
-              </a>
-            </li>
-          }
-
-          <!-- Opciones para Mantención -->
-          @if (authService.hasRole(['mantencion', 'gestor'])) {
-            <li>
-              <a routerLink="/mantencion/dashboard" 
-                 routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
-                 (click)="closeMobileMenu()"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
-                <i class="fa-solid fa-wrench text-base w-5 text-center text-blue-500"></i>
-                <span>Órdenes de Trabajo</span>
-              </a>
-            </li>
-          }
-        </ul>
-      </div>
-
-      <!-- Sección Administración (Solo Gestor / Admin) -->
-      @if (authService.hasRole(['gestor'])) {
+      <!-- VISTA GENERAL PARA ESTUDIANTE, GUARDIA Y MANTENCIÓN -->
+      @if (authService.userRole() !== 'gestor') {
         <div>
-          <p class="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-2">Gestión & BI</p>
+          <p class="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-2">Navegación</p>
           <ul class="space-y-1">
             <li>
-              <a routerLink="/gestor/usuarios" 
+              <a [routerLink]="authService.userRole() === 'guardia' ? '/guardia/dashboard' : authService.userRole() === 'mantencion' ? '/mantencion/dashboard' : '/estudiante/dashboard'" 
                  routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
                  (click)="closeMobileMenu()"
                  class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
-                <i class="fa-solid fa-users-gear text-base w-5 text-center text-purple-500"></i>
-                <span>Personal & Cuentas</span>
+                <i class="fa-solid fa-chart-pie text-base w-5 text-center text-[#FFB800]"></i>
+                <span>Dashboard Principal</span>
+              </a>
+            </li>
+            <li>
+              <a [routerLink]="authService.userRole() === 'usuario' ? '/estudiante/mis-tickets' : authService.userRole() === 'guardia' ? '/guardia/mis-tickets' : '/mantencion/mis-tickets'" 
+                 routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
+                 (click)="closeMobileMenu()"
+                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
+                <i class="fa-solid fa-ticket text-base w-5 text-center text-slate-500"></i>
+                <span>Mis Incidentes</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        @if (authService.userRole() === 'guardia' || authService.userRole() === 'mantencion') {
+          <div>
+            <p class="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-2">Operaciones</p>
+            <ul class="space-y-1">
+              @if (authService.userRole() === 'guardia') {
+                <li>
+                  <a routerLink="/guardia/dashboard" 
+                     routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
+                     (click)="closeMobileMenu()"
+                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
+                    <i class="fa-solid fa-user-shield text-base w-5 text-center text-amber-500"></i>
+                    <span>Inspección de Guardia</span>
+                  </a>
+                </li>
+              }
+              @if (authService.userRole() === 'mantencion') {
+                <li>
+                  <a routerLink="/mantencion/dashboard" 
+                     routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
+                     (click)="closeMobileMenu()"
+                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
+                    <i class="fa-solid fa-wrench text-base w-5 text-center text-blue-500"></i>
+                    <span>Órdenes de Trabajo</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      }
+
+      <!-- VISTA EXCLUSIVA DE GESTOR / ADMINISTRADOR (SECCIONES DE IMÁGENES) -->
+      @if (authService.userRole() === 'gestor') {
+        <!-- 1. PRINCIPAL -->
+        <div>
+          <p class="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-2">PRINCIPAL</p>
+          <ul class="space-y-1">
+            <li>
+              <a routerLink="/gestor/dashboard" 
+                 routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
+                 (click)="closeMobileMenu()"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
+                <i class="fa-solid fa-chart-pie text-base w-5 text-center text-[#FFB800]"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 2. GESTIÓN OPERATIVA -->
+        <div>
+          <p class="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-2">GESTIÓN OPERATIVA</p>
+          <ul class="space-y-1">
+            <li>
+              <a routerLink="/gestor/mis-tickets" 
+                 routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
+                 (click)="closeMobileMenu()"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
+                <i class="fa-solid fa-ticket text-base w-5 text-center text-slate-500"></i>
+                <span>Todos los Tickets</span>
               </a>
             </li>
             <li>
               <a routerLink="/gestor/reportes-bi" 
                  routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
                  (click)="closeMobileMenu()"
-                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
-                <i class="fa-solid fa-chart-line text-base w-5 text-center text-emerald-500"></i>
-                <span>Reportes Analytics BI</span>
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
+                <i class="fa-solid fa-chart-line text-base w-5 text-center text-indigo-500"></i>
+                <span>Business Intelligence</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 3. ADMINISTRACIÓN -->
+        <div>
+          <p class="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-2">ADMINISTRACIÓN</p>
+          <ul class="space-y-1">
+            <li>
+              <a routerLink="/gestor/solicitudes-cuenta" 
+                 routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
+                 (click)="closeMobileMenu()"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
+                <i class="fa-solid fa-user-clock text-base w-5 text-center text-sky-500"></i>
+                <span>Solicitudes de Cuenta</span>
+              </a>
+            </li>
+            <li>
+              <a routerLink="/gestor/usuarios" 
+                 routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
+                 (click)="closeMobileMenu()"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
+                <i class="fa-solid fa-users text-base w-5 text-center text-purple-500"></i>
+                <span>Usuarios</span>
+              </a>
+            </li>
+            <li>
+              <a routerLink="/gestor/inasistencias" 
+                 routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
+                 (click)="closeMobileMenu()"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
+                <i class="fa-solid fa-calendar-xmark text-base w-5 text-center text-rose-500"></i>
+                <span>Inasistencias</span>
+              </a>
+            </li>
+            <li>
+              <a routerLink="/gestor/materiales" 
+                 routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
+                 (click)="closeMobileMenu()"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
+                <i class="fa-solid fa-boxes-stacked text-base w-5 text-center text-emerald-500"></i>
+                <span>Materiales del Pañol</span>
               </a>
             </li>
           </ul>

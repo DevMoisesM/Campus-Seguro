@@ -6,7 +6,7 @@ from .views import (
     health_check, CustomTokenObtainPairView, UserProfileView,
     UsuarioViewSet, RolViewSet, EspecialidadViewSet,
     SedeViewSet, EdificioViewSet, PisoViewSet, UbicacionViewSet,
-    CategoriaTicketViewSet, MaterialViewSet, TicketViewSet
+    CategoriaTicketViewSet, MaterialViewSet, TicketViewSet, InasistenciaViewSet
 )
 
 router = DefaultRouter()
@@ -19,6 +19,7 @@ router.register(r'pisos', PisoViewSet, basename='piso')
 router.register(r'ubicaciones', UbicacionViewSet, basename='ubicacion')
 router.register(r'categorias-ticket', CategoriaTicketViewSet, basename='categoriaticket')
 router.register(r'materiales', MaterialViewSet, basename='material')
+router.register(r'inasistencias', InasistenciaViewSet, basename='inasistencia')
 router.register(r'tickets', TicketViewSet, basename='ticket')
 
 urlpatterns = [

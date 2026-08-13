@@ -6,6 +6,9 @@ import { GuardiaDashboardComponent } from './components/roles/guardia-dashboard/
 import { MantencionDashboardComponent } from './components/roles/mantencion-dashboard/mantencion-dashboard.component';
 import { GestorDashboardComponent } from './components/roles/gestor-dashboard/gestor-dashboard.component';
 import { GestorBiComponent } from './components/roles/gestor-bi/gestor-bi.component';
+import { GestorUsuariosComponent } from './components/roles/gestor-usuarios/gestor-usuarios.component';
+import { GestorMaterialesComponent } from './components/roles/gestor-materiales/gestor-materiales.component';
+import { GestorInasistenciasComponent } from './components/roles/gestor-inasistencias/gestor-inasistencias.component';
 import { TicketCreateComponent } from './components/tickets/ticket-create/ticket-create.component';
 import { TicketListComponent } from './components/tickets/ticket-list/ticket-list.component';
 import { TicketDetailComponent } from './components/tickets/ticket-detail/ticket-detail.component';
@@ -91,7 +94,10 @@ export const routes: Routes = [
         data: { roles: ['gestor'] },
         children: [
           { path: 'dashboard', component: GestorDashboardComponent },
-          { path: 'usuarios', component: GestorDashboardComponent },
+          { path: 'solicitudes-cuenta', component: GestorUsuariosComponent },
+          { path: 'usuarios', component: GestorUsuariosComponent },
+          { path: 'materiales', component: GestorMaterialesComponent },
+          { path: 'inasistencias', component: GestorInasistenciasComponent },
           { path: 'reportes-bi', component: GestorBiComponent },
           { path: 'mis-tickets', component: TicketListComponent },
           { path: 'nuevo-ticket', component: TicketCreateComponent }

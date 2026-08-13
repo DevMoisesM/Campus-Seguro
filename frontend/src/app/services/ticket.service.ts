@@ -104,6 +104,30 @@ export class TicketService {
     return this.http.get<MaterialCatalog[]>(`${this.apiUrl}/materiales/`);
   }
 
+  createMaterial(data: { nombre: string; unidad_defecto: string; stock_disponible: number }): Observable<MaterialCatalog> {
+    return this.http.post<MaterialCatalog>(`${this.apiUrl}/materiales/`, data);
+  }
+
+  updateMaterial(id: number, data: Partial<MaterialCatalog>): Observable<MaterialCatalog> {
+    return this.http.patch<MaterialCatalog>(`${this.apiUrl}/materiales/${id}/`, data);
+  }
+
+  deleteMaterial(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/materiales/${id}/`);
+  }
+
+  getInasistencias(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/inasistencias/`);
+  }
+
+  aprobarInasistencia(id: number, observacion?: string): Observable<{ status: string }> {
+    return this.http.post<{ status: string }>(`${this.apiUrl}/inasistencias/${id}/aprobar/`, { observacion });
+  }
+
+  rechazarInasistencia(id: number, observacion?: string): Observable<{ status: string }> {
+    return this.http.post<{ status: string }>(`${this.apiUrl}/inasistencias/${id}/rechazar/`, { observacion });
+  }
+
   getMetrics(params?: { rango?: string; fecha_desde?: string; fecha_hasta?: string; sede?: number }): Observable<TicketMetrics> {
     let httpParams = new HttpParams();
     if (params?.rango) httpParams = httpParams.set('rango', params.rango);
