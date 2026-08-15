@@ -120,6 +120,10 @@ export class TicketService {
     return this.http.get<any[]>(`${this.apiUrl}/inasistencias/`);
   }
 
+  createInasistencia(data: { motivo: string; fecha_desde: string; fecha_hasta: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/inasistencias/`, data);
+  }
+
   aprobarInasistencia(id: number, observacion?: string): Observable<{ status: string }> {
     return this.http.post<{ status: string }>(`${this.apiUrl}/inasistencias/${id}/aprobar/`, { observacion });
   }

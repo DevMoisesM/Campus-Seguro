@@ -120,6 +120,15 @@
                   </a>
                 </li>
               }
+              <li>
+                <a [routerLink]="authService.userRole() === 'guardia' ? '/guardia/mis-ausencias' : '/mantencion/mis-ausencias'" 
+                   routerLinkActive="bg-[#FFB800]/15 text-slate-900 border-l-3 border-[#FFB800] font-bold"
+                   (click)="closeMobileMenu()"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-medium transition-all">
+                  <i class="fa-solid fa-calendar-days text-base w-5 text-center text-amber-600"></i>
+                  <span>Mis Ausencias</span>
+                </a>
+              </li>
             </ul>
           </div>
         }

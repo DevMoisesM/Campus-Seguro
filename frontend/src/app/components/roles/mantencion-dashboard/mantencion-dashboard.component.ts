@@ -114,6 +114,43 @@ export class MantencionDashboardComponent implements OnInit {
     this.imagenUrl = '';
   }
 
+  // Modal de Licencia / Permiso
+  showInasistenciaModal = signal(false);
+  inasiMotivo = '';
+  inasiFechaDesde = '';
+  inasiFechaHasta = '';
+
+  openInasistenciaModal(): void {
+    const today = new Date().toISOString().split('T')[0];
+    this.inasiMotivo = '';
+    this.inasiFechaDesde = today;
+    this.inasiFechaHasta = today;
+    this.showInasistenciaModal.set(true);
+  }
+
+  closeInasistenciaModal(): void {
+    this.showInasistenciaModal.set(false);
+  }
+
+  submitInasistencia(): void {
+    if (!this.inasiMotivo.trim() || !this.inasiFechaDesde || !this.inasiFechaHasta) {
+      alert('Por favor complete todos los campos de la solicitud.');
+      return;
+    }
+
+    this.ticketService.createInasistencia({
+      motivo: this.inasiMotivo,
+      fecha_desde: this.inasiFechaDesde,
+      fecha_hasta: this.inasiFechaHasta
+    }).subscribe({
+      next: () => {
+        alert('Solicitud de permiso/licencia enviada exitosamente para revisión del Gestor.');
+        this.closeInasistenciaModal();
+      },
+      error: () => alert('Error al enviar la solicitud.')
+    });
+  }
+
   submitRegistro(): void {
     const ticket = this.selectedTicket();
     if (!ticket) return;

@@ -9,6 +9,7 @@ import { GestorBiComponent } from './components/roles/gestor-bi/gestor-bi.compon
 import { GestorUsuariosComponent } from './components/roles/gestor-usuarios/gestor-usuarios.component';
 import { GestorMaterialesComponent } from './components/roles/gestor-materiales/gestor-materiales.component';
 import { GestorInasistenciasComponent } from './components/roles/gestor-inasistencias/gestor-inasistencias.component';
+import { MisAusenciasComponent } from './components/roles/mis-ausencias/mis-ausencias.component';
 import { TicketCreateComponent } from './components/tickets/ticket-create/ticket-create.component';
 import { TicketListComponent } from './components/tickets/ticket-list/ticket-list.component';
 import { TicketDetailComponent } from './components/tickets/ticket-detail/ticket-detail.component';
@@ -68,6 +69,7 @@ export const routes: Routes = [
           { path: 'dashboard', component: GuardiaDashboardComponent },
           { path: 'inspecciones', component: GuardiaDashboardComponent },
           { path: 'mis-tickets', component: TicketListComponent },
+          { path: 'mis-ausencias', component: MisAusenciasComponent },
           { path: 'nuevo-ticket', component: TicketCreateComponent }
         ]
       },
@@ -82,6 +84,7 @@ export const routes: Routes = [
           { path: 'dashboard', component: MantencionDashboardComponent },
           { path: 'ordenes', component: MantencionDashboardComponent },
           { path: 'mis-tickets', component: TicketListComponent },
+          { path: 'mis-ausencias', component: MisAusenciasComponent },
           { path: 'nuevo-ticket', component: TicketCreateComponent }
         ]
       },

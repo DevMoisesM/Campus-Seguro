@@ -270,4 +270,53 @@
     </div>
   }
 
+  <!-- MODAL DE SOLICITAR LICENCIA / PERMISO -->
+  @if (showInasistenciaModal()) {
+    <div class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-sm font-bold text-slate-900 uppercase font-mono tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-calendar-plus text-blue-600"></i>
+            <span>Solicitar Permiso / Licencia Médica</span>
+          </h3>
+          <button (click)="closeInasistenciaModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Fecha Desde *</label>
+              <input [(ngModel)]="inasiFechaDesde" type="date" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Fecha Hasta *</label>
+              <input [(ngModel)]="inasiFechaHasta" type="date" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Motivo o Justificación *</label>
+            <textarea [(ngModel)]="inasiMotivo" 
+                      rows="3" 
+                      placeholder="Explica la razón de tu ausencia o adjunta número de licencia médica..." 
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500"></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button (click)="closeInasistenciaModal()" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs">
+            Cancelar
+          </button>
+          <button (click)="submitInasistencia()" type="button" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs">
+            Enviar Solicitud
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
 </div>
