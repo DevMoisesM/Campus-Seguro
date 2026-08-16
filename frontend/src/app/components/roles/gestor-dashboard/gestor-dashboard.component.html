@@ -70,7 +70,78 @@
     }
 
     @if (!loading() && tickets().length > 0) {
-      <div class="overflow-x-auto">
+      
+      <!-- VISTA MÓVIL Y TABLET EN TARJETAS (< lg: 1024px) -->
+      <div class="block lg:hidden space-y-3">
+        @for (t of tickets(); track t.id) {
+          <div class="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-3">
+            <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <span class="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg">
+                {{ t.folio }}
+              </span>
+              <div class="flex items-center gap-1.5">
+                <span [class]="'px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
+                  {{ t.urgencia }}
+                </span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 border border-slate-200 text-slate-800">
+                  <span class="w-1.5 h-1.5 rounded-full" [style.background-color]="t.estado.color_hex || '#3b82f6'"></span>
+                  {{ t.estado.nombre_display }}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-slate-900 text-sm sm:text-base leading-snug break-words">{{ t.titulo }}</h4>
+              <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                <i class="fa-solid fa-location-dot text-slate-400"></i>
+                <span class="break-words">{{ t.ubicacion.nombre }} ({{ t.ubicacion.edificio_nombre }})</span>
+              </p>
+              <p class="text-[11px] text-slate-400 font-mono mt-0.5">
+                Por: {{ t.creado_por.first_name }} {{ t.creado_por.last_name }}
+              </p>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100 space-y-2">
+              <div class="text-xs">
+                <span class="text-slate-400 font-bold block mb-1 font-mono uppercase text-[10px]">Mantenedor Asignado:</span>
+                @if (t.asignado_a) {
+                  <span class="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 inline-block">
+                    {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
+                  </span>
+                } @else {
+                  <select (change)="assignMantenedor(t.id, $any($event.target).value)" 
+                          class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-700">
+                    <option value="">-- Asignar Mantenedor --</option>
+                    @for (m of mantenedores(); track m.id) {
+                      <option [value]="m.id">{{ m.first_name }} {{ m.last_name }}</option>
+                    }
+                  </select>
+                }
+              </div>
+
+              <div class="flex flex-col gap-1.5 pt-1">
+                @if (t.estado.codigo === 'reparado') {
+                  <button (click)="cerrarTicket(t.id)" 
+                          [disabled]="submitting()" 
+                          type="button" 
+                          class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Aprobar Cierre Final</span>
+                  </button>
+                }
+                <a [routerLink]="['/gestor/tickets', t.id]" 
+                   class="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-1">
+                  <i class="fa-solid fa-eye text-xs"></i>
+                  <span>Ver Trazabilidad</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- VISTA ESCRITORIO EN TABLA (>= lg: 1024px) -->
+      <div class="hidden lg:block overflow-x-auto">
         <table class="w-full text-left text-sm text-slate-700">
           <thead class="text-xs font-mono uppercase bg-slate-100 text-slate-600 border-b border-slate-200">
             <tr>
@@ -91,11 +162,11 @@
                     <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-60"></i>
                   </a>
                 </td>
-                <td class="px-4 py-3.5">
-                  <a [routerLink]="['/gestor/tickets', t.id]" class="font-semibold text-slate-900 hover:text-indigo-600 hover:underline block">
+                <td class="px-4 py-3.5 max-w-[260px] lg:max-w-[340px] xl:max-w-[420px]">
+                  <a [routerLink]="['/gestor/tickets', t.id]" class="font-semibold text-slate-900 hover:text-indigo-600 hover:underline block break-words leading-snug line-clamp-2" [title]="t.titulo">
                     {{ t.titulo }}
                   </a>
-                  <p class="text-xs text-slate-400 font-mono">Por: {{ t.creado_por.first_name }} {{ t.creado_por.last_name }}</p>
+                  <p class="text-xs text-slate-400 font-mono mt-0.5 truncate">Por: {{ t.creado_por.first_name }} {{ t.creado_por.last_name }}</p>
                 </td>
                 <td class="px-4 py-3.5 text-xs text-slate-700">
                   {{ t.ubicacion.nombre }}

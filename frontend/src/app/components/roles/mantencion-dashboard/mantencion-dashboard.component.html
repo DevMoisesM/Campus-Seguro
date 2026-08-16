@@ -76,12 +76,80 @@
     }
 
     @if (!loading() && tickets().length > 0) {
-      <div class="overflow-x-auto">
+      
+      <!-- VISTA MÓVIL Y TABLET EN TARJETAS (< lg: 1024px) -->
+      <div class="block lg:hidden space-y-3">
+        @for (t of tickets(); track t.id) {
+          <div class="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-3">
+            <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <span class="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg">
+                {{ t.folio }}
+              </span>
+              <div class="flex items-center gap-1.5">
+                <span [class]="'px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
+                  {{ t.urgencia }}
+                </span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 border border-slate-200 text-slate-800">
+                  <span class="w-1.5 h-1.5 rounded-full" [style.background-color]="t.estado.color_hex || '#3b82f6'"></span>
+                  {{ t.estado.nombre_display }}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-slate-900 text-sm sm:text-base leading-snug break-words">{{ t.titulo }}</h4>
+              <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                <i class="fa-solid fa-location-dot text-slate-400"></i>
+                <span class="break-words">{{ t.ubicacion.nombre }} ({{ t.ubicacion.edificio_nombre }})</span>
+              </p>
+            </div>
+
+            <div class="flex flex-col gap-2 pt-1">
+              @if (t.estado.codigo === 'validado') {
+                <button (click)="iniciarTrabajo(t)" 
+                        [disabled]="submitting()" 
+                        type="button" 
+                        class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-play text-xs"></i>
+                  <span>Iniciar Mantención</span>
+                </button>
+              }
+
+              @if (t.estado.codigo === 'en_mantencion' || t.estado.codigo === 'validado') {
+                <div class="grid grid-cols-2 gap-2">
+                  <button (click)="openAvanceModal(t)" 
+                          type="button" 
+                          class="w-full py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Avance Diario</span>
+                  </button>
+
+                  <button (click)="openRegisterModal(t)" 
+                          type="button" 
+                          class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Finalizar</span>
+                  </button>
+                </div>
+              }
+
+              <a [routerLink]="['/mantencion/tickets', t.id]" 
+                 class="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-1">
+                <i class="fa-solid fa-eye text-xs"></i>
+                <span>Ver Trazabilidad</span>
+              </a>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- VISTA ESCRITORIO EN TABLA (>= lg: 1024px) -->
+      <div class="hidden lg:block overflow-x-auto">
         <table class="w-full text-left text-sm text-slate-700">
           <thead class="text-xs font-mono uppercase bg-slate-100 text-slate-600 border-b border-slate-200">
             <tr>
               <th class="px-4 py-3">Folio</th>
-              <th class="px-4 py-3">Problema / Detalle</th>
+              <th class="px-4 py-3">Título / Detalle</th>
               <th class="px-4 py-3">Ubicación</th>
               <th class="px-4 py-3">Urgencia</th>
               <th class="px-4 py-3">Estado</th>
@@ -91,14 +159,14 @@
           <tbody class="divide-y divide-slate-100">
             @for (t of tickets(); track t.id) {
               <tr class="hover:bg-slate-50 transition-colors">
-                <td class="px-4 py-3.5 font-mono text-xs font-bold">
+                <td class="px-4 py-3.5 font-mono text-xs font-bold font-mono">
                   <a [routerLink]="['/mantencion/tickets', t.id]" class="text-slate-900 hover:text-amber-600 hover:underline flex items-center gap-1">
                     <span>{{ t.folio }}</span>
                     <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-60"></i>
                   </a>
                 </td>
-                <td class="px-4 py-3.5 font-semibold text-slate-900">
-                  <a [routerLink]="['/mantencion/tickets', t.id]" class="hover:text-indigo-600 hover:underline">
+                <td class="px-4 py-3.5 font-semibold text-slate-900 max-w-[260px] lg:max-w-[340px] xl:max-w-[420px]">
+                  <a [routerLink]="['/mantencion/tickets', t.id]" class="hover:text-indigo-600 hover:underline block break-words leading-snug line-clamp-2" [title]="t.titulo">
                     {{ t.titulo }}
                   </a>
                 </td>
