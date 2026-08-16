@@ -119,6 +119,8 @@ export interface TicketCreateData {
   riesgo_electrico?: boolean;
   riesgo_estructural?: boolean;
   riesgo_accesibilidad?: boolean;
+  imagen_url?: string;
+  imagenes_urls?: string[];
 }
 
 export interface TicketMetrics {

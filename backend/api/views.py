@@ -274,19 +274,27 @@ class TicketViewSet(viewsets.ModelViewSet):
             estado_enviado = EstadoCatalogo.objects.first()
 
         imagen_url = serializer.validated_data.pop('imagen_url', None)
+        imagenes_urls = self.request.data.get('imagenes_urls', [])
 
         ticket = serializer.save(
             creado_por=self.request.user,
             estado=estado_enviado
         )
 
-        if imagen_url:
-            EvidenciaFotografica.objects.create(
-                ticket=ticket,
-                fase='reporte',
-                imagen_url=imagen_url,
-                creado_por=self.request.user
-            )
+        all_urls = []
+        if isinstance(imagenes_urls, list) and len(imagenes_urls) > 0:
+            all_urls.extend(imagenes_urls)
+        elif imagen_url:
+            all_urls.append(imagen_url)
+
+        for url in all_urls:
+            if url and isinstance(url, str) and url.strip():
+                EvidenciaFotografica.objects.create(
+                    ticket=ticket,
+                    fase='reporte',
+                    imagen_url=url.strip(),
+                    creado_por=self.request.user
+                )
 
         LogAuditoria.objects.create(
             ticket=ticket,

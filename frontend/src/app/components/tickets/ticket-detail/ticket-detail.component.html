@@ -131,13 +131,13 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               @for (ev of ticket()?.evidencias; track ev.id) {
                 <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-2 space-y-2">
-                  <a [href]="ev.imagen_url" target="_blank" class="block group relative overflow-hidden rounded-lg">
+                  <div (click)="openPreviewModal(ev.imagen_url)" class="block group relative overflow-hidden rounded-lg cursor-pointer" title="Clic para ampliar">
                     <img [src]="ev.imagen_url" alt="Evidencia" class="w-full h-40 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300" />
-                    <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
-                      <i class="fa-solid fa-up-right-from-square"></i>
-                      <span>Ver Completa</span>
+                    <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1.5">
+                      <i class="fa-solid fa-magnifying-glass-plus text-sm"></i>
+                      <span>Ampliar Imagen</span>
                     </div>
-                  </a>
+                  </div>
                   <div class="flex items-center justify-between text-xs px-1">
                     <span [class]="ev.fase === 'reporte' ? 'px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px] uppercase' : 'px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px] uppercase'">
                       {{ ev.fase === 'reporte' ? 'Evidencia Inicial' : 'Evidencia Reparación' }}
@@ -223,6 +223,18 @@
 
     </div>
 
+  }
+
+  <!-- MODAL LIGHTBOX PARA AMPLIAR EVIDENCIA FOTOGRÁFICA -->
+  @if (previewModalImage()) {
+    <div class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4" (click)="closePreviewModal()">
+      <div class="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center justify-center p-2" (click)="$event.stopPropagation()">
+        <button (click)="closePreviewModal()" type="button" class="self-end text-white hover:text-amber-400 text-2xl font-bold mb-2 transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <img [src]="previewModalImage()" alt="Vista ampliada" class="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl border border-slate-700 bg-slate-900" />
+      </div>
+    </div>
   }
 
 </div>

@@ -20,6 +20,17 @@ export class TicketDetailComponent implements OnInit {
   loading = signal(true);
   errorMessage = signal<string | null>(null);
 
+  // Lightbox Modal para fotos de evidencia
+  previewModalImage = signal<string | null>(null);
+
+  openPreviewModal(img: string): void {
+    this.previewModalImage.set(img);
+  }
+
+  closePreviewModal(): void {
+    this.previewModalImage.set(null);
+  }
+
   // Estados clave para determinar la posición en la línea de tiempo
   timelineSteps = [
     { code: 'enviado', label: '1. Reportado / Enviado', icon: 'fa-paper-plane' },

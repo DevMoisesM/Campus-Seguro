@@ -26,7 +26,7 @@ export class MantencionDashboardComponent implements OnInit {
   selectedTicket = signal<Ticket | null>(null);
   horasTrabajadas = 1;
   observacionesTecnicas = '';
-  imagenUrl = '';
+  imagenUrl = signal<string>('');
   
   // Lista dinámica de materiales consumidos del pañol
   materiales = signal<Array<{ nombre_material: string; cantidad: number; unidad: string }>>([
@@ -82,7 +82,7 @@ export class MantencionDashboardComponent implements OnInit {
     this.selectedTicket.set(ticket);
     this.horasTrabajadas = 1;
     this.observacionesTecnicas = '';
-    this.imagenUrl = '';
+    this.imagenUrl.set('');
     this.materiales.set([{ nombre_material: '', cantidad: 1, unidad: 'unidades' }]);
   }
 
@@ -104,14 +104,15 @@ export class MantencionDashboardComponent implements OnInit {
       const file = input.files[0];
       const reader = new FileReader();
       reader.onload = (e) => {
-        this.imagenUrl = e.target?.result as string || '';
+        const result = e.target?.result as string || '';
+        this.imagenUrl.set(result);
       };
       reader.readAsDataURL(file);
     }
   }
 
   removeFile(): void {
-    this.imagenUrl = '';
+    this.imagenUrl.set('');
   }
 
   // Modal de Licencia / Permiso
@@ -164,7 +165,7 @@ export class MantencionDashboardComponent implements OnInit {
       horas_trabajadas: this.horasTrabajadas,
       observaciones_tecnicas: this.observacionesTecnicas || 'Mantenimiento preventivo/correctivo ejecutado exitosamente.',
       materiales: validMateriales,
-      imagen_url: this.imagenUrl.trim() || undefined
+      imagen_url: this.imagenUrl().trim() || undefined
     }).subscribe({
       next: () => {
         this.submitting.set(false);

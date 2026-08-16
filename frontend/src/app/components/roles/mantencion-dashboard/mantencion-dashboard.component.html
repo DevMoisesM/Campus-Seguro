@@ -236,10 +236,10 @@
                 <span class="font-semibold">Seleccionar foto desde tu equipo</span>
               </div>
             </div>
-            @if (imagenUrl) {
+            @if (imagenUrl()) {
               <div class="mt-2 p-2 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-2 shadow-xs">
                 <div class="flex items-center gap-2 overflow-hidden">
-                  <img [src]="imagenUrl" alt="Foto reparación" class="w-12 h-12 object-cover rounded-lg border border-slate-300 flex-shrink-0" />
+                  <img [src]="imagenUrl()" alt="Foto reparación" class="w-12 h-12 object-cover rounded-lg border border-slate-300 flex-shrink-0" />
                   <span class="text-xs font-bold text-emerald-700">Foto de reparación adjunta</span>
                 </div>
                 <button (click)="removeFile()" type="button" class="text-rose-600 hover:text-rose-800 text-xs font-bold px-2 py-1 bg-rose-50 rounded border border-rose-200">

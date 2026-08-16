@@ -23,7 +23,7 @@ export class TicketCreateComponent implements OnInit {
   // Form Fields
   titulo = '';
   descripcion = '';
-  imagenUrl = '';
+  imagenesUrls = signal<string[]>([]);
   selectedSedeId: number | null = null;
   selectedEdificioId: number | null = null;
   selectedPisoId: number | null = null;
@@ -64,18 +64,35 @@ export class TicketCreateComponent implements OnInit {
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.imagenUrl = e.target?.result as string || '';
-      };
-      reader.readAsDataURL(file);
+    if (input.files && input.files.length > 0) {
+      Array.from(input.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string || '';
+          if (result) {
+            this.imagenesUrls.update(list => [...list, result]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+      // Reset input value to allow selecting same files again if needed
+      input.value = '';
     }
   }
 
-  removeFile(): void {
-    this.imagenUrl = '';
+  // Modal Lightbox para Ampliar Imagen
+  previewModalImage = signal<string | null>(null);
+
+  openPreviewModal(img: string): void {
+    this.previewModalImage.set(img);
+  }
+
+  closePreviewModal(): void {
+    this.previewModalImage.set(null);
+  }
+
+  removeFile(index: number): void {
+    this.imagenesUrls.update(list => list.filter((_, i) => i !== index));
   }
 
   onSedeChange(sedeIdStr: string): void {
@@ -142,7 +159,8 @@ export class TicketCreateComponent implements OnInit {
       riesgo_electrico: this.riesgoElectrico,
       riesgo_estructural: this.riesgoEstructural,
       riesgo_accesibilidad: this.riesgoAccesibilidad,
-      imagen_url: this.imagenUrl.trim() || undefined
+      imagen_url: this.imagenesUrls().length > 0 ? this.imagenesUrls()[0] : undefined,
+      imagenes_urls: this.imagenesUrls()
     }).subscribe({
       next: (ticket) => {
         this.loading.set(false);

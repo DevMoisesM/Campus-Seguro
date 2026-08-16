@@ -44,7 +44,7 @@ export class TicketService {
     return this.http.get<Ticket>(`${this.apiUrl}/tickets/${id}/`);
   }
 
-  createTicket(data: TicketCreateData): Observable<Ticket> {
+  createTicket(data: TicketCreateData & { imagenes_urls?: string[] }): Observable<Ticket> {
     return this.http.post<Ticket>(`${this.apiUrl}/tickets/`, data);
   }
 
