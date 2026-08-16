@@ -43,7 +43,8 @@ export const routes: Routes = [
         children: [
           { path: 'dashboard', component: EstudianteDashboardComponent },
           { path: 'mis-tickets', component: TicketListComponent },
-          { path: 'nuevo-ticket', component: TicketCreateComponent }
+          { path: 'nuevo-ticket', component: TicketCreateComponent },
+          { path: 'tickets/:id', component: TicketDetailComponent }
         ]
       },
 
@@ -70,7 +71,8 @@ export const routes: Routes = [
           { path: 'inspecciones', component: GuardiaDashboardComponent },
           { path: 'mis-tickets', component: TicketListComponent },
           { path: 'mis-ausencias', component: MisAusenciasComponent },
-          { path: 'nuevo-ticket', component: TicketCreateComponent }
+          { path: 'nuevo-ticket', component: TicketCreateComponent },
+          { path: 'tickets/:id', component: TicketDetailComponent }
         ]
       },
 
@@ -85,7 +87,8 @@ export const routes: Routes = [
           { path: 'ordenes', component: MantencionDashboardComponent },
           { path: 'mis-tickets', component: TicketListComponent },
           { path: 'mis-ausencias', component: MisAusenciasComponent },
-          { path: 'nuevo-ticket', component: TicketCreateComponent }
+          { path: 'nuevo-ticket', component: TicketCreateComponent },
+          { path: 'tickets/:id', component: TicketDetailComponent }
         ]
       },
 
@@ -103,7 +106,8 @@ export const routes: Routes = [
           { path: 'inasistencias', component: GestorInasistenciasComponent },
           { path: 'reportes-bi', component: GestorBiComponent },
           { path: 'mis-tickets', component: TicketListComponent },
-          { path: 'nuevo-ticket', component: TicketCreateComponent }
+          { path: 'nuevo-ticket', component: TicketCreateComponent },
+          { path: 'tickets/:id', component: TicketDetailComponent }
         ]
       },
 

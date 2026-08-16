@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TicketService } from '../../../services/ticket.service';
@@ -19,6 +19,23 @@ export class TicketDetailComponent implements OnInit {
   ticket = signal<Ticket | null>(null);
   loading = signal(true);
   errorMessage = signal<string | null>(null);
+
+  // Computeds para adaptar la interfaz según el rol
+  isStaff = computed(() => ['guardia', 'mantencion', 'gestor'].includes(this.authService.userRole() || ''));
+  isEstudiante = computed(() => ['usuario', 'estudiante'].includes(this.authService.userRole() || '') || !this.isStaff());
+
+  // Total Horas Hombre acumuladas en sesiones de trabajo
+  totalHorasTrabajadas = computed(() => {
+    const sesiones = this.ticket()?.sesiones_trabajo || [];
+    let totalMs = 0;
+    sesiones.forEach(s => {
+      if (s.inicio && s.fin) {
+        totalMs += new Date(s.fin).getTime() - new Date(s.inicio).getTime();
+      }
+    });
+    const hours = totalMs / (1000 * 60 * 60);
+    return hours > 0 ? hours.toFixed(1) : '1.0';
+  });
 
   // Lightbox Modal para fotos de evidencia
   previewModalImage = signal<string | null>(null);

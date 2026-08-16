@@ -91,8 +91,17 @@
           <tbody class="divide-y divide-slate-100">
             @for (t of tickets(); track t.id) {
               <tr class="hover:bg-slate-50 transition-colors">
-                <td class="px-4 py-3.5 font-mono text-xs font-bold text-slate-900">{{ t.folio }}</td>
-                <td class="px-4 py-3.5 font-semibold text-slate-900">{{ t.titulo }}</td>
+                <td class="px-4 py-3.5 font-mono text-xs font-bold">
+                  <a [routerLink]="['/mantencion/tickets', t.id]" class="text-slate-900 hover:text-amber-600 hover:underline flex items-center gap-1">
+                    <span>{{ t.folio }}</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-60"></i>
+                  </a>
+                </td>
+                <td class="px-4 py-3.5 font-semibold text-slate-900">
+                  <a [routerLink]="['/mantencion/tickets', t.id]" class="hover:text-indigo-600 hover:underline">
+                    {{ t.titulo }}
+                  </a>
+                </td>
                 <td class="px-4 py-3.5 text-xs text-slate-700 font-bold">
                   {{ t.ubicacion.nombre }}
                   <span class="block text-[11px] font-normal text-slate-400">{{ t.ubicacion.edificio_nombre }}</span>
@@ -109,19 +118,19 @@
                   </span>
                 </td>
                 <td class="px-4 py-3.5 text-right">
-                  
-                  @if (t.estado.codigo === 'validado') {
-                    <button (click)="iniciarTrabajo(t)" 
-                            [disabled]="submitting()" 
-                            type="button" 
-                            class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1 cursor-pointer">
-                      <i class="fa-solid fa-play text-[10px]"></i>
-                      <span>Iniciar Mantención</span>
-                    </button>
-                  }
+                  <div class="flex items-center justify-end gap-1.5">
+                    
+                    @if (t.estado.codigo === 'validado') {
+                      <button (click)="iniciarTrabajo(t)" 
+                              [disabled]="submitting()" 
+                              type="button" 
+                              class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1 cursor-pointer">
+                        <i class="fa-solid fa-play text-[10px]"></i>
+                        <span>Iniciar Mantención</span>
+                      </button>
+                    }
 
-                  @if (t.estado.codigo === 'en_mantencion' || t.estado.codigo === 'validado') {
-                    <div class="flex items-center justify-end gap-1.5">
+                    @if (t.estado.codigo === 'en_mantencion' || t.estado.codigo === 'validado') {
                       <button (click)="openAvanceModal(t)" 
                               type="button" 
                               class="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 transition-colors inline-flex items-center gap-1 cursor-pointer"
@@ -137,16 +146,14 @@
                         <i class="fa-solid fa-circle-check"></i>
                         <span>Finalizar Reparación</span>
                       </button>
-                    </div>
-                  }
+                    }
 
-                  @if (t.estado.codigo === 'reparado' || t.estado.codigo === 'cerrado') {
-                    <span class="text-xs text-emerald-600 font-bold flex items-center justify-end gap-1">
-                      <i class="fa-solid fa-circle-check"></i>
-                      <span>Trabajo Finalizado</span>
-                    </span>
-                  }
-
+                    <a [routerLink]="['/mantencion/tickets', t.id]" 
+                       class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-1">
+                      <i class="fa-solid fa-eye text-[10px]"></i>
+                      <span>Ver Trazabilidad</span>
+                    </a>
+                  </div>
                 </td>
               </tr>
             }

@@ -119,8 +119,17 @@
           <tbody class="divide-y divide-slate-100">
             @for (t of tickets(); track t.id) {
               <tr class="hover:bg-slate-50 transition-colors">
-                <td class="px-4 py-3.5 font-mono text-xs font-bold text-slate-900">{{ t.folio }}</td>
-                <td class="px-4 py-3.5 font-semibold text-slate-900">{{ t.titulo }}</td>
+                <td class="px-4 py-3.5 font-mono text-xs font-bold">
+                  <a [routerLink]="['/estudiante/tickets', t.id]" class="text-slate-900 hover:text-amber-600 hover:underline flex items-center gap-1">
+                    <span>{{ t.folio }}</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-60"></i>
+                  </a>
+                </td>
+                <td class="px-4 py-3.5 font-semibold text-slate-900">
+                  <a [routerLink]="['/estudiante/tickets', t.id]" class="hover:text-amber-600 hover:underline">
+                    {{ t.titulo }}
+                  </a>
+                </td>
                 <td class="px-4 py-3.5 text-xs text-slate-500">{{ t.ubicacion.nombre }} ({{ t.ubicacion.edificio_nombre }})</td>
                 <td class="px-4 py-3.5">
                   <span [class]="'px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
@@ -134,7 +143,7 @@
                   </span>
                 </td>
                 <td class="px-4 py-3.5 text-right">
-                  <a [routerLink]="['/tickets', t.id]" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-white transition-colors inline-flex items-center gap-1">
+                  <a [routerLink]="['/estudiante/tickets', t.id]" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-white transition-colors inline-flex items-center gap-1">
                     <span>Ver Línea de Tiempo</span>
                     <i class="fa-solid fa-arrow-right text-[10px]"></i>
                   </a>

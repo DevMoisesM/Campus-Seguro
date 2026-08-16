@@ -64,6 +64,14 @@ export class TicketListComponent implements OnInit {
     });
   }
 
+  getRolePrefix(): string {
+    const role: string = this.authService.userRole() || '';
+    if (role === 'guardia') return '/guardia';
+    if (role === 'mantencion') return '/mantencion';
+    if (role === 'gestor') return '/gestor';
+    return '/estudiante';
+  }
+
   getUrgenciaBadgeClass(urgencia: string): string {
     switch (urgencia) {
       case 'critica': return 'bg-rose-50 text-rose-700 border-rose-200';

@@ -49,6 +49,31 @@
       </div>
     </div>
 
+    <!-- BANNER DE ESTADO INFORMATIVO PARA ESTUDIANTES / USUARIO BASE -->
+    @if (isEstudiante()) {
+      <div class="p-6 bg-gradient-to-r from-amber-500/10 via-amber-50 to-emerald-500/10 border border-amber-200 rounded-2xl shadow-xs space-y-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FFB800] to-[#f59e0b] text-slate-950 font-bold flex items-center justify-center text-lg shadow-sm">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900">Seguimiento de tu Reporte Institucional</h3>
+            <p class="text-xs text-slate-600 font-medium mt-0.5">
+              @if (ticket()?.estado?.codigo === 'enviado') {
+                🟡 Tu reporte fue registrado exitosamente. Un Guardia de Seguridad acudirá a inspeccionar el área.
+              } @else if (ticket()?.estado?.codigo === 'validado') {
+                🔵 Tu reporte fue verificado e inspeccionado en terreno. Ha sido derivado al equipo técnico.
+              } @else if (ticket()?.estado?.codigo === 'en_mantencion') {
+                🔧 El personal de Mantención se encuentra trabajando activamente en la reparación de este incidente.
+              } @else if (ticket()?.estado?.codigo === 'reparado' || ticket()?.estado?.codigo === 'cerrado') {
+                🟢 ¡El incidente ha sido reparado con éxito! Muchas gracias por contribuir a la seguridad del Campus.
+              }
+            </p>
+          </div>
+        </div>
+      </div>
+    }
+
     <!-- 2. TARJETA DE DETALLES DEL INCIDENTE Y UBICACIÓN -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
@@ -94,8 +119,8 @@
           </div>
         </div>
 
-        <!-- Registro de Inspección de Guardia -->
-        @if (ticket()?.validacion_guardia) {
+        <!-- Registro de Inspección de Guardia (Visible solo para personal Staff) -->
+        @if (isStaff() && ticket()?.validacion_guardia) {
           <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-3">
             <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center gap-2 text-amber-600">
               <i class="fa-solid fa-user-shield"></i>
@@ -150,10 +175,46 @@
           </div>
         }
 
-        <!-- Materiales Consumidos del Pañol (Si hay) -->
-        @if (ticket()?.materiales_utilizados && ticket()?.materiales_utilizados!.length > 0) {
+        <!-- Bitácora de Sesiones de Trabajo y Avances Diarios (Visible solo para Staff) -->
+        @if (isStaff() && ticket()?.sesiones_trabajo && ticket()?.sesiones_trabajo!.length > 0) {
+          <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono flex items-center gap-2 text-blue-600">
+                <i class="fa-solid fa-business-time"></i>
+                <span>Bitácora de Avances Diarios y Turnos de Trabajo</span>
+              </h3>
+              <span class="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">
+                Total Invertido: {{ totalHorasTrabajadas() }} HH
+              </span>
+            </div>
+
+            <div class="space-y-3">
+              @for (sesion of ticket()?.sesiones_trabajo; track sesion.id) {
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs">
+                  <div class="flex items-center justify-between font-mono">
+                    <span class="font-bold text-slate-900 flex items-center gap-1.5">
+                      <i class="fa-solid fa-user-gear text-indigo-600"></i>
+                      <span>{{ sesion.mantenedor_nombre || 'Técnico de Mantención' }}</span>
+                    </span>
+                    <span class="text-slate-500 font-bold text-[11px] bg-white px-2 py-0.5 rounded border border-slate-200">
+                      {{ sesion.inicio | date:'dd/MM/yyyy HH:mm' }}
+                    </span>
+                  </div>
+                  @if (sesion.observaciones) {
+                    <p class="text-slate-700 font-medium pl-1 border-l-2 border-indigo-400 bg-white p-2 rounded-r-lg">
+                      {{ sesion.observaciones }}
+                    </p>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Materiales Consumidos del Pañol (Visible solo para Staff) -->
+        @if (isStaff() && ticket()?.materiales_utilizados && ticket()?.materiales_utilizados!.length > 0) {
           <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-3">
-            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center gap-2 text-blue-600">
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono border-b border-slate-100 pb-3 flex items-center gap-2 text-indigo-600">
               <i class="fa-solid fa-boxes-stacked"></i>
               <span>Insumos y Materiales Utilizados del Pañol</span>
             </h3>
@@ -161,7 +222,7 @@
               @for (m of ticket()?.materiales_utilizados; track m.id) {
                 <li class="py-2 flex items-center justify-between">
                   <span class="font-semibold text-slate-800">{{ m.nombre_material }}</span>
-                  <span class="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                  <span class="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
                     {{ m.cantidad }} {{ m.unidad }}
                   </span>
                 </li>
