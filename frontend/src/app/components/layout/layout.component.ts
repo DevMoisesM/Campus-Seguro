@@ -14,9 +14,14 @@ export class LayoutComponent {
   private router = inject(Router);
 
   mobileMenuOpen = signal(false);
+  sidebarCollapsed = signal(false);
 
   toggleMobileMenu() {
     this.mobileMenuOpen.update(v => !v);
+  }
+
+  toggleSidebar() {
+    this.sidebarCollapsed.update(v => !v);
   }
 
   closeMobileMenu() {
