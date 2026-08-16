@@ -373,6 +373,8 @@ class TicketViewSet(viewsets.ModelViewSet):
             estado_nuevo=estado_en_mantencion.nombre_display if estado_en_mantencion else ''
         )
 
+        return Response({'status': 'ok', 'asignado_a': mantenedor.get_full_name()}, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'])
     def registrar_avance(self, request, pk=None):
         """
