@@ -22,8 +22,9 @@ export class MantencionDashboardComponent implements OnInit {
 
   catalogoMateriales = signal<MaterialCatalog[]>([]);
 
-  // Modal de Registro de Mantenimiento y Pañol
+  // Modal de Registro / Avance de Mantenimiento y Pañol
   selectedTicket = signal<Ticket | null>(null);
+  isAvanceDiario = signal(false);
   horasTrabajadas = 1;
   observacionesTecnicas = '';
   imagenUrl = signal<string>('');
@@ -78,7 +79,17 @@ export class MantencionDashboardComponent implements OnInit {
     });
   }
 
+  openAvanceModal(ticket: Ticket): void {
+    this.isAvanceDiario.set(true);
+    this.selectedTicket.set(ticket);
+    this.horasTrabajadas = 1;
+    this.observacionesTecnicas = '';
+    this.imagenUrl.set('');
+    this.materiales.set([{ nombre_material: '', cantidad: 1, unidad: 'unidades' }]);
+  }
+
   openRegisterModal(ticket: Ticket): void {
+    this.isAvanceDiario.set(false);
     this.selectedTicket.set(ticket);
     this.horasTrabajadas = 1;
     this.observacionesTecnicas = '';
@@ -160,20 +171,34 @@ export class MantencionDashboardComponent implements OnInit {
       .filter(m => m.nombre_material.trim().length > 0)
       .map(m => ({ nombre: m.nombre_material, cantidad: m.cantidad, unidad: m.unidad }));
 
-    this.submitting.set(true);
-    this.ticketService.registrarMantencion(ticket.id, {
+    const payload = {
       horas_trabajadas: this.horasTrabajadas,
-      observaciones_tecnicas: this.observacionesTecnicas || 'Mantenimiento preventivo/correctivo ejecutado exitosamente.',
+      observaciones_tecnicas: this.observacionesTecnicas || (this.isAvanceDiario() ? 'Avance de mantenimiento registrado.' : 'Mantenimiento preventivo/correctivo ejecutado exitosamente.'),
       materiales: validMateriales,
       imagen_url: this.imagenUrl().trim() || undefined
-    }).subscribe({
-      next: () => {
-        this.submitting.set(false);
-        this.closeRegisterModal();
-        this.loadTickets();
-      },
-      error: () => this.submitting.set(false)
-    });
+    };
+
+    this.submitting.set(true);
+
+    if (this.isAvanceDiario()) {
+      this.ticketService.registrarAvance(ticket.id, payload).subscribe({
+        next: () => {
+          this.submitting.set(false);
+          this.closeRegisterModal();
+          this.loadTickets();
+        },
+        error: () => this.submitting.set(false)
+      });
+    } else {
+      this.ticketService.registrarMantencion(ticket.id, payload).subscribe({
+        next: () => {
+          this.submitting.set(false);
+          this.closeRegisterModal();
+          this.loadTickets();
+        },
+        error: () => this.submitting.set(false)
+      });
+    }
   }
 
   getUrgenciaBadgeClass(urgencia: string): string {

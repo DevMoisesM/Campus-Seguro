@@ -373,7 +373,62 @@ class TicketViewSet(viewsets.ModelViewSet):
             estado_nuevo=estado_en_mantencion.nombre_display if estado_en_mantencion else ''
         )
 
-        return Response({'status': 'ok', 'asignado_a': mantenedor.get_full_name()}, status=status.HTTP_200_OK)
+    @action(detail=True, methods=['post'])
+    def registrar_avance(self, request, pk=None):
+        """
+        Acción del Mantenedor para registrar un avance diario (jornada de trabajo) sin cerrar el ticket.
+        """
+        ticket = self.get_object()
+        horas = float(request.data.get('horas_trabajadas', 1))
+        observaciones = request.data.get('observaciones_tecnicas', request.data.get('observacion', 'Avance diario de mantenimiento.'))
+        materiales = request.data.get('materiales', [])
+        imagen_url = request.data.get('imagen_url')
+
+        inicio_dt = timezone.now() - timezone.timedelta(hours=horas)
+        fin_dt = timezone.now()
+
+        # Registrar sesión de trabajo de la jornada
+        SesionTrabajo.objects.create(
+            ticket=ticket,
+            mantenedor=request.user,
+            inicio=inicio_dt,
+            fin=fin_dt,
+            observaciones=f"[Avance Diario] {observaciones}"
+        )
+
+        # Registrar materiales consumidos en la jornada
+        for mat in materiales:
+            MaterialUtilizado.objects.create(
+                ticket=ticket,
+                nombre_material=mat.get('nombre', mat.get('nombre_material', 'Material')),
+                cantidad=mat.get('cantidad', 1),
+                unidad=mat.get('unidad', 'unidades')
+            )
+
+        # Registrar evidencia de avance si existe
+        if imagen_url:
+            EvidenciaFotografica.objects.create(
+                ticket=ticket,
+                fase='reparacion',
+                imagen_url=imagen_url,
+                creado_por=request.user
+            )
+
+        # Asegurar que el estado siga siendo 'en_mantencion'
+        estado_en_mantencion = EstadoCatalogo.objects.filter(entidad='ticket', codigo='en_mantencion').first()
+        if estado_en_mantencion:
+            ticket.estado = estado_en_mantencion
+            ticket.save()
+
+        LogAuditoria.objects.create(
+            ticket=ticket,
+            usuario=request.user,
+            accion=f'Avance diario registrado ({horas} HH)',
+            estado_nuevo=estado_en_mantencion.nombre_display if estado_en_mantencion else 'En Mantenimiento',
+            detalle=observaciones
+        )
+
+        return Response({'status': 'ok', 'mensaje': f'Avance diario de {horas} HH registrado con éxito.'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def registrar_mantencion(self, request, pk=None):

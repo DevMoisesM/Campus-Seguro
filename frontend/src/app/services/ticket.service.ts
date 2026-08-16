@@ -89,6 +89,19 @@ export class TicketService {
     );
   }
 
+  registrarAvance(ticketId: number, data: {
+    observaciones_tecnicas?: string;
+    observacion?: string;
+    horas_trabajadas?: number;
+    materiales?: Array<{ nombre: string; cantidad: number; unidad: string }>;
+    imagen_url?: string;
+  }): Observable<{ status: string; mensaje: string }> {
+    return this.http.post<{ status: string; mensaje: string }>(
+      `${this.apiUrl}/tickets/${ticketId}/registrar_avance/`,
+      data
+    );
+  }
+
   cerrarTicket(ticketId: number): Observable<{ status: string }> {
     return this.http.post<{ status: string }>(
       `${this.apiUrl}/tickets/${ticketId}/cerrar_ticket/`,
