@@ -329,6 +329,21 @@ class TicketViewSet(viewsets.ModelViewSet):
             }
         )
 
+        # Evidencia Fotográfica de la Inspección de Guardia
+        imagen_url = request.data.get('imagen_url')
+        imagenes_urls = request.data.get('imagenes_urls', [])
+        if imagen_url and not imagenes_urls:
+            imagenes_urls = [imagen_url]
+
+        for img in imagenes_urls:
+            if img:
+                EvidenciaFotografica.objects.create(
+                    ticket=ticket,
+                    fase='inspeccion',
+                    imagen_url=img,
+                    creado_por=request.user
+                )
+
         nuevo_codigo = 'validado' if valido else 'rechazado'
         nuevo_estado = EstadoCatalogo.objects.filter(entidad='ticket', codigo=nuevo_codigo).first()
 

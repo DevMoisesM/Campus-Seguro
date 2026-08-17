@@ -54,6 +54,8 @@ export class TicketService {
     checklist_estructural?: boolean;
     checklist_accesibilidad?: boolean;
     valido?: boolean;
+    imagen_url?: string;
+    imagenes_urls?: string[];
   }): Observable<{ status: string; estado: string }> {
     const payload = {
       valido: data.valido ?? true,

@@ -46,16 +46,41 @@ export class GuardiaDashboardComponent implements OnInit {
     });
   }
 
+  // Evidencias Fotográficas Múltiples de la Inspección
+  imagenesPreview = signal<string[]>([]);
+
+  onFilesSelected(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const files = target.files;
+    if (files && files.length > 0) {
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          this.imagenesPreview.update(prev => [...prev, result]);
+        };
+        reader.readAsDataURL(file);
+      });
+      target.value = '';
+    }
+  }
+
+  removeImagenAt(index: number): void {
+    this.imagenesPreview.update(prev => prev.filter((_, i) => i !== index));
+  }
+
   openValidationModal(ticket: Ticket): void {
     this.selectedTicket.set(ticket);
     this.checklistElectrico = ticket.riesgo_electrico || false;
     this.checklistEstructural = ticket.riesgo_estructural || false;
     this.checklistAccesibilidad = ticket.riesgo_accesibilidad || false;
     this.observacion = '';
+    this.imagenesPreview.set([]);
   }
 
   closeValidationModal(): void {
     this.selectedTicket.set(null);
+    this.imagenesPreview.set([]);
   }
 
   // Modal de Licencia / Permiso
@@ -104,7 +129,8 @@ export class GuardiaDashboardComponent implements OnInit {
       checklist_electrico: this.checklistElectrico,
       checklist_estructural: this.checklistEstructural,
       checklist_accesibilidad: this.checklistAccesibilidad,
-      observacion: this.observacion || 'Inspección realizada en terreno sin observaciones críticas.'
+      observacion: this.observacion || 'Inspección realizada en terreno sin observaciones críticas.',
+      imagenes_urls: this.imagenesPreview()
     }).subscribe({
       next: () => {
         this.submitting.set(false);
