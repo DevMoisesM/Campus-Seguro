@@ -410,7 +410,9 @@ class TicketViewSet(viewsets.ModelViewSet):
             mantenedor=request.user,
             inicio=inicio_dt,
             fin=fin_dt,
-            observaciones=f"[Avance Diario] {observaciones}"
+            observaciones=f"[Avance Diario] {observaciones}",
+            tipo='avance',
+            es_final=False
         )
 
         # Registrar materiales consumidos en la jornada
@@ -453,16 +455,18 @@ class TicketViewSet(viewsets.ModelViewSet):
         Acción del Mantenedor para registrar el trabajo realizado, materiales usados y evidencia.
         """
         ticket = self.get_object()
-        observacion = request.data.get('observacion', '')
+        observacion = request.data.get('observaciones_tecnicas') or request.data.get('observacion', '')
         materiales = request.data.get('materiales', [])
         imagen_url = request.data.get('imagen_url')
 
-        # Registrar sesión de trabajo
+        # Registrar sesión de trabajo final de reparación
         SesionTrabajo.objects.create(
             ticket=ticket,
             mantenedor=request.user,
             observaciones=observacion,
-            fin=timezone.now()
+            fin=timezone.now(),
+            tipo='final',
+            es_final=True
         )
 
         # Registrar materiales

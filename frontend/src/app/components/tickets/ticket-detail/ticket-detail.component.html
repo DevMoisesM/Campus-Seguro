@@ -175,29 +175,63 @@
           </div>
         }
 
-        <!-- Bitácora de Sesiones de Trabajo y Avances Diarios (Visible solo para Staff) -->
-        @if (isStaff() && ticket()?.sesiones_trabajo && ticket()?.sesiones_trabajo!.length > 0) {
+        <!-- Informe Técnico Final de Reparación (Visible para Todos los usuarios cuando existe resolución) -->
+        @if (trabajoFinalReparacion()) {
+          <div class="bg-gradient-to-br from-emerald-50 via-teal-50/50 to-white border border-emerald-300 rounded-2xl p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-emerald-200 pb-3">
+              <h3 class="text-sm font-bold text-emerald-950 uppercase tracking-wider font-mono flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+                <span>Informe Técnico Final de Reparación</span>
+              </h3>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-wider shadow-2xs">
+                Trabajo Finalizado
+              </span>
+            </div>
+
+            <div class="space-y-2">
+              <p class="text-xs font-bold text-emerald-800 uppercase font-mono text-[10px]">Detalle y Solución Aplicada por Mantención:</p>
+              <div class="p-3.5 bg-white rounded-xl border border-emerald-200/80 shadow-2xs text-xs font-medium text-slate-800 leading-relaxed">
+                {{ trabajoFinalReparacion()?.observaciones || 'Reparación técnica efectuada exitosamente en terreno.' }}
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between text-xs text-slate-600 font-mono pt-1 border-t border-emerald-100">
+              <span class="flex items-center gap-1.5">
+                <i class="fa-solid fa-user-gear text-emerald-600"></i>
+                <span>Técnico Responsable: <strong class="text-slate-900 font-bold">{{ trabajoFinalReparacion()?.mantenedor_nombre || 'Técnico de Mantenimiento' }}</strong></span>
+              </span>
+              <span class="flex items-center gap-1.5">
+                <i class="fa-solid fa-clock text-emerald-600"></i>
+                <span>Fecha de Conclusión: <strong class="text-slate-900 font-bold">{{ (trabajoFinalReparacion()?.fin || trabajoFinalReparacion()?.inicio) | date:'dd/MM/yyyy HH:mm' }}</strong></span>
+              </span>
+            </div>
+          </div>
+        }
+
+        <!-- Bitácora de Avances Diarios Intermedios (Visible para Staff y Usuarios) -->
+        @if (avancesDiarios().length > 0) {
           <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono flex items-center gap-2 text-blue-600">
                 <i class="fa-solid fa-business-time"></i>
-                <span>Bitácora de Avances Diarios y Turnos de Trabajo</span>
+                <span>Bitácora de Avances Diarios de Mantenimiento</span>
               </h3>
               <span class="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">
-                Total Invertido: {{ totalHorasTrabajadas() }} HH
+                Horas Invertidas: {{ totalHorasTrabajadas() }} HH
               </span>
             </div>
 
             <div class="space-y-3">
-              @for (sesion of ticket()?.sesiones_trabajo; track sesion.id) {
+              @for (sesion of avancesDiarios(); track sesion.id) {
                 <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs">
                   <div class="flex items-center justify-between font-mono">
                     <span class="font-bold text-slate-900 flex items-center gap-1.5">
-                      <i class="fa-solid fa-user-gear text-indigo-600"></i>
+                      <i class="fa-solid fa-wrench text-indigo-600"></i>
                       <span>{{ sesion.mantenedor_nombre || 'Técnico de Mantención' }}</span>
+                      <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] uppercase font-bold">Avance Diario</span>
                     </span>
-                    <span class="text-slate-500 font-bold text-[11px] bg-white px-2 py-0.5 rounded border border-slate-200">
-                      {{ sesion.inicio | date:'dd/MM/yyyy HH:mm' }}
+                    <span class="text-slate-500 font-bold text-[11px] bg-white px-2 py-0.5 rounded border border-slate-200" [title]="'Registrado a las ' + ((sesion.fin || sesion.inicio) | date:'HH:mm')">
+                      {{ (sesion.fin || sesion.inicio) | date:'dd/MM/yyyy HH:mm' }}
                     </span>
                   </div>
                   @if (sesion.observaciones) {

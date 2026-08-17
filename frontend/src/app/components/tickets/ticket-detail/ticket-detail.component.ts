@@ -37,6 +37,27 @@ export class TicketDetailComponent implements OnInit {
     return hours > 0 ? hours.toFixed(1) : '1.0';
   });
 
+  // Informe Técnico Final de Reparación (destacado)
+  trabajoFinalReparacion = computed(() => {
+    const sesiones = this.ticket()?.sesiones_trabajo || [];
+    const finalSesion = sesiones.find(s => s.es_final || s.tipo === 'final');
+    if (finalSesion) return finalSesion;
+
+    const estado = this.ticket()?.estado?.codigo;
+    if (['reparado', 'cerrado'].includes(estado || '') && sesiones.length > 0) {
+      return sesiones[sesiones.length - 1];
+    }
+    return null;
+  });
+
+  // Avances diarios de mantenimiento
+  avancesDiarios = computed(() => {
+    const sesiones = this.ticket()?.sesiones_trabajo || [];
+    const finalObj = this.trabajoFinalReparacion();
+    if (!finalObj) return sesiones;
+    return sesiones.filter(s => s.id !== finalObj.id);
+  });
+
   // Lightbox Modal para fotos de evidencia
   previewModalImage = signal<string | null>(null);
 

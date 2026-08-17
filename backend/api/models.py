@@ -345,11 +345,18 @@ class ValidacionGuardia(models.Model):
 
 
 class SesionTrabajo(models.Model):
+    TIPO_CHOICES = [
+        ('avance', 'Avance Diario'),
+        ('final', 'Informe Final de Reparación'),
+    ]
+
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="sesiones_trabajo")
     mantenedor = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name="sesiones_mantenimiento")
     inicio = models.DateTimeField(default=timezone.now)
     fin = models.DateTimeField(null=True, blank=True)
     observaciones = models.TextField(blank=True, null=True)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='avance')
+    es_final = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Sesión de Trabajo"

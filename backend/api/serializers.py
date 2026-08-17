@@ -209,7 +209,7 @@ class SesionTrabajoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SesionTrabajo
-        fields = ['id', 'ticket', 'mantenedor', 'mantenedor_nombre', 'inicio', 'fin', 'observaciones']
+        fields = ['id', 'ticket', 'mantenedor', 'mantenedor_nombre', 'inicio', 'fin', 'observaciones', 'tipo', 'es_final']
 
 
 class MaterialUtilizadoSerializer(serializers.ModelSerializer):
