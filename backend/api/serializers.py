@@ -204,20 +204,22 @@ class ValidacionGuardiaSerializer(serializers.ModelSerializer):
         ]
 
 
-class SesionTrabajoSerializer(serializers.ModelSerializer):
-    mantenedor_nombre = serializers.ReadOnlyField(source='mantenedor.get_full_name')
-
-    class Meta:
-        model = SesionTrabajo
-        fields = ['id', 'ticket', 'mantenedor', 'mantenedor_nombre', 'inicio', 'fin', 'observaciones', 'tipo', 'es_final']
-
-
 class MaterialUtilizadoSerializer(serializers.ModelSerializer):
     categoria_nombre = serializers.ReadOnlyField(source='categoria.nombre_display')
 
     class Meta:
         model = MaterialUtilizado
         fields = ['id', 'ticket', 'nombre_material', 'categoria', 'categoria_nombre', 'cantidad', 'unidad']
+
+
+class SesionTrabajoSerializer(serializers.ModelSerializer):
+    mantenedor_nombre = serializers.ReadOnlyField(source='mantenedor.get_full_name')
+    materiales = MaterialUtilizadoSerializer(many=True, read_only=True)
+    evidencias = EvidenciaFotograficaSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = SesionTrabajo
+        fields = ['id', 'ticket', 'mantenedor', 'mantenedor_nombre', 'inicio', 'fin', 'observaciones', 'tipo', 'es_final', 'materiales', 'evidencias']
 
 
 class LogAuditoriaSerializer(serializers.ModelSerializer):

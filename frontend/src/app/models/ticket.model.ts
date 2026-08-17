@@ -59,6 +59,8 @@ export interface SesionTrabajo {
   observaciones?: string;
   tipo?: 'avance' | 'final';
   es_final?: boolean;
+  materiales?: MaterialUtilizado[];
+  evidencias?: EvidenciaFotografica[];
 }
 
 export interface MaterialUtilizado {

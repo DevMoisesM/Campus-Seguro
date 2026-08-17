@@ -183,9 +183,15 @@
                 <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
                 <span>Informe Técnico Final de Reparación</span>
               </h3>
-              <span class="px-2.5 py-1 rounded-full bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-wider shadow-2xs">
-                Trabajo Finalizado
-              </span>
+              <div class="flex items-center gap-2">
+                <button (click)="openSesionModal(trabajoFinalReparacion())" type="button" class="px-3 py-1 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+                  <i class="fa-solid fa-eye text-xs"></i>
+                  <span>Ver Detalle</span>
+                </button>
+                <span class="px-2.5 py-1 rounded-full bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-wider shadow-2xs">
+                  Trabajo Finalizado
+                </span>
+              </div>
             </div>
 
             <div class="space-y-2">
@@ -223,16 +229,22 @@
 
             <div class="space-y-3">
               @for (sesion of avancesDiarios(); track sesion.id) {
-                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs">
+                <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
                   <div class="flex items-center justify-between font-mono">
                     <span class="font-bold text-slate-900 flex items-center gap-1.5">
                       <i class="fa-solid fa-wrench text-indigo-600"></i>
                       <span>{{ sesion.mantenedor_nombre || 'Técnico de Mantención' }}</span>
                       <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] uppercase font-bold">Avance Diario</span>
                     </span>
-                    <span class="text-slate-500 font-bold text-[11px] bg-white px-2 py-0.5 rounded border border-slate-200" [title]="'Registrado a las ' + ((sesion.fin || sesion.inicio) | date:'HH:mm')">
-                      {{ (sesion.fin || sesion.inicio) | date:'dd/MM/yyyy HH:mm' }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                      <button (click)="openSesionModal(sesion)" type="button" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer border border-indigo-200">
+                        <i class="fa-solid fa-eye"></i>
+                        <span>Ver Detalle</span>
+                      </button>
+                      <span class="text-slate-500 font-bold text-[11px] bg-white px-2 py-0.5 rounded border border-slate-200" [title]="'Registrado a las ' + ((sesion.fin || sesion.inicio) | date:'HH:mm')">
+                        {{ (sesion.fin || sesion.inicio) | date:'dd/MM/yyyy HH:mm' }}
+                      </span>
+                    </div>
                   </div>
                   @if (sesion.observaciones) {
                     <p class="text-slate-700 font-medium pl-1 border-l-2 border-indigo-400 bg-white p-2 rounded-r-lg">
@@ -318,6 +330,93 @@
 
     </div>
 
+  }
+
+  <!-- MODAL DE DETALLE EMERGENTE DE LA JORNADA / SESIÓN DE TRABAJO -->
+  @if (selectedSesionModal()) {
+    <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" (click)="closeSesionModal()">
+      <div class="bg-white border border-slate-200 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        
+        <!-- Header Modal -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base font-bold shadow-2xs">
+              <i class="fa-solid" [ngClass]="selectedSesionModal()?.es_final || selectedSesionModal()?.tipo === 'final' ? 'fa-circle-check text-emerald-600' : 'fa-wrench'"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 leading-tight">
+                {{ selectedSesionModal()?.es_final || selectedSesionModal()?.tipo === 'final' ? 'Detalle de Informe Final de Reparación' : 'Detalle de Avance Diario' }}
+              </h3>
+              <p class="text-[11px] font-mono text-slate-500 mt-0.5">
+                Registrado por <strong class="text-slate-800">{{ selectedSesionModal()?.mantenedor_nombre || 'Técnico de Mantención' }}</strong> · {{ (selectedSesionModal()?.fin || selectedSesionModal()?.inicio) | date:'dd/MM/yyyy HH:mm' }}
+              </p>
+            </div>
+          </div>
+          <button (click)="closeSesionModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg p-1 cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Observación Técnica -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5">
+            Observación / Reporte Técnico:
+          </h4>
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 font-medium leading-relaxed">
+            {{ selectedSesionModal()?.observaciones || 'Sin detalles adicionales registrados.' }}
+          </div>
+        </div>
+
+        <!-- Evidencias Fotográficas de la Jornada (si existen) -->
+        @if (selectedSesionModal()?.evidencias && selectedSesionModal()?.evidencias!.length > 0) {
+          <div>
+            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5 flex items-center gap-1.5 text-indigo-600">
+              <i class="fa-solid fa-camera"></i>
+              <span>Evidencia Fotográfica de la Jornada ({{ selectedSesionModal()?.evidencias!.length }}):</span>
+            </h4>
+            <div class="grid grid-cols-2 gap-3">
+              @for (ev of selectedSesionModal()?.evidencias; track ev.id) {
+                <div (click)="openPreviewModal(ev.imagen_url)" class="relative group rounded-xl overflow-hidden border border-slate-200 cursor-pointer h-32 bg-slate-100 shadow-2xs">
+                  <img [src]="ev.imagen_url" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="Evidencia de jornada" />
+                  <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                    <span>Ampliar</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Materiales Consumidos en la Jornada (si existen) -->
+        @if (selectedSesionModal()?.materiales && selectedSesionModal()?.materiales!.length > 0) {
+          <div>
+            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5 flex items-center gap-1.5 text-emerald-600">
+              <i class="fa-solid fa-boxes-stacked"></i>
+              <span>Insumos y Materiales Utilizados ({{ selectedSesionModal()?.materiales!.length }}):</span>
+            </h4>
+            <ul class="divide-y divide-slate-100 border border-slate-200 rounded-xl bg-slate-50 p-2 text-xs space-y-1">
+              @for (mat of selectedSesionModal()?.materiales; track mat.id) {
+                <li class="py-1.5 px-2 flex items-center justify-between">
+                  <span class="font-semibold text-slate-800">{{ mat.nombre_material }}</span>
+                  <span class="font-mono font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
+                    {{ mat.cantidad }} {{ mat.unidad }}
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        <!-- Footer Modal -->
+        <div class="flex items-center justify-end pt-3 border-t border-slate-100">
+          <button (click)="closeSesionModal()" type="button" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 transition-colors">
+            Cerrar
+          </button>
+        </div>
+
+      </div>
+    </div>
   }
 
   <!-- MODAL LIGHTBOX PARA AMPLIAR EVIDENCIA FOTOGRÁFICA -->

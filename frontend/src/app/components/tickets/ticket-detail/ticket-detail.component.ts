@@ -69,6 +69,17 @@ export class TicketDetailComponent implements OnInit {
     this.previewModalImage.set(null);
   }
 
+  // Modal de Detalle Emergente por Jornada de Mantenimiento
+  selectedSesionModal = signal<any | null>(null);
+
+  openSesionModal(sesion: any): void {
+    this.selectedSesionModal.set(sesion);
+  }
+
+  closeSesionModal(): void {
+    this.selectedSesionModal.set(null);
+  }
+
   // Estados clave para determinar la posición en la línea de tiempo
   timelineSteps = [
     { code: 'enviado', label: '1. Reportado / Enviado', icon: 'fa-paper-plane' },

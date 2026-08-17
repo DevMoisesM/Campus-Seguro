@@ -405,7 +405,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         fin_dt = timezone.now()
 
         # Registrar sesión de trabajo de la jornada
-        SesionTrabajo.objects.create(
+        sesion_obj = SesionTrabajo.objects.create(
             ticket=ticket,
             mantenedor=request.user,
             inicio=inicio_dt,
@@ -419,6 +419,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         for mat in materiales:
             MaterialUtilizado.objects.create(
                 ticket=ticket,
+                sesion=sesion_obj,
                 nombre_material=mat.get('nombre', mat.get('nombre_material', 'Material')),
                 cantidad=mat.get('cantidad', 1),
                 unidad=mat.get('unidad', 'unidades')
@@ -428,6 +429,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         if imagen_url:
             EvidenciaFotografica.objects.create(
                 ticket=ticket,
+                sesion=sesion_obj,
                 fase='reparacion',
                 imagen_url=imagen_url,
                 creado_por=request.user
@@ -460,7 +462,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         imagen_url = request.data.get('imagen_url')
 
         # Registrar sesión de trabajo final de reparación
-        SesionTrabajo.objects.create(
+        sesion_obj = SesionTrabajo.objects.create(
             ticket=ticket,
             mantenedor=request.user,
             observaciones=observacion,
@@ -473,6 +475,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         for mat in materiales:
             MaterialUtilizado.objects.create(
                 ticket=ticket,
+                sesion=sesion_obj,
                 nombre_material=mat.get('nombre', 'Material'),
                 cantidad=mat.get('cantidad', 1),
                 unidad=mat.get('unidad', 'unidades')
@@ -482,6 +485,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         if imagen_url:
             EvidenciaFotografica.objects.create(
                 ticket=ticket,
+                sesion=sesion_obj,
                 fase='reparacion',
                 imagen_url=imagen_url,
                 creado_por=request.user

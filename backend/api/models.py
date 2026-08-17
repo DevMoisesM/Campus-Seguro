@@ -365,6 +365,7 @@ class SesionTrabajo(models.Model):
 
 class MaterialUtilizado(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="materiales_utilizados")
+    sesion = models.ForeignKey(SesionTrabajo, on_delete=models.SET_NULL, null=True, blank=True, related_name="materiales")
     nombre_material = models.CharField(max_length=150)
     categoria = models.ForeignKey(CategoriaMaterial, on_delete=models.SET_NULL, null=True, blank=True)
     cantidad = models.PositiveIntegerField(default=1)
@@ -383,6 +384,7 @@ class EvidenciaFotografica(models.Model):
     ]
 
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="evidencias")
+    sesion = models.ForeignKey(SesionTrabajo, on_delete=models.SET_NULL, null=True, blank=True, related_name="evidencias")
     fase = models.CharField(max_length=20, choices=FASE_CHOICES, default='reporte')
     imagen_url = models.TextField(blank=True, null=True, verbose_name="URL o Data Base64 de Imagen")
     creado_por = models.ForeignKey(Usuario, on_delete=models.PROTECT)
