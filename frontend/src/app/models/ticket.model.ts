@@ -96,6 +96,7 @@ export interface Ticket {
   ubicacion: Ubicacion;
   urgencia: UrgenciaTicket;
   estado: EstadoCatalogo;
+  subestado_rechazo?: 'falsa_alarma' | 'requiere_proveedor_externo' | 'duplicado' | 'otro';
   creado_por: User;
   validado_por?: User;
   asignado_a?: User;
@@ -107,6 +108,7 @@ export interface Ticket {
   updated_at: string;
   cerrado_at?: string;
   validacion_guardia?: ValidacionGuardia;
+  validaciones?: ValidacionGuardia[];
   evidencias?: EvidenciaFotografica[];
   materiales_utilizados?: MaterialUtilizado[];
   sesiones_trabajo?: SesionTrabajo[];

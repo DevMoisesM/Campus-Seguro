@@ -104,7 +104,29 @@
             <div class="pt-2 border-t border-slate-100 space-y-2">
               <div class="text-xs">
                 <span class="text-slate-400 font-bold block mb-1 font-mono uppercase text-[10px]">Mantenedor Asignado:</span>
-                @if (t.asignado_a) {
+                @if (t.estado.codigo === 'rechazado') {
+                  @if (t.subestado_rechazo === 'falsa_alarma' || (!t.subestado_rechazo && !t.asignado_a)) {
+                    <span class="font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-flex items-center gap-1 font-mono text-[11px]">
+                      <i class="fa-solid fa-bell-slash text-rose-600"></i>
+                      <span>Falsa Alarma</span>
+                    </span>
+                  } @else if (t.subestado_rechazo === 'requiere_proveedor_externo') {
+                    <span class="font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 inline-flex items-center gap-1 font-mono text-[11px]">
+                      <i class="fa-solid fa-boxes-packing text-amber-600"></i>
+                      <span>Requiere Empresa Externa</span>
+                    </span>
+                  } @else {
+                    <span class="font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-flex items-center gap-1 font-mono text-[11px]">
+                      <i class="fa-solid fa-ban text-rose-600"></i>
+                      <span>Inviable (No Reparable)</span>
+                    </span>
+                  }
+                  @if (t.asignado_a) {
+                    <span class="block text-[10px] text-slate-400 font-mono mt-0.5">
+                      Técnico: {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
+                    </span>
+                  }
+                } @else if (t.asignado_a) {
                   <span class="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 inline-block">
                     {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
                   </span>
@@ -178,7 +200,29 @@
                   </span>
                 </td>
                 <td class="px-4 py-3.5 text-xs">
-                  @if (t.asignado_a) {
+                  @if (t.estado.codigo === 'rechazado') {
+                    @if (t.subestado_rechazo === 'falsa_alarma' || (!t.subestado_rechazo && !t.asignado_a)) {
+                      <span class="font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-flex items-center gap-1 font-mono text-[11px]">
+                        <i class="fa-solid fa-bell-slash text-rose-600"></i>
+                        <span>Falsa Alarma</span>
+                      </span>
+                    } @else if (t.subestado_rechazo === 'requiere_proveedor_externo') {
+                      <span class="font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 inline-flex items-center gap-1 font-mono text-[11px]">
+                        <i class="fa-solid fa-boxes-packing text-amber-600"></i>
+                        <span>Requiere Empresa Externa</span>
+                      </span>
+                    } @else {
+                      <span class="font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-flex items-center gap-1 font-mono text-[11px]">
+                        <i class="fa-solid fa-ban text-rose-600"></i>
+                        <span>Inviable (No Reparable)</span>
+                      </span>
+                    }
+                    @if (t.asignado_a) {
+                      <span class="block text-[10px] text-slate-400 font-mono mt-0.5">
+                        Técnico: {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
+                      </span>
+                    }
+                  } @else if (t.asignado_a) {
                     <span class="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
                       {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
                     </span>

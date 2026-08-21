@@ -126,6 +126,49 @@ export class MantencionDashboardComponent implements OnInit {
     this.imagenUrl.set('');
   }
 
+  // Modal de Declarar No Reparable / Inviable
+  showInviableModal = signal(false);
+  inviableMotivo = '';
+  subestadoRechazo = 'requiere_proveedor_externo';
+  inviableImagenUrl = signal<string>('');
+
+  openInviableModal(ticket: Ticket): void {
+    this.selectedTicket.set(ticket);
+    this.inviableMotivo = '';
+    this.subestadoRechazo = 'requiere_proveedor_externo';
+    this.inviableImagenUrl.set('');
+    this.showInviableModal.set(true);
+  }
+
+  closeInviableModal(): void {
+    this.showInviableModal.set(false);
+    this.selectedTicket.set(null);
+  }
+
+  submitInviable(): void {
+    const ticket = this.selectedTicket();
+    if (!ticket) return;
+
+    if (!this.inviableMotivo.trim()) {
+      alert('Debes ingresar la justificación técnica por la cual no es posible efectuar la reparación.');
+      return;
+    }
+
+    this.submitting.set(true);
+    this.ticketService.declararInviable(ticket.id, {
+      motivo: this.inviableMotivo.trim(),
+      subestado_rechazo: this.subestadoRechazo,
+      imagen_url: this.inviableImagenUrl().trim() || undefined
+    }).subscribe({
+      next: () => {
+        this.submitting.set(false);
+        this.closeInviableModal();
+        this.loadTickets();
+      },
+      error: () => this.submitting.set(false)
+    });
+  }
+
   // Modal de Licencia / Permiso
   showInasistenciaModal = signal(false);
   inasiMotivo = '';

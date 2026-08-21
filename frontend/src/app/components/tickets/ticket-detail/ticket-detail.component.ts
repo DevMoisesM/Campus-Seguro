@@ -58,6 +58,64 @@ export class TicketDetailComponent implements OnInit {
     return sesiones.filter(s => s.id !== finalObj.id);
   });
 
+  // Estado Excepcional: Ticket Rechazado / Falsa Alarma / No Reparable
+  isRechazado = computed(() => this.ticket()?.estado?.codigo === 'rechazado');
+
+  infoRechazo = computed(() => {
+    if (!this.isRechazado()) return null;
+    const ticket = this.ticket();
+    if (!ticket) return null;
+
+    // 1. Revisar si fue rechazado en la Inspección de Guardia
+    const validaciones = ticket.validaciones || (ticket.validacion_guardia ? [ticket.validacion_guardia] : []);
+    const valInvalida = validaciones.find((v: any) => v.valido === false);
+
+    const subestado = ticket.subestado_rechazo || (valInvalida ? 'falsa_alarma' : 'requiere_proveedor_externo');
+    let subestadoDisplay = 'Rechazado';
+    if (subestado === 'falsa_alarma') subestadoDisplay = 'Falsa Alarma / Incidente Inválido';
+    else if (subestado === 'requiere_proveedor_externo') subestadoDisplay = 'Requiere Cotización / Empresa Externa';
+    else if (subestado === 'duplicado') subestadoDisplay = 'Ticket Duplicado';
+    else if (subestado === 'otro') subestadoDisplay = 'Inviable Técnicamente';
+    if (valInvalida) {
+      return {
+        tipo: 'guardia',
+        subestado,
+        subestadoDisplay,
+        titulo: 'Incidente Rechazado / Falsa Alarma',
+        subtitulo: 'Inspección de Guardia de Seguridad',
+        responsable: valInvalida.guardia_nombre || 'Guardia de Seguridad',
+        observacion: valInvalida.observacion || 'Falsa alarma o reporte no válido comprobado en terreno.',
+        fecha: valInvalida.created_at
+      };
+    }
+
+    // 2. Revisar si fue rechazado / declarado no reparable por Mantención
+    const finalSesion = this.trabajoFinalReparacion();
+    if (finalSesion) {
+      return {
+        tipo: 'mantencion',
+        subestado,
+        subestadoDisplay,
+        titulo: subestado === 'requiere_proveedor_externo' ? 'Requiere Proveedor / Cotización Externa' : 'Incidente Declarado No Reparable',
+        subtitulo: 'Evaluación Técnica de Mantenimiento',
+        responsable: finalSesion.mantenedor_nombre || 'Técnico de Mantenimiento',
+        observacion: finalSesion.observaciones || 'No es posible efectuar la reparación con los recursos técnicos disponibles.',
+        fecha: finalSesion.fin || finalSesion.inicio
+      };
+    }
+
+    return {
+      tipo: 'general',
+      subestado,
+      subestadoDisplay,
+      titulo: 'Incidente Rechazado',
+      subtitulo: 'Revisión de Gestión de Campus',
+      responsable: 'Gestor del Sistema',
+      observacion: 'El incidente fue evaluado y rechazado.',
+      fecha: ticket.created_at
+    };
+  });
+
   // Lightbox Modal para fotos de evidencia
   previewModalImage = signal<string | null>(null);
 

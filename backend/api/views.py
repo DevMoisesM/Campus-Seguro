@@ -350,6 +350,8 @@ class TicketViewSet(viewsets.ModelViewSet):
         if nuevo_estado:
             ticket.estado = nuevo_estado
             ticket.validado_por = request.user
+            if not valido:
+                ticket.subestado_rechazo = 'falsa_alarma'
             ticket.save()
 
         LogAuditoria.objects.create(
@@ -368,6 +370,9 @@ class TicketViewSet(viewsets.ModelViewSet):
         Acción del Gestor para asignar un ticket a un mantenedor específico.
         """
         ticket = self.get_object()
+        if ticket.estado and ticket.estado.codigo == 'rechazado':
+            return Response({'error': 'No se puede asignar ni derivar a mantención un ticket que fue rechazado.'}, status=status.HTTP_400_BAD_REQUEST)
+
         mantenedor_id = request.data.get('mantenedor_id')
 
         if not mantenedor_id:
@@ -505,6 +510,55 @@ class TicketViewSet(viewsets.ModelViewSet):
         )
 
         return Response({'status': 'ok'}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def declarar_inviable(self, request, pk=None):
+        """
+        Acción del Mantenedor o Gestor para declarar un ticket como No Reparable / Inviable / Cancelado.
+        """
+        ticket = self.get_object()
+        motivo = request.data.get('motivo') or request.data.get('observaciones_tecnicas') or request.data.get('observacion')
+        imagen_url = request.data.get('imagen_url')
+
+        if not motivo or not motivo.strip():
+            return Response({'error': 'Debe especificar el motivo técnico por el cual no se puede reparar.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Registrar sesión de trabajo de cierre inviable
+        sesion_obj = SesionTrabajo.objects.create(
+            ticket=ticket,
+            mantenedor=request.user,
+            observaciones=f"[DECLARADO NO REPARABLE / INVIABLE] {motivo}",
+            fin=timezone.now(),
+            tipo='final',
+            es_final=True
+        )
+
+        if imagen_url:
+            EvidenciaFotografica.objects.create(
+                ticket=ticket,
+                sesion=sesion_obj,
+                fase='reparacion',
+                imagen_url=imagen_url,
+                creado_por=request.user
+            )
+
+        subestado = request.data.get('subestado_rechazo') or 'requiere_proveedor_externo'
+
+        estado_rechazado = EstadoCatalogo.objects.filter(entidad='ticket', codigo='rechazado').first()
+        if estado_rechazado:
+            ticket.estado = estado_rechazado
+            ticket.subestado_rechazo = subestado
+            ticket.save()
+
+        LogAuditoria.objects.create(
+            ticket=ticket,
+            usuario=request.user,
+            accion='Incidente Declarado No Reparable / Inviable',
+            estado_nuevo=estado_rechazado.nombre_display if estado_rechazado else 'Rechazado',
+            detalle=motivo
+        )
+
+        return Response({'status': 'ok', 'mensaje': 'El ticket ha sido marcado como No Reparable.'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def cerrar_ticket(self, request, pk=None):

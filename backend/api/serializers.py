@@ -271,7 +271,7 @@ class TicketDetailSerializer(serializers.ModelSerializer):
         model = Ticket
         fields = [
             'id', 'folio', 'titulo', 'descripcion', 'categoria', 'especialidad_requerida',
-            'ubicacion', 'urgencia', 'estado', 'creado_por', 'validado_por', 'asignado_a',
+            'ubicacion', 'urgencia', 'estado', 'subestado_rechazo', 'creado_por', 'validado_por', 'asignado_a',
             'afecta_clase', 'riesgo_electrico', 'riesgo_estructural', 'riesgo_accesibilidad',
             'created_at', 'updated_at', 'cerrado_at', 'validacion_guardia',
             'evidencias', 'materiales_utilizados', 'sesiones_trabajo'

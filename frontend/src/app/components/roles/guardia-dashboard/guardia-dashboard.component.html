@@ -269,19 +269,32 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-          <button (click)="closeValidationModal()" type="button" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200">
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+          <button (click)="closeValidationModal()" type="button" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 cursor-pointer">
             Cancelar
           </button>
-          <button [disabled]="submitting()" 
-                  (click)="submitValidation()" 
-                  type="button" 
-                  class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-all shadow-md flex items-center gap-2">
-            @if (submitting()) {
-              <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
-            }
-            <span>Aprobar y Validar Incidente</span>
-          </button>
+          
+          <div class="flex items-center gap-2">
+            <!-- Botón 1: Rechazar / Falsa Alarma -->
+            <button [disabled]="submitting()" 
+                    (click)="submitValidation(false)" 
+                    type="button" 
+                    class="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-ban"></i>
+              <span>Rechazar (Falsa Alarma)</span>
+            </button>
+
+            <!-- Botón 2: Aprobar y Validar Incidente -->
+            <button [disabled]="submitting()" 
+                    (click)="submitValidation(true)" 
+                    type="button" 
+                    class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer">
+              @if (submitting()) {
+                <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+              }
+              <span>Aprobar y Validar Incidente</span>
+            </button>
+          </div>
         </div>
 
       </div>

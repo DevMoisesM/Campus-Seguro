@@ -120,16 +120,22 @@ export class GuardiaDashboardComponent implements OnInit {
     });
   }
 
-  submitValidation(): void {
+  submitValidation(valido: boolean = true): void {
     const ticket = this.selectedTicket();
     if (!ticket) return;
+
+    if (!valido && !this.observacion.trim()) {
+      alert('Para rechazar un ticket o declararlo como falsa alarma, debes ingresar un motivo en las observaciones.');
+      return;
+    }
 
     this.submitting.set(true);
     this.ticketService.validarGuardia(ticket.id, {
       checklist_electrico: this.checklistElectrico,
       checklist_estructural: this.checklistEstructural,
       checklist_accesibilidad: this.checklistAccesibilidad,
-      observacion: this.observacion || 'Inspección realizada en terreno sin observaciones críticas.',
+      observacion: this.observacion || (valido ? 'Inspección realizada en terreno sin observaciones críticas.' : 'Ticket rechazado / Falsa alarma comprobada en terreno.'),
+      valido: valido,
       imagenes_urls: this.imagenesPreview()
     }).subscribe({
       next: () => {

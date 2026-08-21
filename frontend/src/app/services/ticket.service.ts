@@ -104,6 +104,13 @@ export class TicketService {
     );
   }
 
+  declararInviable(ticketId: number, data: { motivo: string; subestado_rechazo?: string; imagen_url?: string }): Observable<{ status: string; mensaje?: string }> {
+    return this.http.post<{ status: string; mensaje?: string }>(
+      `${this.apiUrl}/tickets/${ticketId}/declarar_inviable/`,
+      data
+    );
+  }
+
   cerrarTicket(ticketId: number): Observable<{ status: string }> {
     return this.http.post<{ status: string }>(
       `${this.apiUrl}/tickets/${ticketId}/cerrar_ticket/`,

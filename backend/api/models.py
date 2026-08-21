@@ -288,6 +288,13 @@ class Ticket(models.Model):
         ('critica', 'Crítica'),
     ]
 
+    SUBESTADO_RECHAZO_CHOICES = [
+        ('falsa_alarma', 'Falsa Alarma / Incidente Inválido'),
+        ('requiere_proveedor_externo', 'Requiere Cotización / Empresa Externa'),
+        ('duplicado', 'Ticket Duplicado'),
+        ('otro', 'Otro Motivo'),
+    ]
+
     folio = models.CharField(max_length=20, unique=True, editable=False)
     titulo = models.CharField(max_length=150, verbose_name="Título del Incidente")
     descripcion = models.TextField(verbose_name="Descripción Detallada")
@@ -296,6 +303,13 @@ class Ticket(models.Model):
     ubicacion = models.ForeignKey(Ubicacion, on_delete=models.PROTECT, related_name="tickets")
     urgencia = models.CharField(max_length=20, choices=URGENCIA_CHOICES, default='media')
     estado = models.ForeignKey(EstadoCatalogo, on_delete=models.PROTECT, related_name="tickets")
+    subestado_rechazo = models.CharField(
+        max_length=40,
+        choices=SUBESTADO_RECHAZO_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Sub-estado de Rechazo / Inviabilidad"
+    )
 
     # Personas involucradas
     creado_por = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name="tickets_creados")

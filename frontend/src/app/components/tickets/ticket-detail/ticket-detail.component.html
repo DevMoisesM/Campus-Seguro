@@ -49,8 +49,37 @@
       </div>
     </div>
 
+    <!-- BANNER DESTACADO SI EL TICKET FUE RECHAZADO / DECLARADO NO REPARABLE -->
+    @if (isRechazado() && infoRechazo()) {
+      <div class="p-6 bg-gradient-to-r from-rose-500/10 via-rose-50 to-rose-100/50 border border-rose-300 rounded-2xl shadow-sm space-y-3">
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-rose-600 text-white font-bold flex items-center justify-center text-xl shadow-md shadow-rose-600/20 flex-shrink-0">
+            <i class="fa-solid fa-circle-xmark"></i>
+          </div>
+          <div class="space-y-1 flex-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-base font-extrabold text-rose-950 uppercase font-mono tracking-tight flex items-center gap-2">
+                <span>{{ infoRechazo()?.titulo }}</span>
+              </h3>
+              <span class="px-3 py-1 rounded-full bg-rose-600 text-white font-bold text-xs shadow-xs inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>{{ infoRechazo()?.subestadoDisplay }}</span>
+              </span>
+            </div>
+            <p class="text-xs text-rose-800 font-bold font-mono">
+              {{ infoRechazo()?.subtitulo }} · Evaluado por: <strong class="text-slate-900">{{ infoRechazo()?.responsable }}</strong>
+            </p>
+            <div class="p-3 bg-white/90 rounded-xl border border-rose-200 text-xs font-medium text-slate-800 leading-relaxed mt-2 shadow-2xs">
+              <p class="font-bold text-rose-900 text-[10px] uppercase font-mono mb-1">Motivo / Justificación Registrada:</p>
+              {{ infoRechazo()?.observacion }}
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
     <!-- BANNER DE ESTADO INFORMATIVO PARA ESTUDIANTES / USUARIO BASE -->
-    @if (isEstudiante()) {
+    @if (isEstudiante() && !isRechazado()) {
       <div class="p-6 bg-gradient-to-r from-amber-500/10 via-amber-50 to-emerald-500/10 border border-amber-200 rounded-2xl shadow-xs space-y-3">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FFB800] to-[#f59e0b] text-slate-950 font-bold flex items-center justify-center text-lg shadow-sm">
