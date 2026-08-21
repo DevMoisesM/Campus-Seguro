@@ -126,6 +126,26 @@
                       Técnico: {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
                     </span>
                   }
+                } @else if (t.estado.codigo === 'cerrado') {
+                  <span class="font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1 font-mono text-[11px]">
+                    <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                    <span>Cierre Aprobado</span>
+                  </span>
+                  @if (t.asignado_a) {
+                    <span class="block text-[10px] text-slate-400 font-mono mt-0.5">
+                      Reparado por: {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
+                    </span>
+                  }
+                } @else if (t.estado.codigo === 'reparado') {
+                  <span class="font-bold text-teal-800 bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200 inline-flex items-center gap-1 font-mono text-[11px]">
+                    <i class="fa-solid fa-clipboard-check text-teal-600"></i>
+                    <span>Reparación Finalizada</span>
+                  </span>
+                  @if (t.asignado_a) {
+                    <span class="block text-[10px] text-slate-400 font-mono mt-0.5">
+                      Técnico: {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
+                    </span>
+                  }
                 } @else if (t.asignado_a) {
                   <span class="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 inline-block">
                     {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
@@ -217,6 +237,26 @@
                         <span>Inviable (No Reparable)</span>
                       </span>
                     }
+                    @if (t.asignado_a) {
+                      <span class="block text-[10px] text-slate-400 font-mono mt-0.5">
+                        Técnico: {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
+                      </span>
+                    }
+                  } @else if (t.estado.codigo === 'cerrado') {
+                    <span class="font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1 font-mono text-[11px]">
+                      <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                      <span>Cierre Aprobado</span>
+                    </span>
+                    @if (t.asignado_a) {
+                      <span class="block text-[10px] text-slate-400 font-mono mt-0.5">
+                        Reparado por: {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
+                      </span>
+                    }
+                  } @else if (t.estado.codigo === 'reparado') {
+                    <span class="font-bold text-teal-800 bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200 inline-flex items-center gap-1 font-mono text-[11px]">
+                      <i class="fa-solid fa-clipboard-check text-teal-600"></i>
+                      <span>Reparación Finalizada</span>
+                    </span>
                     @if (t.asignado_a) {
                       <span class="block text-[10px] text-slate-400 font-mono mt-0.5">
                         Técnico: {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
