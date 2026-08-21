@@ -51,9 +51,12 @@
       </div>
     </div>
 
-    <!-- Bloque de Usuario Conectado -->
-    <div class="mx-2 mt-3 p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3 overflow-hidden">
-      <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs flex-shrink-0 mx-auto" [title]="authService.currentUser()?.first_name || authService.currentUser()?.username">
+    <!-- Bloque de Usuario Conectado (Navega a Mi Perfil) -->
+    <a routerLink="/perfil" 
+       (click)="closeMobileMenu()"
+       title="Ver Mi Perfil"
+       class="mx-2 mt-3 p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center gap-3 overflow-hidden transition-colors cursor-pointer group/user">
+      <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs flex-shrink-0 mx-auto group-hover/user:scale-105 transition-transform" [title]="authService.currentUser()?.first_name || authService.currentUser()?.username">
         {{ userInitials }}
       </div>
       <div class="overflow-hidden min-w-0 flex-1 sidebar-text-block">
@@ -66,7 +69,7 @@
           </span>
         </div>
       </div>
-    </div>
+    </a>
 
     <!-- Menú de Navegación -->
     <nav class="flex-1 p-2 overflow-y-auto space-y-5 mt-2">

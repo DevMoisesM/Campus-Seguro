@@ -13,6 +13,7 @@ import { MisAusenciasComponent } from './components/roles/mis-ausencias/mis-ause
 import { TicketCreateComponent } from './components/tickets/ticket-create/ticket-create.component';
 import { TicketListComponent } from './components/tickets/ticket-list/ticket-list.component';
 import { TicketDetailComponent } from './components/tickets/ticket-detail/ticket-detail.component';
+import { PerfilComponent } from './components/perfil/perfil.component';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -34,6 +35,10 @@ export const routes: Routes = [
         path: 'dashboard',
         component: EstudianteDashboardComponent
       },
+      {
+        path: 'perfil',
+        component: PerfilComponent
+      },
       
       // ════════════════════════════════════════════════
       // 1. RUTAS PREFIJADAS DE ESTUDIANTE / USUARIO BASE
@@ -44,6 +49,7 @@ export const routes: Routes = [
           { path: 'dashboard', component: EstudianteDashboardComponent },
           { path: 'mis-tickets', component: TicketListComponent },
           { path: 'nuevo-ticket', component: TicketCreateComponent },
+          { path: 'perfil', component: PerfilComponent },
           { path: 'tickets/:id', component: TicketDetailComponent }
         ]
       },
@@ -72,6 +78,7 @@ export const routes: Routes = [
           { path: 'mis-tickets', component: TicketListComponent },
           { path: 'mis-ausencias', component: MisAusenciasComponent },
           { path: 'nuevo-ticket', component: TicketCreateComponent },
+          { path: 'perfil', component: PerfilComponent },
           { path: 'tickets/:id', component: TicketDetailComponent }
         ]
       },
@@ -88,6 +95,7 @@ export const routes: Routes = [
           { path: 'mis-tickets', component: TicketListComponent },
           { path: 'mis-ausencias', component: MisAusenciasComponent },
           { path: 'nuevo-ticket', component: TicketCreateComponent },
+          { path: 'perfil', component: PerfilComponent },
           { path: 'tickets/:id', component: TicketDetailComponent }
         ]
       },
@@ -107,6 +115,7 @@ export const routes: Routes = [
           { path: 'reportes-bi', component: GestorBiComponent },
           { path: 'mis-tickets', component: TicketListComponent },
           { path: 'nuevo-ticket', component: TicketCreateComponent },
+          { path: 'perfil', component: PerfilComponent },
           { path: 'tickets/:id', component: TicketDetailComponent }
         ]
       },

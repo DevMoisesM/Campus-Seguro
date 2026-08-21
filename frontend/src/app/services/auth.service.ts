@@ -65,6 +65,22 @@ export class AuthService {
     );
   }
 
+  updateProfile(data: { first_name: string; last_name: string }): Observable<User> {
+    const user = this.currentUser();
+    if (!user) throw new Error('No hay usuario autenticado');
+    return this.http.patch<User>(`${this.apiUrl}/usuarios/${user.id}/`, data).pipe(
+      tap((updatedUser) => {
+        const mergedUser: User = {
+          ...user,
+          first_name: updatedUser.first_name || data.first_name,
+          last_name: updatedUser.last_name || data.last_name
+        };
+        this.currentUser.set(mergedUser);
+        localStorage.setItem('user_data', JSON.stringify(mergedUser));
+      })
+    );
+  }
+
   logout(): void {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
