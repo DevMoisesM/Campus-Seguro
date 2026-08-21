@@ -631,6 +631,12 @@ class TicketViewSet(viewsets.ModelViewSet):
         en_mantencion = qs.filter(estado__codigo='en_mantencion').count()
         reparados = qs.filter(estado__codigo='reparado').count()
         cerrados = qs.filter(estado__codigo='cerrado').count()
+        rechazados = qs.filter(estado__codigo='rechazado').count()
+
+        falsas_alarmas = qs.filter(estado__codigo='rechazado', subestado_rechazo='falsa_alarma').count()
+        requiere_externo = qs.filter(estado__codigo='rechazado', subestado_rechazo='requiere_proveedor_externo').count()
+        duplicados = qs.filter(estado__codigo='rechazado', subestado_rechazo='duplicado').count()
+        otros_inviables = qs.filter(estado__codigo='rechazado', subestado_rechazo='otro').count()
 
         cerrados_periodo = cerrados + reparados
         tasa_cierre = round((cerrados_periodo / total_periodo * 100), 1) if total_periodo > 0 else 0.0
@@ -756,7 +762,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         trabajos_completados = reparados + cerrados
         hh_totales = round(trabajos_completados * 2.2, 1)
         hh_promedio = round(hh_totales / trabajos_completados, 1) if trabajos_completados > 0 else 0.0
-        no_reparados = qs.filter(estado__codigo='no_reparable').count()
+        no_reparados = qs.filter(estado__codigo='rechazado').filter(Q(subestado_rechazo__in=['requiere_proveedor_externo', 'otro']) | Q(asignado_a__isnull=False)).count()
         tasa_no_reparacion = round((no_reparados / total_periodo * 100), 1) if total_periodo > 0 else 0.0
         tiempo_prom_trabajo_min = 45 # Promedio simulado en terreno
         requirio_apoyo_cnt = qs.filter(afecta_clase=True).count()
@@ -769,7 +775,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         for t in tecnicos_all:
             repar = Ticket.objects.filter(asignado_a=t, estado__codigo='reparado').count()
             en_proc = Ticket.objects.filter(asignado_a=t, estado__codigo='en_mantencion').count()
-            no_rep = Ticket.objects.filter(asignado_a=t, estado__codigo='no_reparable').count()
+            no_rep = Ticket.objects.filter(asignado_a=t, estado__codigo='rechazado').count()
             reasig = Ticket.objects.filter(asignado_a=t, estado__codigo='validado').count()
             inasist = Inasistencia.objects.filter(usuario=t, estado='aprobada').count()
             tablero_tecnicos.append({
@@ -820,6 +826,16 @@ class TicketViewSet(viewsets.ModelViewSet):
             'en_mantencion': en_mantencion,
             'reparados': reparados,
             'cerrados': cerrados,
+            'rechazados': rechazados,
+            'rechazo_metrics': {
+                'total': rechazados,
+                'falsas_alarmas': falsas_alarmas,
+                'requiere_externo': requiere_externo,
+                'duplicados': duplicados,
+                'otros_inviables': otros_inviables,
+                'porc_falsa_alarma': round((falsas_alarmas / total_periodo * 100), 1) if total_periodo > 0 else 0.0,
+                'porc_requiere_externo': round((requiere_externo / total_periodo * 100), 1) if total_periodo > 0 else 0.0
+            },
             'cerrados_periodo': cerrados_periodo,
             'tasa_cierre': tasa_cierre,
             'afectan_clase': afectan_clase,

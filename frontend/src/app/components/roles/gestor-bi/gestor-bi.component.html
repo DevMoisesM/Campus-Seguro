@@ -94,8 +94,8 @@
     @if (activeTab() === 'general') {
       <div class="space-y-6">
         
-        <!-- Bloque Volumen y Cierre (4 KPIs Superiores) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Bloque Volumen y Cierre (5 KPIs Superiores) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div class="bg-white border border-slate-200 border-l-4 border-l-blue-500 rounded-2xl p-5 shadow-xs">
             <p class="text-xs font-bold text-slate-400 uppercase font-mono">Tickets en Período</p>
             <h3 class="text-3xl font-black text-slate-900 font-sora mt-1">{{ metrics()?.total || 0 }}</h3>
@@ -120,11 +120,20 @@
             </p>
           </div>
 
-          <div class="bg-white border border-slate-200 border-l-4 border-l-rose-500 rounded-2xl p-5 shadow-xs">
+          <div class="bg-white border border-slate-200 border-l-4 border-l-purple-500 rounded-2xl p-5 shadow-xs">
             <p class="text-xs font-bold text-slate-400 uppercase font-mono">Riesgos Detectados</p>
             <h3 class="text-3xl font-black text-slate-900 font-sora mt-1">{{ metrics()?.riesgos?.total || 0 }}</h3>
             <p class="text-[11px] text-slate-500 font-mono mt-1">
               ⚡ {{ metrics()?.riesgos?.electricos || 0 }} · 🏗️ {{ metrics()?.riesgos?.estructurales || 0 }} · ♿ {{ metrics()?.riesgos?.accesibilidad || 0 }}
+            </p>
+          </div>
+
+          <div class="bg-white border border-slate-200 border-l-4 border-l-rose-500 rounded-2xl p-5 shadow-xs">
+            <p class="text-xs font-bold text-slate-400 uppercase font-mono">Tickets Rechazados</p>
+            <h3 class="text-3xl font-black text-rose-700 font-sora mt-1">{{ metrics()?.rechazados || 0 }}</h3>
+            <p class="text-[11px] text-slate-500 font-mono mt-1 flex items-center gap-1">
+              <span>🚨 {{ metrics()?.rechazo_metrics?.falsas_alarmas || 0 }} falsas</span> · 
+              <span>📦 {{ metrics()?.rechazo_metrics?.requiere_externo || 0 }} ext.</span>
             </p>
           </div>
         </div>
@@ -185,7 +194,81 @@
               }
             </div>
           </div>
+        </div>
 
+        <!-- ANALÍTICA DE TICKETS RECHAZADOS E INVIABLES -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="text-sm font-bold text-slate-900 uppercase font-mono flex items-center gap-2">
+              <i class="fa-solid fa-ban text-rose-600"></i>
+              <span>Análisis de Tickets Rechazados e Inviabilidad Técnica</span>
+            </h3>
+            <span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-bold text-[10px] uppercase font-mono border border-rose-200">
+              TOTAL: {{ metrics()?.rechazo_metrics?.total || 0 }} RECHAZOS
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Falsas Alarmas -->
+            <div class="p-4 bg-rose-50/50 border border-rose-200 rounded-xl space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-rose-900 uppercase font-mono flex items-center gap-1">
+                  <i class="fa-solid fa-bell-slash text-rose-600"></i>
+                  <span>Falsas Alarmas</span>
+                </span>
+                <span class="text-xs font-black text-rose-700">{{ metrics()?.rechazo_metrics?.falsas_alarmas || 0 }}</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Desaprobados en terreno por el Guardia por ser falsos o inexistentes.</p>
+              <div class="pt-2">
+                <div class="w-full bg-rose-200 h-2 rounded-full overflow-hidden">
+                  <div class="bg-rose-600 h-full rounded-full" [style.width.%]="metrics()?.rechazo_metrics?.porc_falsa_alarma || 0"></div>
+                </div>
+                <span class="text-[10px] text-slate-400 font-mono mt-1 block">{{ metrics()?.rechazo_metrics?.porc_falsa_alarma || 0 }}% del volumen total</span>
+              </div>
+            </div>
+
+            <!-- Requiere Empresa Externa -->
+            <div class="p-4 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-amber-900 uppercase font-mono flex items-center gap-1">
+                  <i class="fa-solid fa-boxes-packing text-amber-600"></i>
+                  <span>Requiere Empresa Externa</span>
+                </span>
+                <span class="text-xs font-black text-amber-700">{{ metrics()?.rechazo_metrics?.requiere_externo || 0 }}</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Fallas reales que exceden capacidad interna y requieren cotización o contratista.</p>
+              <div class="pt-2">
+                <div class="w-full bg-amber-200 h-2 rounded-full overflow-hidden">
+                  <div class="bg-amber-600 h-full rounded-full" [style.width.%]="metrics()?.rechazo_metrics?.porc_requiere_externo || 0"></div>
+                </div>
+                <span class="text-[10px] text-slate-400 font-mono mt-1 block">{{ metrics()?.rechazo_metrics?.porc_requiere_externo || 0 }}% del volumen total</span>
+              </div>
+            </div>
+
+            <!-- Duplicados -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 uppercase font-mono flex items-center gap-1">
+                  <i class="fa-solid fa-copy text-slate-500"></i>
+                  <span>Reportes Duplicados</span>
+                </span>
+                <span class="text-xs font-black text-slate-700">{{ metrics()?.rechazo_metrics?.duplicados || 0 }}</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Tickets archivados por corresponder a una orden de trabajo ya registrada.</p>
+            </div>
+
+            <!-- Otros Inviables -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 uppercase font-mono flex items-center gap-1">
+                  <i class="fa-solid fa-circle-exclamation text-slate-500"></i>
+                  <span>Otros Motivos</span>
+                </span>
+                <span class="text-xs font-black text-slate-700">{{ metrics()?.rechazo_metrics?.otros_inviables || 0 }}</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Equipos descontinuados o reemplazos totales programados por la administración.</p>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -334,8 +417,8 @@
             <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold text-[10px] uppercase font-mono border border-emerald-200">MÉTRICAS DE CARGA REAL</span>
           </div>
 
-          <div class="table-wrap">
-            <table class="w-full text-left border-collapse">
+          <div class="overflow-x-auto scrollbar-thin pb-2">
+            <table class="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase font-mono">
                   <th class="py-3 px-4">Técnico</th>
@@ -394,8 +477,8 @@
             <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold text-[10px] uppercase font-mono border border-emerald-200">CONSUMO ACUMULADO</span>
           </div>
 
-          <div class="table-wrap">
-            <table class="w-full text-left border-collapse">
+          <div class="overflow-x-auto scrollbar-thin pb-2">
+            <table class="w-full text-left border-collapse min-w-[650px]">
               <thead>
                 <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase font-mono">
                   <th class="py-3 px-4">#</th>

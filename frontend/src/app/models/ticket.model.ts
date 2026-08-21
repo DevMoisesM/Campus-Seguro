@@ -135,7 +135,17 @@ export interface TicketMetrics {
   validados: number;
   en_mantencion: number;
   reparados: number;
-  cerrados: number;
+  cerrados?: number;
+  rechazados?: number;
+  rechazo_metrics?: {
+    total: number;
+    falsas_alarmas: number;
+    requiere_externo: number;
+    duplicados: number;
+    otros_inviables: number;
+    porc_falsa_alarma: number;
+    porc_requiere_externo: number;
+  };
   cerrados_periodo?: number;
   tasa_cierre?: number;
   afectan_clase?: number;
