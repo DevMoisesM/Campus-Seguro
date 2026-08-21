@@ -76,6 +76,9 @@ export class TicketDetailComponent implements OnInit {
     else if (subestado === 'requiere_proveedor_externo') subestadoDisplay = 'Requiere Cotización / Empresa Externa';
     else if (subestado === 'duplicado') subestadoDisplay = 'Ticket Duplicado';
     else if (subestado === 'otro') subestadoDisplay = 'Inviable Técnicamente';
+    const evidenciasGuardia = (ticket.evidencias || []).filter(e => e.fase === 'inspeccion');
+    const evidenciasMantencion = (ticket.evidencias || []).filter(e => e.fase === 'reparacion');
+
     if (valInvalida) {
       return {
         tipo: 'guardia',
@@ -85,6 +88,7 @@ export class TicketDetailComponent implements OnInit {
         subtitulo: 'Inspección de Guardia de Seguridad',
         responsable: valInvalida.guardia_nombre || 'Guardia de Seguridad',
         observacion: valInvalida.observacion || 'Falsa alarma o reporte no válido comprobado en terreno.',
+        evidencias: evidenciasGuardia,
         fecha: valInvalida.created_at
       };
     }
@@ -100,6 +104,7 @@ export class TicketDetailComponent implements OnInit {
         subtitulo: 'Evaluación Técnica de Mantenimiento',
         responsable: finalSesion.mantenedor_nombre || 'Técnico de Mantenimiento',
         observacion: finalSesion.observaciones || 'No es posible efectuar la reparación con los recursos técnicos disponibles.',
+        evidencias: (finalSesion.evidencias && finalSesion.evidencias.length > 0) ? finalSesion.evidencias : evidenciasMantencion,
         fecha: finalSesion.fin || finalSesion.inicio
       };
     }
@@ -112,6 +117,7 @@ export class TicketDetailComponent implements OnInit {
       subtitulo: 'Revisión de Gestión de Campus',
       responsable: 'Gestor del Sistema',
       observacion: 'El incidente fue evaluado y rechazado.',
+      evidencias: evidenciasGuardia.length > 0 ? evidenciasGuardia : evidenciasMantencion,
       fecha: ticket.created_at
     };
   });

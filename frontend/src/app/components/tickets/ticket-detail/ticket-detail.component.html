@@ -1,19 +1,19 @@
 <div class="max-w-5xl mx-auto space-y-6">
 
   <!-- Header y Botón Volver -->
-  <div class="flex items-center justify-between">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
     <div>
-      <div class="flex items-center gap-3">
-        <span class="font-mono text-sm font-bold text-slate-900 bg-slate-200 px-3 py-1 rounded-lg">
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <span class="font-mono text-xs sm:text-sm font-bold text-slate-900 bg-slate-200 px-2.5 py-1 rounded-lg">
           {{ ticket()?.folio || 'TICK-...' }}
         </span>
-        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">{{ ticket()?.titulo || 'Cargando...' }}</h2>
+        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">{{ ticket()?.titulo || 'Cargando...' }}</h2>
       </div>
       <p class="text-xs text-slate-500 mt-1">Detalle completo de trazabilidad e historial del incidente</p>
     </div>
-    <a [routerLink]="authService.userRole() === 'usuario' ? '/estudiante/mis-tickets' : authService.userRole() === 'guardia' ? '/guardia/dashboard' : authService.userRole() === 'mantencion' ? '/mantencion/dashboard' : '/gestor/dashboard'" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-2">
+    <a [routerLink]="authService.userRole() === 'usuario' ? '/estudiante/mis-tickets' : authService.userRole() === 'guardia' ? '/guardia/dashboard' : authService.userRole() === 'mantencion' ? '/mantencion/dashboard' : '/gestor/dashboard'" class="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center justify-center gap-2">
       <i class="fa-solid fa-arrow-left"></i>
-      <span>Volver a Dashboard / Incidentes</span>
+      <span>Volver al Dashboard</span>
     </a>
   </div>
 
@@ -25,43 +25,20 @@
   }
 
   @if (!loading() && ticket()) {
-    
-    <!-- 1. LÍNEA DE TIEMPO VISUAL DE ESTADOS -->
-    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
-      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest font-mono mb-6">
-        📍 Flujo y Línea de Tiempo de Estados
-      </h3>
 
-      <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 relative">
-        @for (step of timelineSteps; track step.code) {
-          <div [class]="'p-4 rounded-xl border transition-all relative text-center flex flex-col items-center ' + 
-                       (isStepCompleted(step.code) ? 'bg-emerald-50/60 border-emerald-300 text-emerald-900 shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-400')">
-            <div [class]="'w-10 h-10 rounded-full flex items-center justify-center text-base mb-2 font-bold ' + 
-                         (isStepCompleted(step.code) ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-200 text-slate-500')">
-              <i [class]="'fa-solid ' + step.icon"></i>
-            </div>
-            <span class="text-xs font-bold">{{ step.label }}</span>
-            <span class="text-[10px] font-mono mt-1 font-semibold">
-              {{ isStepCompleted(step.code) ? '✓ Completado' : 'Pendiente' }}
-            </span>
-          </div>
-        }
-      </div>
-    </div>
-
-    <!-- BANNER DESTACADO SI EL TICKET FUE RECHAZADO / DECLARADO NO REPARABLE -->
+    <!-- 1. BANNER DESTACADO SI EL TICKET FUE RECHAZADO / DECLARADO NO REPARABLE (A PRIMERA VISTA) -->
     @if (isRechazado() && infoRechazo()) {
-      <div class="p-6 bg-gradient-to-r from-rose-500/10 via-rose-50 to-rose-100/50 border border-rose-300 rounded-2xl shadow-sm space-y-3">
-        <div class="flex items-start gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-rose-600 text-white font-bold flex items-center justify-center text-xl shadow-md shadow-rose-600/20 flex-shrink-0">
+      <div class="p-4 sm:p-6 bg-gradient-to-r from-rose-500/10 via-rose-50 to-rose-100/50 border border-rose-300 rounded-2xl shadow-sm space-y-3">
+        <div class="flex items-start gap-3 sm:gap-4">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-rose-600 text-white font-bold flex items-center justify-center text-lg sm:text-xl shadow-md shadow-rose-600/20 flex-shrink-0">
             <i class="fa-solid fa-circle-xmark"></i>
           </div>
-          <div class="space-y-1 flex-1">
+          <div class="space-y-1 flex-1 min-w-0">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <h3 class="text-base font-extrabold text-rose-950 uppercase font-mono tracking-tight flex items-center gap-2">
+              <h3 class="text-sm sm:text-base font-extrabold text-rose-950 uppercase font-mono tracking-tight flex items-center gap-2">
                 <span>{{ infoRechazo()?.titulo }}</span>
               </h3>
-              <span class="px-3 py-1 rounded-full bg-rose-600 text-white font-bold text-xs shadow-xs inline-flex items-center gap-1.5">
+              <span class="px-2.5 py-1 rounded-full bg-rose-600 text-white font-bold text-[11px] sm:text-xs shadow-xs inline-flex items-center gap-1.5">
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 <span>{{ infoRechazo()?.subestadoDisplay }}</span>
               </span>
@@ -69,9 +46,32 @@
             <p class="text-xs text-rose-800 font-bold font-mono">
               {{ infoRechazo()?.subtitulo }} · Evaluado por: <strong class="text-slate-900">{{ infoRechazo()?.responsable }}</strong>
             </p>
-            <div class="p-3 bg-white/90 rounded-xl border border-rose-200 text-xs font-medium text-slate-800 leading-relaxed mt-2 shadow-2xs">
-              <p class="font-bold text-rose-900 text-[10px] uppercase font-mono mb-1">Motivo / Justificación Registrada:</p>
-              {{ infoRechazo()?.observacion }}
+            <div class="p-3 bg-white/90 rounded-xl border border-rose-200 text-xs font-medium text-slate-800 leading-relaxed mt-2 shadow-2xs space-y-3">
+              <div>
+                <p class="font-bold text-rose-900 text-[10px] uppercase font-mono mb-1">Motivo / Justificación Registrada:</p>
+                {{ infoRechazo()?.observacion }}
+              </div>
+
+              @if (infoRechazo()?.evidencias && infoRechazo()?.evidencias!.length > 0) {
+                <div class="pt-2 border-t border-rose-100">
+                  <p class="font-bold text-rose-900 text-[10px] uppercase font-mono mb-1.5 flex items-center gap-1">
+                    <i class="fa-solid fa-camera text-rose-600"></i>
+                    <span>Evidencia Fotográfica de Inspección / Rechazo ({{ infoRechazo()?.evidencias!.length }}):</span>
+                  </p>
+                  <div class="flex flex-wrap gap-2">
+                    @for (ev of infoRechazo()?.evidencias; track ev.id) {
+                      <button (click)="openPreviewModal(ev.imagen_url)" 
+                              type="button" 
+                              class="group relative rounded-xl overflow-hidden border border-rose-200 shadow-2xs hover:shadow-md transition-all cursor-pointer">
+                        <img [src]="ev.imagen_url" alt="Evidencia rechazo" class="w-16 h-16 object-cover group-hover:scale-105 transition-transform" />
+                        <div class="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                          <i class="fa-solid fa-magnifying-glass-plus text-xs"></i>
+                        </div>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -80,28 +80,51 @@
 
     <!-- BANNER DE ESTADO INFORMATIVO PARA ESTUDIANTES / USUARIO BASE -->
     @if (isEstudiante() && !isRechazado()) {
-      <div class="p-6 bg-gradient-to-r from-amber-500/10 via-amber-50 to-emerald-500/10 border border-amber-200 rounded-2xl shadow-xs space-y-3">
+      <div class="p-4 sm:p-6 bg-gradient-to-r from-amber-500/10 via-amber-50 to-emerald-500/10 border border-amber-200 rounded-2xl shadow-xs space-y-3">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FFB800] to-[#f59e0b] text-slate-950 font-bold flex items-center justify-center text-lg shadow-sm">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FFB800] to-[#f59e0b] text-slate-950 font-bold flex items-center justify-center text-lg shadow-sm flex-shrink-0">
             <i class="fa-solid fa-graduation-cap"></i>
           </div>
           <div>
-            <h3 class="text-base font-extrabold text-slate-900">Seguimiento de tu Reporte Institucional</h3>
+            <h3 class="text-sm sm:text-base font-extrabold text-slate-900">Seguimiento de tu Reporte Institucional</h3>
             <p class="text-xs text-slate-600 font-medium mt-0.5">
               @if (ticket()?.estado?.codigo === 'enviado') {
-                🟡 Tu reporte fue registrado exitosamente. Un Guardia de Seguridad acudirá a inspeccionar el área.
+                Tu reporte fue registrado exitosamente. Un Guardia de Seguridad acudirá a inspeccionar el área.
               } @else if (ticket()?.estado?.codigo === 'validado') {
-                🔵 Tu reporte fue verificado e inspeccionado en terreno. Ha sido derivado al equipo técnico.
+                Tu reporte fue verificado e inspeccionado en terreno. Ha sido derivado al equipo técnico.
               } @else if (ticket()?.estado?.codigo === 'en_mantencion') {
-                🔧 El personal de Mantención se encuentra trabajando activamente en la reparación de este incidente.
+                El personal de Mantención se encuentra trabajando activamente en la reparación de este incidente.
               } @else if (ticket()?.estado?.codigo === 'reparado' || ticket()?.estado?.codigo === 'cerrado') {
-                🟢 ¡El incidente ha sido reparado con éxito! Muchas gracias por contribuir a la seguridad del Campus.
+                ¡El incidente ha sido reparado con éxito! Muchas gracias por contribuir a la seguridad del Campus.
               }
             </p>
           </div>
         </div>
       </div>
     }
+
+    <!-- 2. LÍNEA DE TIEMPO VISUAL DE ESTADOS (COMPACTA HORIZONTAL EN MÓVIL) -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-xs space-y-3">
+      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest font-mono">
+        📍 Flujo y Línea de Tiempo de Estados
+      </h3>
+
+      <div class="flex overflow-x-auto sm:grid sm:grid-cols-5 gap-2 sm:gap-3 pb-2 sm:pb-0 scrollbar-thin">
+        @for (step of timelineSteps; track step.code) {
+          <div [class]="'p-3 sm:p-4 rounded-xl border transition-all text-center flex flex-col items-center flex-shrink-0 w-28 sm:w-auto ' + 
+                       (isStepCompleted(step.code) ? 'bg-emerald-50/60 border-emerald-300 text-emerald-900 shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-400')">
+            <div [class]="'w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-base mb-1.5 sm:mb-2 font-bold ' + 
+                         (isStepCompleted(step.code) ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-200 text-slate-500')">
+              <i [class]="'fa-solid ' + step.icon"></i>
+            </div>
+            <span class="text-[11px] sm:text-xs font-bold leading-tight line-clamp-1">{{ step.label }}</span>
+            <span class="text-[9px] sm:text-[10px] font-mono mt-1 font-semibold">
+              {{ isStepCompleted(step.code) ? '✓ Completado' : 'Pendiente' }}
+            </span>
+          </div>
+        }
+      </div>
+    </div>
 
     <!-- 2. TARJETA DE DETALLES DEL INCIDENTE Y UBICACIÓN -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
