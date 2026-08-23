@@ -50,6 +50,36 @@ export class GestorDashboardComponent implements OnInit {
     });
   }
 
+  // Modal de Asignación de Mantenedor
+  selectedAssignTicket = signal<Ticket | null>(null);
+  selectedMantenedorId = signal<number | null>(null);
+
+  openAssignModal(ticket: Ticket): void {
+    this.selectedAssignTicket.set(ticket);
+    this.selectedMantenedorId.set(null);
+  }
+
+  closeAssignModal(): void {
+    this.selectedAssignTicket.set(null);
+    this.selectedMantenedorId.set(null);
+  }
+
+  confirmarAsignacion(): void {
+    const ticket = this.selectedAssignTicket();
+    const mantenedorId = this.selectedMantenedorId();
+    if (!ticket || !mantenedorId) return;
+
+    this.submitting.set(true);
+    this.ticketService.assignMantencion(ticket.id, Number(mantenedorId)).subscribe({
+      next: () => {
+        this.submitting.set(false);
+        this.closeAssignModal();
+        this.loadData();
+      },
+      error: () => this.submitting.set(false)
+    });
+  }
+
   assignMantenedor(ticketId: number, mantenedorIdStr: string): void {
     const mantenedorId = Number(mantenedorIdStr);
     if (!mantenedorId) return;

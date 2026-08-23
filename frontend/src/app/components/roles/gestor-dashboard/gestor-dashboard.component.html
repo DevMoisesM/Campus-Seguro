@@ -165,15 +165,10 @@
                     {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
                   </span>
                 } @else {
-                  <select (change)="assignMantenedor(t.id, $any($event.target).value)" 
-                          class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-700">
-                    <option value="">-- Asignar Mantenedor --</option>
-                    @for (m of mantenedores(); track m.id) {
-                      <option [value]="m.id" [disabled]="!!m.inasistencia_activa">
-                        {{ m.first_name }} {{ m.last_name }}{{ m.inasistencia_activa ? ' (⚠️ Ausente / Licencia)' : '' }}
-                      </option>
-                    }
-                  </select>
+                  <span class="text-[11px] text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 font-mono inline-flex items-center gap-1 font-semibold">
+                    <i class="fa-solid fa-clock text-amber-600"></i>
+                    <span>Por Asignar</span>
+                  </span>
                 }
               </div>
 
@@ -184,6 +179,14 @@
                           class="w-full py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-bolt text-indigo-600"></i>
                     <span>Validar Directo (Gestor)</span>
+                  </button>
+                }
+                @if ((t.estado.codigo === 'validado' || !t.asignado_a) && t.estado.codigo !== 'enviado' && t.estado.codigo !== 'rechazado' && t.estado.codigo !== 'cerrado') {
+                  <button (click)="openAssignModal(t)" 
+                          type="button" 
+                          class="w-full py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-300 shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-wrench text-amber-600"></i>
+                    <span>Asignar Técnico</span>
                   </button>
                 }
                 @if (t.estado.codigo === 'reparado') {
@@ -308,15 +311,10 @@
                       {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
                     </span>
                   } @else {
-                    <select (change)="assignMantenedor(t.id, $any($event.target).value)" 
-                            class="px-2.5 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 max-w-[180px]">
-                      <option value="">-- Asignar Mantenedor --</option>
-                      @for (m of mantenedores(); track m.id) {
-                        <option [value]="m.id" [disabled]="!!m.inasistencia_activa">
-                          {{ m.first_name }} {{ m.last_name }}{{ m.inasistencia_activa ? ' (⚠️ Ausente)' : '' }}
-                        </option>
-                      }
-                    </select>
+                    <span class="text-[11px] text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 font-mono inline-flex items-center gap-1 font-semibold">
+                      <i class="fa-solid fa-clock text-amber-600"></i>
+                      <span>Por Asignar</span>
+                    </span>
                   }
                 </td>
                 <td class="px-4 py-3.5 text-right whitespace-nowrap">
@@ -327,6 +325,14 @@
                               class="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 shadow-2xs transition-colors inline-flex items-center gap-1 cursor-pointer">
                         <i class="fa-solid fa-bolt text-indigo-600"></i>
                         <span>Validar Directo</span>
+                      </button>
+                    }
+                    @if ((t.estado.codigo === 'validado' || !t.asignado_a) && t.estado.codigo !== 'enviado' && t.estado.codigo !== 'rechazado' && t.estado.codigo !== 'cerrado') {
+                      <button (click)="openAssignModal(t)" 
+                              type="button" 
+                              class="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-300 shadow-2xs transition-colors inline-flex items-center gap-1 cursor-pointer">
+                        <i class="fa-solid fa-wrench text-amber-600"></i>
+                        <span>Asignar Técnico</span>
                       </button>
                     }
                     @if (t.estado.codigo === 'reparado') {
@@ -452,6 +458,80 @@
             }
             <i class="fa-solid fa-check-double"></i>
             <span>Confirmar Validación Gestor</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- MODAL FLOTANTE DE ASIGNACIÓN DE MANTENEDOR -->
+  @if (selectedAssignTicket(); as ticket) {
+    <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+        
+        <!-- Header Modal -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2 text-amber-600 font-bold text-base">
+            <i class="fa-solid fa-wrench text-lg"></i>
+            <span>Asignar Mantenedor: {{ ticket.folio }}</span>
+          </div>
+          <button (click)="closeAssignModal()" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Resumen del Incidente -->
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-bold text-slate-800 text-sm truncate">{{ ticket.titulo }}</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize font-mono flex-shrink-0"
+                  [ngClass]="getUrgenciaBadgeClass(ticket.urgencia)">
+              {{ ticket.urgencia }}
+            </span>
+          </div>
+          <p class="text-slate-600"><strong class="text-slate-700">Ubicación:</strong> {{ ticket.ubicacion.nombre }} ({{ ticket.ubicacion.edificio_nombre }} - Piso {{ ticket.ubicacion.piso_numero }})</p>
+          <p class="text-slate-500 font-mono text-[11px]"><strong class="text-slate-700 font-sans">Reportado por:</strong> {{ ticket.creado_por.first_name }} {{ ticket.creado_por.last_name }}</p>
+        </div>
+
+        <!-- Selección de Técnico -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
+            Seleccionar Técnico de Mantención:
+          </label>
+          <select [ngModel]="selectedMantenedorId()" 
+                  (ngModelChange)="selectedMantenedorId.set($any($event))" 
+                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-amber-500">
+            <option [ngValue]="null">-- Seleccione Técnico Responsable --</option>
+            @for (m of mantenedores(); track m.id) {
+              <option [value]="m.id" [disabled]="!!m.inasistencia_activa">
+                {{ m.first_name }} {{ m.last_name }}{{ m.inasistencia_activa ? ' (⚠️ Ausente / Licencia)' : '' }}
+              </option>
+            }
+          </select>
+          <p class="text-[11px] text-slate-400">
+            Al confirmar, el estado del ticket cambiará a <strong class="text-indigo-600">En Mantenimiento</strong> y aparecerá en las órdenes de trabajo del técnico seleccionado.
+          </p>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <button (click)="closeAssignModal()" 
+                  type="button" 
+                  class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors cursor-pointer">
+            Cancelar
+          </button>
+          <button (click)="confirmarAsignacion()" 
+                  [disabled]="submitting() || !selectedMantenedorId()" 
+                  type="button" 
+                  class="px-5 py-2 rounded-xl bg-[#FFB800] hover:bg-[#E6A600] disabled:opacity-50 text-slate-950 font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+            @if (submitting()) {
+              <i class="fa-solid fa-circle-notch fa-spin"></i>
+              <span>Asignando...</span>
+            } @else {
+              <i class="fa-solid fa-wrench"></i>
+              <span>Confirmar Asignación</span>
+            }
           </button>
         </div>
 
