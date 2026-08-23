@@ -257,8 +257,8 @@ class TicketViewSet(viewsets.ModelViewSet):
             # Usuario Base solo ve los tickets que él ha creado
             return queryset.filter(creado_por=user)
         elif rol_codigo == 'guardia':
-            # Guardia ve tickets pendientes de validación, asignados a su inspección o que él validó
-            return queryset.filter(Q(estado__codigo__in=['enviado', 'validado']) | Q(validado_por=user) | Q(guardia_asignado=user))
+            # Guardia solo ve los tickets asignados a su inspección o que él validó
+            return queryset.filter(Q(guardia_asignado=user) | Q(validado_por=user))
         elif rol_codigo == 'mantencion':
             # Mantenedor ve los tickets asignados a él
             return queryset.filter(asignado_a=user)
