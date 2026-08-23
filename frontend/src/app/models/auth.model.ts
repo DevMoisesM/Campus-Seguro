@@ -36,6 +36,7 @@ export interface User {
     fecha_hasta: string;
   } | null;
   carga_activa?: number;
+  reparados_hoy?: number;
 }
 
 export interface LoginCredentials {

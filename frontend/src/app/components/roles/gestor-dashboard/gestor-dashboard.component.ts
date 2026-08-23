@@ -157,9 +157,9 @@ export class GestorDashboardComponent implements OnInit {
     if (m.inasistencia_activa) {
       return 'bg-slate-100 text-slate-500 border-slate-200';
     }
-    const carga = m.carga_activa ?? 0;
-    if (carga === 0) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (carga <= 2) return 'bg-amber-50 text-amber-700 border-amber-200';
+    const activas = m.carga_activa ?? 0;
+    if (activas === 0) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (activas <= 2) return 'bg-amber-50 text-amber-700 border-amber-200';
     return 'bg-rose-50 text-rose-700 border-rose-200';
   }
 
@@ -167,10 +167,11 @@ export class GestorDashboardComponent implements OnInit {
     if (m.inasistencia_activa) {
       return '⛔ Ausente (Licencia)';
     }
-    const carga = m.carga_activa ?? 0;
-    if (carga === 0) return '🟢 0 órdenes activas (Disponible)';
-    if (carga === 1) return '🟡 1 orden activa';
-    if (carga <= 2) return `🟡 ${carga} órdenes activas`;
-    return `🔴 Alta carga (${carga} órdenes)`;
+    const activas = m.carga_activa ?? 0;
+    const reparadas = m.reparados_hoy ?? 0;
+    const estadoIcon = activas === 0 ? '🟢' : activas <= 2 ? '🟡' : '🔴';
+    const activasText = activas === 0 ? '0 en curso' : `${activas} en curso`;
+    const reparadasText = `${reparadas} ${reparadas === 1 ? 'resuelta hoy' : 'resueltas hoy'}`;
+    return `${estadoIcon} ${activasText} • ${reparadasText}`;
   }
 }

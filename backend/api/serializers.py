@@ -86,6 +86,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
     especialidades = EspecialidadSerializer(many=True, read_only=True)
     inasistencia_activa = serializers.SerializerMethodField()
     carga_activa = serializers.SerializerMethodField()
+    reparados_hoy = serializers.SerializerMethodField()
 
     class Meta:
         model = Usuario
@@ -93,15 +94,23 @@ class UsuarioSerializer(serializers.ModelSerializer):
             'id', 'username', 'correo_institucional', 'first_name', 'last_name',
             'rut', 'telefono', 'rol', 'escuela', 'carrera', 'departamento',
             'estado_cuenta', 'auth0_sub', 'especialidades', 'is_active',
-            'inasistencia_activa', 'carga_activa'
+            'inasistencia_activa', 'carga_activa', 'reparados_hoy'
         ]
 
     def get_carga_activa(self, obj):
         return obj.tickets_asignados.filter(estado__codigo__in=['validado', 'en_mantencion']).count()
 
+    def get_reparados_hoy(self, obj):
+        from django.utils import timezone
+        hoy = timezone.localdate()
+        return obj.tickets_asignados.filter(
+            estado__codigo__in=['reparado', 'cerrado'],
+            updated_at__date=hoy
+        ).count()
+
     def get_inasistencia_activa(self, obj):
         from django.utils import timezone
-        hoy = timezone.now().date()
+        hoy = timezone.localdate()
         inasi = obj.inasistencias.filter(estado='aprobada', fecha_desde__lte=hoy, fecha_hasta__gte=hoy).first()
         if inasi:
             return {
