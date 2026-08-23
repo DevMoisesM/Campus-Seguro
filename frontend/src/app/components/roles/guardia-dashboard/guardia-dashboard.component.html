@@ -303,21 +303,38 @@
 
   <!-- MODAL DE SOLICITAR LICENCIA / PERMISO -->
   @if (showInasistenciaModal()) {
-    <div class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4">
+    <div class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-4">
         
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
           <h3 class="text-sm font-bold text-slate-900 uppercase font-mono tracking-wider flex items-center gap-2">
-            <i class="fa-solid fa-calendar-plus text-amber-500"></i>
+            <i class="fa-solid fa-calendar-plus text-amber-500 text-base"></i>
             <span>Solicitar Permiso / Licencia Médica</span>
           </h3>
-          <button (click)="closeInasistenciaModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg">
+          <button (click)="closeInasistenciaModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
 
+        <!-- Banner de Éxito / Error -->
+        @if (inasistenciaSuccess()) {
+          <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 shadow-2xs animate-fade-in">
+            <i class="fa-solid fa-circle-check text-emerald-600 text-base shrink-0"></i>
+            <div>
+              <strong class="block font-bold">¡Solicitud enviada con éxito!</strong>
+              <span>{{ inasistenciaSuccess() }}</span>
+            </div>
+          </div>
+        }
+        @if (inasistenciaError()) {
+          <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2.5 shadow-2xs animate-fade-in">
+            <i class="fa-solid fa-circle-exclamation text-rose-600 text-base shrink-0"></i>
+            <span>{{ inasistenciaError() }}</span>
+          </div>
+        }
+
         <div class="space-y-3">
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Fecha Desde *</label>
               <input [(ngModel)]="inasiFechaDesde" type="date" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-amber-500" />
@@ -337,14 +354,55 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-          <button (click)="closeInasistenciaModal()" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs">
-            Cancelar
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button (click)="closeInasistenciaModal()" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer">
+            Cerrar
           </button>
-          <button (click)="submitInasistencia()" type="button" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs">
-            Enviar Solicitud
+          <button (click)="submitInasistencia()" 
+                  [disabled]="submittingInasistencia()"
+                  type="button" 
+                  class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold text-xs shadow-xs inline-flex items-center gap-1.5 cursor-pointer">
+            @if (submittingInasistencia()) {
+              <i class="fa-solid fa-circle-notch fa-spin"></i>
+            }
+            <span>Enviar Solicitud</span>
           </button>
         </div>
+
+        <!-- Historial de Solicitudes (Cards Responsivos) -->
+        @if (misInasistencias().length > 0) {
+          <div class="pt-3 border-t border-slate-100 space-y-2.5">
+            <h4 class="text-xs font-bold text-slate-700 uppercase font-mono flex items-center gap-1.5">
+              <i class="fa-solid fa-clock-rotate-left text-slate-400"></i>
+              <span>Mis Solicitudes Registradas ({{ misInasistencias().length }})</span>
+            </h4>
+            <div class="max-h-56 overflow-y-auto space-y-2.5 pr-1 scrollbar-thin">
+              @for (ina of misInasistencias(); track ina.id) {
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-2 shadow-2xs">
+                  <div class="flex items-start justify-between gap-2">
+                    <span class="font-mono text-[11px] text-slate-600 bg-white px-2 py-0.5 rounded-md border border-slate-200 inline-flex items-center gap-1">
+                      <i class="fa-solid fa-calendar-days text-amber-500"></i>
+                      <span>{{ ina.fecha_desde }} al {{ ina.fecha_hasta }}</span>
+                    </span>
+                    <span [class]="ina.estado === 'aprobada' ? 'px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold font-mono text-[10px] border border-emerald-200 inline-flex items-center gap-1' : ina.estado === 'rechazada' ? 'px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 font-bold font-mono text-[10px] border border-rose-200 inline-flex items-center gap-1' : 'px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-bold font-mono text-[10px] border border-amber-200 inline-flex items-center gap-1'">
+                      <i [class]="ina.estado === 'aprobada' ? 'fa-solid fa-check' : ina.estado === 'rechazada' ? 'fa-solid fa-xmark' : 'fa-solid fa-clock'"></i>
+                      <span>{{ ina.estado | uppercase }}</span>
+                    </span>
+                  </div>
+                  <p class="text-slate-800 text-xs font-medium">{{ ina.motivo }}</p>
+                  @if (ina.observacion_gestor) {
+                    <div class="text-[11px] text-slate-700 bg-white p-2 rounded-xl border border-slate-200 flex items-start gap-1.5">
+                      <i class="fa-solid fa-clipboard-user text-indigo-500 mt-0.5"></i>
+                      <div>
+                        <strong class="text-slate-900">Gestor:</strong> {{ ina.observacion_gestor }}
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
 
       </div>
     </div>

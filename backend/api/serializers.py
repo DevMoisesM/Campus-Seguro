@@ -71,14 +71,29 @@ class UsuarioSerializer(serializers.ModelSerializer):
     carrera = CarreraSerializer(read_only=True)
     departamento = DepartamentoSerializer(read_only=True)
     especialidades = EspecialidadSerializer(many=True, read_only=True)
+    inasistencia_activa = serializers.SerializerMethodField()
 
     class Meta:
         model = Usuario
         fields = [
             'id', 'username', 'correo_institucional', 'first_name', 'last_name',
             'rut', 'telefono', 'rol', 'escuela', 'carrera', 'departamento',
-            'estado_cuenta', 'auth0_sub', 'especialidades', 'is_active'
+            'estado_cuenta', 'auth0_sub', 'especialidades', 'is_active',
+            'inasistencia_activa'
         ]
+
+    def get_inasistencia_activa(self, obj):
+        from django.utils import timezone
+        hoy = timezone.now().date()
+        inasi = obj.inasistencias.filter(estado='aprobada', fecha_desde__lte=hoy, fecha_hasta__gte=hoy).first()
+        if inasi:
+            return {
+                'id': inasi.id,
+                'motivo': inasi.motivo,
+                'fecha_desde': str(inasi.fecha_desde),
+                'fecha_hasta': str(inasi.fecha_hasta)
+            }
+        return None
 
 
 class UsuarioCreateUpdateSerializer(serializers.ModelSerializer):
@@ -289,3 +304,4 @@ class InasistenciaSerializer(serializers.ModelSerializer):
             'motivo', 'fecha_desde', 'fecha_hasta', 'estado',
             'observacion_gestor', 'created_at'
         ]
+        read_only_fields = ['usuario', 'estado', 'observacion_gestor', 'created_at']

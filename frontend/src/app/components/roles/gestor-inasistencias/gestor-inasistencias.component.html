@@ -14,9 +14,9 @@
     </div>
 
     <div class="flex items-center gap-3">
-      <a routerLink="/gestor/dashboard" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors inline-flex items-center gap-1.5">
+      <a routerLink="/gestor/dashboard" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer">
         <i class="fa-solid fa-arrow-left"></i>
-        <span>Volver a Dashboard</span>
+        <span>Volver al Dashboard</span>
       </a>
     </div>
   </div>
@@ -28,10 +28,73 @@
     </div>
   } @else {
 
-    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-xs space-y-4">
       @if (inasistencias().length > 0) {
-        <div class="table-wrap">
-          <table class="w-full text-left border-collapse">
+        
+        <!-- VISTA MÓVIL EN TARJETAS (Cards) -->
+        <div class="block md:hidden space-y-3">
+          @for (ina of inasistencias(); track ina.id) {
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 shadow-2xs">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <h4 class="font-bold text-slate-900 text-sm">{{ ina.usuario_nombre }}</h4>
+                  <span [class]="ina.usuario_rol === 'Guardia' ? 'px-2 py-0.5 rounded bg-amber-50 text-amber-800 font-mono text-[10px] font-bold border border-amber-200 inline-block mt-0.5' : 'px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-mono text-[10px] font-bold border border-blue-200 inline-block mt-0.5'">
+                    {{ ina.usuario_rol }}
+                  </span>
+                </div>
+                <span [class]="ina.estado === 'aprobada' ? 'px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold font-mono text-[10px] border border-emerald-200 inline-flex items-center gap-1' : ina.estado === 'rechazada' ? 'px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 font-bold font-mono text-[10px] border border-rose-200 inline-flex items-center gap-1' : 'px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-bold font-mono text-[10px] border border-amber-200 inline-flex items-center gap-1'">
+                  <i [class]="ina.estado === 'aprobada' ? 'fa-solid fa-check' : ina.estado === 'rechazada' ? 'fa-solid fa-xmark' : 'fa-solid fa-clock'"></i>
+                  <span>{{ ina.estado | uppercase }}</span>
+                </span>
+              </div>
+
+              <div class="p-3 bg-white rounded-xl border border-slate-200/80 text-xs space-y-1.5">
+                <p class="text-slate-500 font-mono text-[11px] flex items-center gap-1.5">
+                  <i class="fa-solid fa-calendar-days text-slate-400"></i>
+                  <span>{{ ina.fecha_desde }} al {{ ina.fecha_hasta }}</span>
+                </p>
+                <p class="text-slate-800 text-xs font-medium pt-1 border-t border-slate-100">{{ ina.motivo }}</p>
+                @if (ina.observacion_gestor) {
+                  <p class="text-[10px] text-slate-500 italic bg-slate-50 p-1.5 rounded border border-slate-100 mt-1">
+                    <strong>Obs. Gestor:</strong> {{ ina.observacion_gestor }}
+                  </p>
+                }
+              </div>
+
+              <div class="pt-1">
+                @if (ina.estado === 'pendiente') {
+                  <div class="grid grid-cols-2 gap-2">
+                    <button (click)="openDecisionModal(ina, 'aprobar')" 
+                            type="button" 
+                            class="w-full py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200 inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs">
+                      <i class="fa-solid fa-check"></i>
+                      <span>Aprobar</span>
+                    </button>
+                    <button (click)="openDecisionModal(ina, 'rechazar')" 
+                            type="button" 
+                            class="w-full py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs">
+                      <i class="fa-solid fa-xmark"></i>
+                      <span>Rechazar</span>
+                    </button>
+                  </div>
+                } @else if (ina.estado === 'aprobada' && ina.usuario_rol === 'Mantenedor') {
+                  <button (click)="openReasignarModal(ina)" 
+                          type="button" 
+                          class="w-full py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-200 inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs">
+                    <i class="fa-solid fa-arrows-rotate text-amber-600"></i>
+                    <span>Reasignar Carga</span>
+                  </button>
+                } @else {
+                  <span class="text-slate-400 text-[11px] italic font-mono block text-center py-1">Solicitud Procesada</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- VISTA ESCRITORIO EN TABLA -->
+        <div class="hidden md:block overflow-x-auto scrollbar-thin pb-2">
+          <table class="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase font-mono">
                 <th class="py-3 px-4">Trabajador</th>
@@ -44,29 +107,49 @@
             </thead>
             <tbody class="divide-y divide-slate-100 text-xs font-medium">
               @for (ina of inasistencias(); track ina.id) {
-                <tr>
-                  <td class="py-3 px-4 font-bold text-slate-900">{{ ina.usuario_nombre }}</td>
-                  <td class="py-3 px-4 text-slate-500 font-mono">{{ ina.usuario_rol }}</td>
-                  <td class="py-3 px-4 text-slate-700">{{ ina.motivo }}</td>
-                  <td class="py-3 px-4 text-center font-mono text-slate-600">
-                    {{ ina.fecha_desde }} al {{ ina.fecha_hasta }}
-                  </td>
-                  <td class="py-3 px-4 text-center">
-                    <span [class]="ina.estado === 'aprobada' ? 'px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold font-mono border border-emerald-200' : ina.estado === 'rechazada' ? 'px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-bold font-mono border border-rose-200' : 'px-2 py-0.5 rounded bg-amber-50 text-amber-700 font-bold font-mono border border-amber-200'">
-                      {{ ina.estado | uppercase }}
+                <tr class="hover:bg-slate-50/60 transition-colors">
+                  <td class="py-3.5 px-4 font-bold text-slate-900">{{ ina.usuario_nombre }}</td>
+                  <td class="py-3.5 px-4">
+                    <span [class]="ina.usuario_rol === 'Guardia' ? 'px-2 py-0.5 rounded bg-amber-50 text-amber-800 font-mono text-[10px] font-bold border border-amber-200' : 'px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-mono text-[10px] font-bold border border-blue-200'">
+                      {{ ina.usuario_rol }}
                     </span>
                   </td>
-                  <td class="py-3 px-4 text-right space-x-2">
-                    @if (ina.estado === 'pendiente') {
-                      <button (click)="aprobar(ina.id)" type="button" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs">
-                        Aprobar
-                      </button>
-                      <button (click)="rechazar(ina.id)" type="button" class="text-rose-600 hover:text-rose-800 font-bold text-xs">
-                        Rechazar
-                      </button>
-                    } @else {
-                      <span class="text-slate-400 text-[11px] italic">Procesado</span>
-                    }
+                  <td class="py-3.5 px-4 text-slate-700 max-w-xs truncate" [title]="ina.motivo">{{ ina.motivo }}</td>
+                  <td class="py-3.5 px-4 text-center font-mono text-slate-600 text-[11px]">
+                    {{ ina.fecha_desde }} al {{ ina.fecha_hasta }}
+                  </td>
+                  <td class="py-3.5 px-4 text-center">
+                    <span [class]="ina.estado === 'aprobada' ? 'px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold font-mono text-[10px] border border-emerald-200 inline-flex items-center gap-1' : ina.estado === 'rechazada' ? 'px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 font-bold font-mono text-[10px] border border-rose-200 inline-flex items-center gap-1' : 'px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-bold font-mono text-[10px] border border-amber-200 inline-flex items-center gap-1'">
+                      <i [class]="ina.estado === 'aprobada' ? 'fa-solid fa-check' : ina.estado === 'rechazada' ? 'fa-solid fa-xmark' : 'fa-solid fa-clock'"></i>
+                      <span>{{ ina.estado | uppercase }}</span>
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right">
+                    <div class="flex items-center justify-end gap-1.5">
+                      @if (ina.estado === 'pendiente') {
+                        <button (click)="openDecisionModal(ina, 'aprobar')" 
+                                type="button" 
+                                class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200 inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs">
+                          <i class="fa-solid fa-check"></i>
+                          <span>Aprobar</span>
+                        </button>
+                        <button (click)="openDecisionModal(ina, 'rechazar')" 
+                                type="button" 
+                                class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs">
+                          <i class="fa-solid fa-xmark"></i>
+                          <span>Rechazar</span>
+                        </button>
+                      } @else if (ina.estado === 'aprobada' && ina.usuario_rol === 'Mantenedor') {
+                        <button (click)="openReasignarModal(ina)" 
+                                type="button" 
+                                class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-200 inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs">
+                          <i class="fa-solid fa-arrows-rotate text-amber-600"></i>
+                          <span>Reasignar Carga</span>
+                        </button>
+                      } @else {
+                        <span class="text-slate-400 text-[11px] italic font-mono">Procesado</span>
+                      }
+                    </div>
                   </td>
                 </tr>
               }
@@ -78,6 +161,120 @@
       }
     </div>
 
+  }
+
+  <!-- MODAL DE DECISIÓN (APROBAR / RECHAZAR) -->
+  @if (selectedInasistencia() && (modalAction() === 'aprobar' || modalAction() === 'rechazar')) {
+    <div class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-sm font-bold uppercase font-mono tracking-wider flex items-center gap-2"
+              [class]="modalAction() === 'aprobar' ? 'text-emerald-700' : 'text-rose-700'">
+            <i [class]="modalAction() === 'aprobar' ? 'fa-solid fa-circle-check text-emerald-600 text-base' : 'fa-solid fa-circle-xmark text-rose-600 text-base'"></i>
+            <span>{{ modalAction() === 'aprobar' ? 'Aprobar Inasistencia' : 'Rechazar Inasistencia' }}</span>
+          </h3>
+          <button (click)="closeModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Ficha Resumen del Trabajador -->
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-900">{{ selectedInasistencia()?.usuario_nombre }}</span>
+            <span class="font-mono text-[10px] text-slate-500 uppercase">{{ selectedInasistencia()?.usuario_rol }}</span>
+          </div>
+          <p class="text-slate-600 font-mono text-[11px]">
+            <strong>Período:</strong> {{ selectedInasistencia()?.fecha_desde }} al {{ selectedInasistencia()?.fecha_hasta }}
+          </p>
+          <p class="text-slate-700 text-[11px] bg-white p-2 rounded-lg border border-slate-100">
+            <strong>Motivo declarado:</strong> {{ selectedInasistencia()?.motivo }}
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">
+              {{ modalAction() === 'aprobar' ? 'Observación del Gestor (Opcional)' : 'Motivo del Rechazo *' }}
+            </label>
+            <textarea [(ngModel)]="observacion" 
+                      rows="3" 
+                      [placeholder]="modalAction() === 'aprobar' ? 'Comentarios o instrucciones para el trabajador...' : 'Indica el motivo por el cual no procede la solicitud...'" 
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500"></textarea>
+          </div>
+
+          @if (modalAction() === 'aprobar' && selectedInasistencia()?.usuario_rol === 'Mantenedor') {
+            <label class="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-xl cursor-pointer">
+              <input type="checkbox" [(ngModel)]="devolverTickets" class="mt-0.5 text-amber-600 rounded" />
+              <span class="text-xs text-amber-900 leading-tight">
+                <strong>Liberar órdenes activas:</strong> Si el técnico tiene tickets asignados pendientes, devolverlos a la cola general para evitar atrasos.
+              </span>
+            </label>
+          }
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button (click)="closeModal()" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer">
+            Cancelar
+          </button>
+          <button (click)="confirmDecision()" 
+                  [disabled]="submitting()"
+                  type="button" 
+                  [class]="modalAction() === 'aprobar' ? 'px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50' : 'px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50'">
+            @if (submitting()) {
+              <i class="fa-solid fa-circle-notch fa-spin"></i>
+            }
+            <span>{{ modalAction() === 'aprobar' ? 'Confirmar Aprobación' : 'Confirmar Rechazo' }}</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- MODAL DE REASIGNAR CARGA -->
+  @if (selectedInasistencia() && modalAction() === 'reasignar') {
+    <div class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-sm font-bold text-amber-800 uppercase font-mono tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-arrows-rotate text-amber-600 text-base"></i>
+            <span>Reasignar Carga de Tickets</span>
+          </h3>
+          <button (click)="closeModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-2 text-amber-950">
+          <p class="font-bold flex items-center gap-1.5 text-amber-900">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+            <span>¿Desasignar tickets de {{ selectedInasistencia()?.usuario_nombre }}?</span>
+          </p>
+          <p class="leading-relaxed">
+            Todos los tickets asignados en estado <strong>Validado</strong> o <strong>En Mantención</strong> volverán a la cola general como <em>Sin Asignar</em> para que puedas asignarlos a otro técnico disponible.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button (click)="closeModal()" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer">
+            Cancelar
+          </button>
+          <button (click)="confirmReasignar()" 
+                  [disabled]="submitting()"
+                  type="button" 
+                  class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+            @if (submitting()) {
+              <i class="fa-solid fa-circle-notch fa-spin"></i>
+            }
+            <span>Desasignar y Devolver a Cola</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
   }
 
 </div>

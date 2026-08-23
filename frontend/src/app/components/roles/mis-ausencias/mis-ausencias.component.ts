@@ -25,11 +25,13 @@ export class MisAusenciasComponent implements OnInit {
   inasiFechaHasta = '';
   submitting = signal(false);
 
+  // Feedback Banners
+  successMessage = signal<string | null>(null);
+  errorMessage = signal<string | null>(null);
+
   // Filtrar solo las inasistencias del usuario conectado
   misInasistencias = computed(() => {
-    const currentUser = this.authService.currentUser();
-    if (!currentUser) return this.inasistencias();
-    return this.inasistencias().filter(i => i.usuario === currentUser.id || i.usuario_nombre === currentUser.first_name);
+    return this.inasistencias();
   });
 
   ngOnInit(): void {
@@ -52,34 +54,41 @@ export class MisAusenciasComponent implements OnInit {
     this.inasiMotivo = '';
     this.inasiFechaDesde = today;
     this.inasiFechaHasta = today;
+    this.errorMessage.set(null);
     this.showModal.set(true);
   }
 
   closeModal(): void {
     this.showModal.set(false);
+    this.errorMessage.set(null);
   }
 
   submitInasistencia(): void {
     if (!this.inasiMotivo.trim() || !this.inasiFechaDesde || !this.inasiFechaHasta) {
-      alert('Por favor complete todos los campos de la solicitud.');
+      this.errorMessage.set('Por favor completa todos los campos requeridos antes de enviar.');
       return;
     }
 
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
     this.submitting.set(true);
+
     this.ticketService.createInasistencia({
       motivo: this.inasiMotivo,
       fecha_desde: this.inasiFechaDesde,
       fecha_hasta: this.inasiFechaHasta
     }).subscribe({
       next: () => {
-        alert('Solicitud de permiso/licencia enviada exitosamente para revisión del Gestor.');
         this.submitting.set(false);
+        this.successMessage.set('Tu solicitud de permiso/licencia fue enviada exitosamente para revisión del Gestor.');
         this.closeModal();
         this.loadData();
+        setTimeout(() => this.successMessage.set(null), 6000);
       },
-      error: () => {
-        alert('Error al enviar la solicitud.');
+      error: (err) => {
         this.submitting.set(false);
+        const msg = err?.error?.detail || err?.error?.motivo?.[0] || 'Ocurrió un error al enviar la solicitud.';
+        this.errorMessage.set(msg);
       }
     });
   }

@@ -146,12 +146,16 @@ export class TicketService {
     return this.http.post<any>(`${this.apiUrl}/inasistencias/`, data);
   }
 
-  aprobarInasistencia(id: number, observacion?: string): Observable<{ status: string }> {
-    return this.http.post<{ status: string }>(`${this.apiUrl}/inasistencias/${id}/aprobar/`, { observacion });
+  aprobarInasistencia(id: number, observacion?: string): Observable<{ status: string; estado: string; tickets_pendientes: number; usuario_nombre: string }> {
+    return this.http.post<{ status: string; estado: string; tickets_pendientes: number; usuario_nombre: string }>(`${this.apiUrl}/inasistencias/${id}/aprobar/`, { observacion });
   }
 
   rechazarInasistencia(id: number, observacion?: string): Observable<{ status: string }> {
     return this.http.post<{ status: string }>(`${this.apiUrl}/inasistencias/${id}/rechazar/`, { observacion });
+  }
+
+  reasignarTicketsInasistencia(id: number, nuevo_mantenedor_id?: number): Observable<{ status: string; tickets_reasignados: number }> {
+    return this.http.post<{ status: string; tickets_reasignados: number }>(`${this.apiUrl}/inasistencias/${id}/reasignar_tickets/`, { nuevo_mantenedor_id });
   }
 
   getMetrics(params?: { rango?: string; fecha_desde?: string; fecha_hasta?: string; sede?: number }): Observable<TicketMetrics> {

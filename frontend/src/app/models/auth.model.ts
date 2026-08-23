@@ -29,6 +29,12 @@ export interface User {
   especialidades?: Especialidad[];
   auth0_sub?: string;
   is_active?: boolean;
+  inasistencia_activa?: {
+    id: number;
+    motivo: string;
+    fecha_desde: string;
+    fecha_hasta: string;
+  } | null;
 }
 
 export interface LoginCredentials {

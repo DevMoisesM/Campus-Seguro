@@ -898,6 +898,16 @@ class InasistenciaViewSet(viewsets.ModelViewSet):
     serializer_class = InasistenciaSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        user = self.request.user
+        if not user or user.is_anonymous:
+            return Inasistencia.objects.none()
+        # Si es gestor o admin, ve todas las inasistencias.
+        if user.rol and user.rol.codigo in ['gestor', 'admin']:
+            return Inasistencia.objects.all().select_related('usuario', 'usuario__rol')
+        # Guardias y Mantenedores ven sus propias inasistencias
+        return Inasistencia.objects.filter(usuario=user).select_related('usuario', 'usuario__rol')
+
     def perform_create(self, serializer):
         serializer.save(usuario=self.request.user)
 
@@ -907,7 +917,19 @@ class InasistenciaViewSet(viewsets.ModelViewSet):
         inasistencia.estado = 'aprobada'
         inasistencia.observacion_gestor = request.data.get('observacion', '')
         inasistencia.save()
-        return Response({'status': 'ok', 'estado': 'aprobada'})
+
+        # Revisar si el usuario tiene tickets asignados pendientes para alertar al gestor
+        tickets_pendientes = Ticket.objects.filter(
+            asignado_a=inasistencia.usuario,
+            estado__codigo__in=['validado', 'en_mantencion']
+        ).count()
+
+        return Response({
+            'status': 'ok',
+            'estado': 'aprobada',
+            'tickets_pendientes': tickets_pendientes,
+            'usuario_nombre': inasistencia.usuario.get_full_name()
+        })
 
     @action(detail=True, methods=['post'])
     def rechazar(self, request, pk=None):
@@ -916,6 +938,46 @@ class InasistenciaViewSet(viewsets.ModelViewSet):
         inasistencia.observacion_gestor = request.data.get('observacion', '')
         inasistencia.save()
         return Response({'status': 'ok', 'estado': 'rechazada'})
+
+    @action(detail=True, methods=['post'])
+    def reasignar_tickets(self, request, pk=None):
+        """
+        Desasigna o reasigna todos los tickets activos de un trabajador con inasistencia.
+        """
+        inasistencia = self.get_object()
+        nuevo_mantenedor_id = request.data.get('nuevo_mantenedor_id')
+        estado_validado = EstadoCatalogo.objects.filter(entidad='ticket', codigo='validado').first()
+
+        tickets = Ticket.objects.filter(
+            asignado_a=inasistencia.usuario,
+            estado__codigo__in=['validado', 'en_mantencion']
+        )
+        total_afectados = tickets.count()
+
+        if nuevo_mantenedor_id:
+            nuevo_mantenedor = get_object_or_404(Usuario, id=nuevo_mantenedor_id)
+            for t in tickets:
+                t.asignado_a = nuevo_mantenedor
+                t.save()
+                LogAuditoria.objects.create(
+                    ticket=t,
+                    usuario=request.user,
+                    accion=f'Reasignado a {nuevo_mantenedor.get_full_name()} por inasistencia de {inasistencia.usuario.get_full_name()}'
+                )
+        else:
+            for t in tickets:
+                t.asignado_a = None
+                if estado_validado:
+                    t.estado = estado_validado
+                t.save()
+                LogAuditoria.objects.create(
+                    ticket=t,
+                    usuario=request.user,
+                    accion=f'Desasignado a cola general por inasistencia de {inasistencia.usuario.get_full_name()}',
+                    estado_nuevo='Validado (Sin Asignar)'
+                )
+
+        return Response({'status': 'ok', 'tickets_reasignados': total_afectados})
 
 
 # ═══════════════════════════════════════════════════════════════

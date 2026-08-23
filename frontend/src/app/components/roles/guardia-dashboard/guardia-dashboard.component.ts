@@ -85,27 +85,47 @@ export class GuardiaDashboardComponent implements OnInit {
 
   // Modal de Licencia / Permiso
   showInasistenciaModal = signal(false);
+  misInasistencias = signal<any[]>([]);
   inasiMotivo = '';
   inasiFechaDesde = '';
   inasiFechaHasta = '';
+  inasistenciaSuccess = signal<string | null>(null);
+  inasistenciaError = signal<string | null>(null);
+  submittingInasistencia = signal(false);
 
   openInasistenciaModal(): void {
     const today = new Date().toISOString().split('T')[0];
     this.inasiMotivo = '';
     this.inasiFechaDesde = today;
     this.inasiFechaHasta = today;
+    this.inasistenciaSuccess.set(null);
+    this.inasistenciaError.set(null);
+    this.loadMisInasistencias();
     this.showInasistenciaModal.set(true);
   }
 
   closeInasistenciaModal(): void {
     this.showInasistenciaModal.set(false);
+    this.inasistenciaSuccess.set(null);
+    this.inasistenciaError.set(null);
+  }
+
+  loadMisInasistencias(): void {
+    this.ticketService.getInasistencias().subscribe({
+      next: (data) => this.misInasistencias.set(data),
+      error: () => {}
+    });
   }
 
   submitInasistencia(): void {
     if (!this.inasiMotivo.trim() || !this.inasiFechaDesde || !this.inasiFechaHasta) {
-      alert('Por favor complete todos los campos de la solicitud.');
+      this.inasistenciaError.set('Por favor completa todos los campos requeridos antes de enviar.');
       return;
     }
+
+    this.inasistenciaError.set(null);
+    this.inasistenciaSuccess.set(null);
+    this.submittingInasistencia.set(true);
 
     this.ticketService.createInasistencia({
       motivo: this.inasiMotivo,
@@ -113,10 +133,17 @@ export class GuardiaDashboardComponent implements OnInit {
       fecha_hasta: this.inasiFechaHasta
     }).subscribe({
       next: () => {
-        alert('Solicitud de permiso/licencia enviada exitosamente para revisión del Gestor.');
-        this.closeInasistenciaModal();
+        this.submittingInasistencia.set(false);
+        this.inasistenciaSuccess.set('Tu solicitud fue registrada y enviada para revisión del Gestor.');
+        this.inasiMotivo = '';
+        this.loadMisInasistencias();
+        setTimeout(() => this.inasistenciaSuccess.set(null), 6000);
       },
-      error: () => alert('Error al enviar la solicitud.')
+      error: (err) => {
+        this.submittingInasistencia.set(false);
+        const msg = err?.error?.detail || err?.error?.motivo?.[0] || 'Ocurrió un error al enviar la solicitud.';
+        this.inasistenciaError.set(msg);
+      }
     });
   }
 
