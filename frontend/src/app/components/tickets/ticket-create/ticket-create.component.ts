@@ -7,6 +7,7 @@ import { TicketService } from '../../../services/ticket.service';
 import { AuthService } from '../../../services/auth.service';
 import { Sede, Edificio, Piso, Ubicacion } from '../../../models/location.model';
 import { CategoriaTicket, UrgenciaTicket } from '../../../models/ticket.model';
+import { compressImage } from '../../../utils/image-compressor.util';
 
 @Component({
   selector: 'app-ticket-create',
@@ -65,15 +66,23 @@ export class TicketCreateComponent implements OnInit {
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      Array.from(input.files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string || '';
-          if (result) {
-            this.imagenesUrls.update(list => [...list, result]);
+      Array.from(input.files).forEach(async (file) => {
+        try {
+          const compressed = await compressImage(file);
+          if (compressed) {
+            this.imagenesUrls.update(list => [...list, compressed]);
           }
-        };
-        reader.readAsDataURL(file);
+        } catch {
+          // Fallback en caso de error
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const result = e.target?.result as string || '';
+            if (result) {
+              this.imagenesUrls.update(list => [...list, result]);
+            }
+          };
+          reader.readAsDataURL(file);
+        }
       });
       // Reset input value to allow selecting same files again if needed
       input.value = '';

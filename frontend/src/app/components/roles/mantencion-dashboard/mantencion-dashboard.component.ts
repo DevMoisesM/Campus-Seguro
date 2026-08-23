@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { TicketService, MaterialCatalog } from '../../../services/ticket.service';
 import { AuthService } from '../../../services/auth.service';
 import { Ticket } from '../../../models/ticket.model';
+import { compressImage } from '../../../utils/image-compressor.util';
 
 @Component({
   selector: 'app-mantencion-dashboard',
@@ -113,12 +114,16 @@ export class MantencionDashboardComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
       const file = input.files[0];
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string || '';
-        this.imagenUrl.set(result);
-      };
-      reader.readAsDataURL(file);
+      compressImage(file).then(compressed => {
+        this.imagenUrl.set(compressed);
+      }).catch(() => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string || '';
+          this.imagenUrl.set(result);
+        };
+        reader.readAsDataURL(file);
+      });
     }
   }
 

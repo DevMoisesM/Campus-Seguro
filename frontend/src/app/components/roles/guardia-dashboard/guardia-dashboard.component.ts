@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { TicketService } from '../../../services/ticket.service';
 import { AuthService } from '../../../services/auth.service';
 import { Ticket } from '../../../models/ticket.model';
+import { compressImage } from '../../../utils/image-compressor.util';
 
 @Component({
   selector: 'app-guardia-dashboard',
@@ -53,13 +54,20 @@ export class GuardiaDashboardComponent implements OnInit {
     const target = event.target as HTMLInputElement;
     const files = target.files;
     if (files && files.length > 0) {
-      Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          this.imagenesPreview.update(prev => [...prev, result]);
-        };
-        reader.readAsDataURL(file);
+      Array.from(files).forEach(async (file) => {
+        try {
+          const compressed = await compressImage(file);
+          if (compressed) {
+            this.imagenesPreview.update(prev => [...prev, compressed]);
+          }
+        } catch {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            this.imagenesPreview.update(prev => [...prev, result]);
+          };
+          reader.readAsDataURL(file);
+        }
       });
       target.value = '';
     }
