@@ -409,19 +409,77 @@
           </div>
 
           @if (bypassValido) {
-            <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">
-                Asignar a Mantenedor Inmediatamente (Opcional)
+            <div class="space-y-2">
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono">
+                Asignar a Mantenedor Inmediatamente (Opcional):
               </label>
-              <select [(ngModel)]="bypassMantenedorId" 
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500">
-                <option value="">-- Dejar solo Validado (Asignar después) --</option>
+
+              <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                <!-- Opción: Dejar solo validado -->
+                <div (click)="bypassMantenedorId = ''"
+                     [ngClass]="bypassMantenedorId === '' ? 'border-indigo-500 bg-indigo-50/50 ring-2 ring-indigo-500/20' : 'border-slate-200 bg-white hover:bg-slate-50'"
+                     class="p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer text-xs">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-clipboard-list text-slate-400"></i>
+                    <span class="font-semibold text-slate-700">Dejar solo Validado (Asignar después)</span>
+                  </div>
+                  <div class="w-4 h-4 rounded-full border flex items-center justify-center"
+                       [ngClass]="bypassMantenedorId === '' ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white'">
+                    @if (bypassMantenedorId === '') {
+                      <i class="fa-solid fa-check text-[8px]"></i>
+                    }
+                  </div>
+                </div>
+
+                <!-- Lista de Mantenedores -->
                 @for (m of mantenedores(); track m.id) {
-                  <option [value]="m.id" [disabled]="!!m.inasistencia_activa">
-                    {{ m.first_name }} {{ m.last_name }}{{ m.inasistencia_activa ? ' (⚠️ Ausente / Licencia)' : '' }}
-                  </option>
+                  <div (click)="!m.inasistencia_activa && (bypassMantenedorId = m.id.toString())"
+                       [ngClass]="{
+                         'border-indigo-500 bg-indigo-50/50 ring-2 ring-indigo-500/20': bypassMantenedorId === m.id.toString(),
+                         'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70': bypassMantenedorId !== m.id.toString() && !m.inasistencia_activa,
+                         'opacity-50 border-slate-200 bg-slate-100/70 cursor-not-allowed': m.inasistencia_activa
+                       }"
+                       class="p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 cursor-pointer">
+                    
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-7 h-7 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">
+                        {{ (m.first_name[0] || '') + (m.last_name[0] || '') }}
+                      </div>
+                      <div class="min-w-0">
+                        <p class="text-xs font-bold text-slate-900 truncate">
+                          {{ m.first_name }} {{ m.last_name }}
+                        </p>
+                        <div class="flex items-center gap-1 mt-0.5 flex-wrap">
+                          @if (m.especialidades && m.especialidades.length > 0) {
+                            @for (esp of m.especialidades; track esp.id) {
+                              <span class="text-[9px] text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded font-mono">
+                                {{ esp.nombre }}
+                              </span>
+                            }
+                          } @else {
+                            <span class="text-[9px] text-slate-400 font-mono">General</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                      <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border"
+                            [ngClass]="getCargaBadgeClass(m)">
+                        {{ getCargaLabel(m) }}
+                      </span>
+
+                      <div class="w-4 h-4 rounded-full border flex items-center justify-center"
+                           [ngClass]="bypassMantenedorId === m.id.toString() ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white'">
+                        @if (bypassMantenedorId === m.id.toString()) {
+                          <i class="fa-solid fa-check text-[8px]"></i>
+                        }
+                      </div>
+                    </div>
+
+                  </div>
                 }
-              </select>
+              </div>
             </div>
           } @else {
             <div>
@@ -494,23 +552,71 @@
           <p class="text-slate-500 font-mono text-[11px]"><strong class="text-slate-700 font-sans">Reportado por:</strong> {{ ticket.creado_por.first_name }} {{ ticket.creado_por.last_name }}</p>
         </div>
 
-        <!-- Selección de Técnico -->
-        <div class="space-y-2">
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
-            Seleccionar Técnico de Mantención:
-          </label>
-          <select [ngModel]="selectedMantenedorId()" 
-                  (ngModelChange)="selectedMantenedorId.set($any($event))" 
-                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-amber-500">
-            <option [ngValue]="null">-- Seleccione Técnico Responsable --</option>
+        <!-- Selección de Técnico con Tarjetas de Carga de Trabajo -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
+              Seleccionar Mantenedor Disponible:
+            </label>
+            <span class="text-[11px] font-medium text-slate-400">
+              {{ mantenedores().length }} técnicos en staff
+            </span>
+          </div>
+
+          <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
             @for (m of mantenedores(); track m.id) {
-              <option [value]="m.id" [disabled]="!!m.inasistencia_activa">
-                {{ m.first_name }} {{ m.last_name }}{{ m.inasistencia_activa ? ' (⚠️ Ausente / Licencia)' : '' }}
-              </option>
+              <div (click)="!m.inasistencia_activa && selectedMantenedorId.set(m.id)"
+                   [ngClass]="{
+                     'border-amber-500 bg-amber-50/50 shadow-xs ring-2 ring-amber-500/20': selectedMantenedorId() === m.id,
+                     'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70': selectedMantenedorId() !== m.id && !m.inasistencia_activa,
+                     'opacity-50 border-slate-200 bg-slate-100/70 cursor-not-allowed': m.inasistencia_activa
+                   }"
+                   class="p-3 rounded-xl border transition-all flex items-center justify-between gap-3 cursor-pointer">
+                
+                <!-- Info Técnico -->
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
+                    {{ (m.first_name[0] || '') + (m.last_name[0] || '') }}
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-xs font-bold text-slate-900 truncate">
+                      {{ m.first_name }} {{ m.last_name }}
+                    </p>
+                    <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      @if (m.especialidades && m.especialidades.length > 0) {
+                        @for (esp of m.especialidades; track esp.id) {
+                          <span class="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded font-mono font-medium">
+                            {{ esp.nombre }}
+                          </span>
+                        }
+                      } @else {
+                        <span class="text-[10px] text-slate-400 font-mono">Técnico General</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Badge de Carga y Radio indicator -->
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md border"
+                        [ngClass]="getCargaBadgeClass(m)">
+                    {{ getCargaLabel(m) }}
+                  </span>
+
+                  <div class="w-5 h-5 rounded-full border flex items-center justify-center transition-colors"
+                       [ngClass]="selectedMantenedorId() === m.id ? 'border-amber-500 bg-[#FFB800] text-slate-950 font-bold' : 'border-slate-300 bg-white'">
+                    @if (selectedMantenedorId() === m.id) {
+                      <i class="fa-solid fa-check text-[10px]"></i>
+                    }
+                  </div>
+                </div>
+
+              </div>
             }
-          </select>
+          </div>
+
           <p class="text-[11px] text-slate-400">
-            Al confirmar, el estado del ticket cambiará a <strong class="text-indigo-600">En Mantenimiento</strong> y aparecerá en las órdenes de trabajo del técnico seleccionado.
+            Al confirmar, el estado cambiará a <strong class="text-indigo-600">En Mantenimiento</strong> y se sumará a la carga activa del técnico.
           </p>
         </div>
 

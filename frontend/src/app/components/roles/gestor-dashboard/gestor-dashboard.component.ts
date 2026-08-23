@@ -152,4 +152,25 @@ export class GestorDashboardComponent implements OnInit {
       default: return 'bg-blue-50 text-blue-700 border-blue-200';
     }
   }
+
+  getCargaBadgeClass(m: User): string {
+    if (m.inasistencia_activa) {
+      return 'bg-slate-100 text-slate-500 border-slate-200';
+    }
+    const carga = m.carga_activa ?? 0;
+    if (carga === 0) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (carga <= 2) return 'bg-amber-50 text-amber-700 border-amber-200';
+    return 'bg-rose-50 text-rose-700 border-rose-200';
+  }
+
+  getCargaLabel(m: User): string {
+    if (m.inasistencia_activa) {
+      return '⛔ Ausente (Licencia)';
+    }
+    const carga = m.carga_activa ?? 0;
+    if (carga === 0) return '🟢 0 órdenes activas (Disponible)';
+    if (carga === 1) return '🟡 1 orden activa';
+    if (carga <= 2) return `🟡 ${carga} órdenes activas`;
+    return `🔴 Alta carga (${carga} órdenes)`;
+  }
 }
