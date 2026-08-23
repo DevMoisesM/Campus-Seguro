@@ -26,6 +26,19 @@
     </div>
   </div>
 
+  <!-- Alerta de Licencia / Ausencia Activa -->
+  @if (inasistenciaActiva()) {
+    <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center gap-3.5 shadow-2xs">
+      <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-lg flex-shrink-0 font-bold shadow-xs">
+        <i class="fa-solid fa-calendar-check"></i>
+      </div>
+      <div>
+        <strong class="text-sm font-bold block text-amber-950">Permiso / Licencia Médica Activa para Hoy</strong>
+        <span class="text-amber-800">El sistema tiene registrada tu inasistencia aprobada; no se te asignarán nuevas inspecciones de terreno durante este período.</span>
+      </div>
+    </div>
+  }
+
   <!-- Métricas Guardia -->
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center justify-between">
@@ -53,10 +66,26 @@
 
   <!-- Lista de Incidentes para Inspeccionar -->
   <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
       <div>
-        <h3 class="text-lg font-extrabold text-slate-900 tracking-tight">Incidentes Pendientes de Inspección</h3>
+        <h3 class="text-lg font-extrabold text-slate-900 tracking-tight">Incidentes para Inspección</h3>
         <p class="text-xs text-slate-500">Revisa la sala y ejecuta el checklist de seguridad antes de derivar a mantenimiento</p>
+      </div>
+      <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
+        <button (click)="filtroTurno.set('mis_inspecciones')" 
+                type="button" 
+                [ngClass]="filtroTurno() === 'mis_inspecciones' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800 font-medium'"
+                class="px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer">
+          <i class="fa-solid fa-person-walking text-amber-500"></i>
+          <span>Mi Ronda ({{ misAsignadosCount() }})</span>
+        </button>
+        <button (click)="filtroTurno.set('todas')" 
+                type="button" 
+                [ngClass]="filtroTurno() === 'todas' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-500 hover:text-slate-800 font-medium'"
+                class="px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer">
+          <i class="fa-solid fa-layer-group text-slate-400"></i>
+          <span>Todo el Campus ({{ tickets().length }})</span>
+        </button>
       </div>
     </div>
 
@@ -67,25 +96,41 @@
       </div>
     }
 
-    @if (!loading() && tickets().length === 0) {
+    @if (!loading() && ticketsFiltrados().length === 0) {
       <div class="py-12 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
         <i class="fa-solid fa-shield-check text-4xl mb-3 text-emerald-500"></i>
-        <p class="text-sm font-semibold text-slate-700">No hay incidentes pendientes de inspección</p>
-        <p class="text-xs text-slate-400 mt-1">Todas las zonas del campus se encuentran validadas.</p>
+        <p class="text-sm font-semibold text-slate-700">No hay incidentes pendientes en esta vista</p>
+        <p class="text-xs text-slate-400 mt-1">Todas las zonas del campus se encuentran validadas o asignadas a otros turnos.</p>
       </div>
     }
 
-    @if (!loading() && tickets().length > 0) {
+    @if (!loading() && ticketsFiltrados().length > 0) {
       
       <!-- VISTA MÓVIL Y TABLET EN TARJETAS (< lg: 1024px) -->
       <div class="block lg:hidden space-y-3">
-        @for (t of tickets(); track t.id) {
+        @for (t of ticketsFiltrados(); track t.id) {
           <div class="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-3">
             <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
               <span class="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg">
                 {{ t.folio }}
               </span>
-              <div class="flex items-center gap-1.5">
+              <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                @if (t.guardia_asignado?.id === authService.currentUser()?.id) {
+                  <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 font-mono">
+                    <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                    <span>Mi Ronda</span>
+                  </span>
+                } @else if (t.guardia_asignado) {
+                  <span class="inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 font-mono">
+                    <i class="fa-solid fa-user-shield text-slate-400"></i>
+                    <span>{{ t.guardia_asignado.first_name }}</span>
+                  </span>
+                } @else {
+                  <span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 font-mono">
+                    <i class="fa-solid fa-bolt text-amber-500"></i>
+                    <span>Cola General</span>
+                  </span>
+                }
                 <span [class]="'px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
                   {{ t.urgencia }}
                 </span>
@@ -131,13 +176,14 @@
               <th class="px-4 py-3">Folio</th>
               <th class="px-4 py-3">Título / Detalle</th>
               <th class="px-4 py-3">Ubicación a Inspeccionar</th>
+              <th class="px-4 py-3">Asignación Ronda</th>
               <th class="px-4 py-3">Urgencia</th>
               <th class="px-4 py-3">Estado</th>
               <th class="px-4 py-3 text-right">Acción Guardia</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            @for (t of tickets(); track t.id) {
+            @for (t of ticketsFiltrados(); track t.id) {
               <tr class="hover:bg-slate-50 transition-colors">
                 <td class="px-4 py-3.5 font-mono text-xs font-bold">
                   <a [routerLink]="['/guardia/tickets', t.id]" class="text-slate-900 hover:text-amber-600 hover:underline flex items-center gap-1">
@@ -153,6 +199,24 @@
                 <td class="px-4 py-3.5 text-xs text-slate-700 font-bold">
                   {{ t.ubicacion.nombre }}
                   <span class="block text-[11px] font-normal text-slate-400">{{ t.ubicacion.edificio_nombre }}</span>
+                </td>
+                <td class="px-4 py-3.5 text-xs">
+                  @if (t.guardia_asignado?.id === authService.currentUser()?.id) {
+                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-mono">
+                      <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                      <span>Mi Ronda</span>
+                    </span>
+                  } @else if (t.guardia_asignado) {
+                    <span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 font-mono">
+                      <i class="fa-solid fa-user-shield text-slate-400"></i>
+                      <span>{{ t.guardia_asignado.first_name }}</span>
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 font-mono">
+                      <i class="fa-solid fa-bolt text-amber-500"></i>
+                      <span>Cola General</span>
+                    </span>
+                  }
                 </td>
                 <td class="px-4 py-3.5">
                   <span [class]="'px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
@@ -177,8 +241,8 @@
                     }
                     <a [routerLink]="['/guardia/tickets', t.id]" 
                        class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-1">
-                      <span>Ver Trazabilidad</span>
-                      <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                       <span>Ver Trazabilidad</span>
+                       <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </a>
                   </div>
                 </td>

@@ -313,6 +313,7 @@ class Ticket(models.Model):
 
     # Personas involucradas
     creado_por = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name="tickets_creados")
+    guardia_asignado = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name="tickets_inspeccion")
     validado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name="tickets_validados")
     asignado_a = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name="tickets_asignados")
 

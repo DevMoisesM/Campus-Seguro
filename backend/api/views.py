@@ -245,7 +245,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         queryset = Ticket.objects.filter(deleted_at__isnull=True).select_related(
             'ubicacion__piso__edificio__sede', 'ubicacion__tipo',
             'estado', 'categoria', 'especialidad_requerida',
-            'creado_por', 'validado_por', 'asignado_a'
+            'creado_por', 'guardia_asignado', 'validado_por', 'asignado_a'
         ).prefetch_related('evidencias', 'materiales_utilizados', 'sesiones_trabajo')
 
         if user.is_superuser:
@@ -257,8 +257,8 @@ class TicketViewSet(viewsets.ModelViewSet):
             # Usuario Base solo ve los tickets que él ha creado
             return queryset.filter(creado_por=user)
         elif rol_codigo == 'guardia':
-            # Guardia ve tickets pendientes de validación o que él validó
-            return queryset.filter(Q(estado__codigo__in=['enviado', 'validado']) | Q(validado_por=user))
+            # Guardia ve tickets pendientes de validación, asignados a su inspección o que él validó
+            return queryset.filter(Q(estado__codigo__in=['enviado', 'validado']) | Q(validado_por=user) | Q(guardia_asignado=user))
         elif rol_codigo == 'mantencion':
             # Mantenedor ve los tickets asignados a él
             return queryset.filter(asignado_a=user)
@@ -276,8 +276,39 @@ class TicketViewSet(viewsets.ModelViewSet):
         imagen_url = serializer.validated_data.pop('imagen_url', None)
         imagenes_urls = self.request.data.get('imagenes_urls', [])
 
+        # Despacho Inteligente y Equitativo (Round-Robin por menor carga) a Guardia de Turno
+        hoy = timezone.localdate()
+        guardias_queryset = Usuario.objects.filter(
+            rol__codigo='guardia',
+            is_active=True
+        )
+        # Excluir guardias con inasistencia aprobada para hoy
+        guardias_ausentes_ids = Inasistencia.objects.filter(
+            fecha_desde__lte=hoy,
+            fecha_hasta__gte=hoy,
+            estado='aprobada'
+        ).values_list('usuario_id', flat=True)
+
+        guardias_disponibles = list(guardias_queryset.exclude(id__in=guardias_ausentes_ids))
+
+        guardia_seleccionado = None
+        if guardias_disponibles:
+            # Calcular carga de tickets asignados a cada guardia hoy
+            guardias_con_carga = []
+            for g in guardias_disponibles:
+                carga = Ticket.objects.filter(
+                    guardia_asignado=g,
+                    created_at__date=hoy
+                ).count()
+                guardias_con_carga.append((carga, g))
+            
+            # Ordenar por menor carga diaria (y por ID para rotación determinista)
+            guardias_con_carga.sort(key=lambda x: (x[0], x[1].id))
+            guardia_seleccionado = guardias_con_carga[0][1]
+
         ticket = serializer.save(
             creado_por=self.request.user,
+            guardia_asignado=guardia_seleccionado,
             estado=estado_enviado
         )
 
@@ -296,11 +327,14 @@ class TicketViewSet(viewsets.ModelViewSet):
                     creado_por=self.request.user
                 )
 
+        detalle_creacion = f"Asignado a ronda de inspección de {guardia_seleccionado.get_full_name()}" if guardia_seleccionado else "Sin guardias disponibles en turno (todos ausentes); derivado a contingencia del Gestor"
+
         LogAuditoria.objects.create(
             ticket=ticket,
             usuario=self.request.user,
             accion='Ticket creado',
             estado_nuevo=estado_enviado.nombre_display,
+            detalle=detalle_creacion,
             ip_address=self.request.META.get('REMOTE_ADDR')
         )
 
@@ -363,6 +397,71 @@ class TicketViewSet(viewsets.ModelViewSet):
         )
 
         return Response({'status': 'ok', 'estado': nuevo_codigo}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def validar_gestor_directo(self, request, pk=None):
+        """
+        Bypass Operacional / Validación de Emergencia del Gestor.
+        Permite al Gestor inspeccionar y validar directamente un ticket en estado 'enviado'
+        (por ejemplo, cuando no hay guardias disponibles o por urgencia institucional)
+        y opcionalmente asignarlo de inmediato a un Mantenedor.
+        """
+        ticket = self.get_object()
+
+        # Validar permisos (solo gestor o admin)
+        if not request.user.rol or request.user.rol.codigo not in ['gestor', 'admin']:
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede validar directamente un ticket.'}, status=status.HTTP_403_FORBIDDEN)
+
+        observacion = request.data.get('observacion', 'Validación directa realizada por Gestor (Bypass de contingencia).')
+        valido = request.data.get('valido', True)
+        mantenedor_id = request.data.get('mantenedor_id')
+
+        # Registrar validación
+        val_guardia, _ = ValidacionGuardia.objects.get_or_create(
+            ticket=ticket,
+            defaults={
+                'guardia': request.user,
+                'observacion': f"[Validación Directa Gestor] {observacion}",
+                'checklist_electrico': request.data.get('checklist_electrico', ticket.riesgo_electrico),
+                'checklist_estructural': request.data.get('checklist_estructural', ticket.riesgo_estructural),
+                'checklist_accesibilidad': request.data.get('checklist_accesibilidad', ticket.riesgo_accesibilidad),
+                'valido': valido
+            }
+        )
+
+        nuevo_codigo = 'validado' if valido else 'rechazado'
+
+        # Si es válido y además se seleccionó un mantenedor, pasa directo a 'en_mantencion'
+        mantenedor = None
+        if valido and mantenedor_id:
+            mantenedor = Usuario.objects.filter(id=mantenedor_id, rol__codigo='mantenedor').first()
+            if mantenedor:
+                nuevo_codigo = 'en_mantencion'
+                ticket.asignado_a = mantenedor
+
+        nuevo_estado = EstadoCatalogo.objects.filter(entidad='ticket', codigo=nuevo_codigo).first()
+        if nuevo_estado:
+            ticket.estado = nuevo_estado
+            ticket.validado_por = request.user
+            if not valido:
+                ticket.subestado_rechazo = request.data.get('subestado_rechazo', 'falsa_alarma')
+            ticket.save()
+
+        accion_str = f'Validación Directa Gestor (Bypass) → Asignado a {mantenedor.get_full_name()}' if mantenedor else f'Validación Directa Gestor (Bypass) → {"Validado" if valido else "Rechazado"}'
+
+        LogAuditoria.objects.create(
+            ticket=ticket,
+            usuario=request.user,
+            accion=accion_str,
+            estado_nuevo=nuevo_estado.nombre_display if nuevo_estado else '',
+            detalle=observacion
+        )
+
+        return Response({
+            'status': 'ok',
+            'estado': nuevo_codigo,
+            'asignado_a': mantenedor.get_full_name() if mantenedor else None
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def derivar_mantencion(self, request, pk=None):

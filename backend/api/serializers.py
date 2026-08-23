@@ -17,6 +17,18 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
     def validate(self, attrs):
         data = super().validate(attrs)
+        from django.utils import timezone
+        hoy = timezone.localdate()
+        inasi = self.user.inasistencias.filter(estado='aprobada', fecha_desde__lte=hoy, fecha_hasta__gte=hoy).first()
+        inasi_data = None
+        if inasi:
+            inasi_data = {
+                'id': inasi.id,
+                'motivo': inasi.motivo,
+                'fecha_desde': str(inasi.fecha_desde),
+                'fecha_hasta': str(inasi.fecha_hasta)
+            }
+
         data['user'] = {
             'id': self.user.id,
             'username': self.user.username,
@@ -27,6 +39,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'rol_codigo': self.user.rol.codigo if self.user.rol else 'usuario',
             'rol_nombre': self.user.rol.nombre if self.user.rol else 'Usuario Base',
             'estado_cuenta': self.user.estado_cuenta,
+            'inasistencia_activa': inasi_data,
         }
         return data
 
@@ -275,6 +288,7 @@ class TicketDetailSerializer(serializers.ModelSerializer):
     categoria = CategoriaTicketSerializer(read_only=True)
     especialidad_requerida = EspecialidadSerializer(read_only=True)
     creado_por = UsuarioSerializer(read_only=True)
+    guardia_asignado = UsuarioSerializer(read_only=True)
     validado_por = UsuarioSerializer(read_only=True)
     asignado_a = UsuarioSerializer(read_only=True)
     validacion_guardia = ValidacionGuardiaSerializer(read_only=True)
@@ -286,7 +300,7 @@ class TicketDetailSerializer(serializers.ModelSerializer):
         model = Ticket
         fields = [
             'id', 'folio', 'titulo', 'descripcion', 'categoria', 'especialidad_requerida',
-            'ubicacion', 'urgencia', 'estado', 'subestado_rechazo', 'creado_por', 'validado_por', 'asignado_a',
+            'ubicacion', 'urgencia', 'estado', 'subestado_rechazo', 'creado_por', 'guardia_asignado', 'validado_por', 'asignado_a',
             'afecta_clase', 'riesgo_electrico', 'riesgo_estructural', 'riesgo_accesibilidad',
             'created_at', 'updated_at', 'cerrado_at', 'validacion_guardia',
             'evidencias', 'materiales_utilizados', 'sesiones_trabajo'

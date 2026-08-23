@@ -98,6 +98,7 @@ export interface Ticket {
   estado: EstadoCatalogo;
   subestado_rechazo?: 'falsa_alarma' | 'requiere_proveedor_externo' | 'duplicado' | 'otro';
   creado_por: User;
+  guardia_asignado?: User;
   validado_por?: User;
   asignado_a?: User;
   afecta_clase: boolean;

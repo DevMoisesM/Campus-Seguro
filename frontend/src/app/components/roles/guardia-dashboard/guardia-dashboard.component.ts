@@ -28,12 +28,48 @@ export class GuardiaDashboardComponent implements OnInit {
   checklistAccesibilidad = false;
   observacion = '';
 
-  // Métricas para Guardia
+  // Métricas y Filtros para Guardia
+  filtroTurno = signal<'mis_inspecciones' | 'todas'>('mis_inspecciones');
   pendientesInspeccion = computed(() => this.tickets().filter(t => t.estado.codigo === 'enviado').length);
   validadosHoy = computed(() => this.tickets().filter(t => t.estado.codigo !== 'enviado').length);
 
+  inasistenciaActiva = computed(() => {
+    // 1. Revisar perfil en sesión
+    const user = this.authService.currentUser();
+    if (user?.inasistencia_activa) return true;
+
+    // 2. Revisar inasistencias en tiempo real
+    const today = new Date().toISOString().split('T')[0];
+    return this.misInasistencias().some(i => {
+      const aprobada = i.estado === 'aprobada';
+      const enRango = i.fecha_desde <= today && today <= i.fecha_hasta;
+      return aprobada && enRango;
+    });
+  });
+
+  misAsignadosCount = computed(() => {
+    if (this.inasistenciaActiva()) return 0;
+    const user = this.authService.currentUser();
+    if (!user) return 0;
+    return this.tickets().filter(t => (t.guardia_asignado?.id === user.id || !t.guardia_asignado) && t.estado.codigo === 'enviado').length;
+  });
+
+  ticketsFiltrados = computed(() => {
+    if (this.filtroTurno() === 'todas') {
+      return this.tickets();
+    }
+    // Si el guardia está con licencia activa hoy, su ronda personal queda vacía
+    if (this.inasistenciaActiva()) {
+      return [];
+    }
+    const user = this.authService.currentUser();
+    if (!user) return [];
+    return this.tickets().filter(t => t.guardia_asignado?.id === user.id || !t.guardia_asignado);
+  });
+
   ngOnInit(): void {
     this.loadTickets();
+    this.loadMisInasistencias();
   }
 
   loadTickets(): void {

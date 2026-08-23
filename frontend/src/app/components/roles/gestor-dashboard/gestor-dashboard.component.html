@@ -103,8 +103,22 @@
 
             <div class="pt-2 border-t border-slate-100 space-y-2">
               <div class="text-xs">
-                <span class="text-slate-400 font-bold block mb-1 font-mono uppercase text-[10px]">Mantenedor Asignado:</span>
-                @if (t.estado.codigo === 'rechazado') {
+                <span class="text-slate-400 font-bold block mb-1 font-mono uppercase text-[10px]">
+                  {{ t.estado.codigo === 'enviado' ? 'Inspección de Guardia:' : 'Mantenedor Asignado:' }}
+                </span>
+                @if (t.estado.codigo === 'enviado') {
+                  @if (t.guardia_asignado) {
+                    <span class="font-medium text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 inline-flex items-center gap-1 font-mono text-[11px]">
+                      <i class="fa-solid fa-person-military-pointing text-amber-600"></i>
+                      <span>Ronda: {{ t.guardia_asignado.first_name }} {{ t.guardia_asignado.last_name }}</span>
+                    </span>
+                  } @else {
+                    <span class="font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-flex items-center gap-1 font-mono text-[11px]">
+                      <i class="fa-solid fa-triangle-exclamation text-rose-600 animate-pulse"></i>
+                      <span>Sin Guardia en Turno</span>
+                    </span>
+                  }
+                } @else if (t.estado.codigo === 'rechazado') {
                   @if (t.subestado_rechazo === 'falsa_alarma' || (!t.subestado_rechazo && !t.asignado_a)) {
                     <span class="font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-flex items-center gap-1 font-mono text-[11px]">
                       <i class="fa-solid fa-bell-slash text-rose-600"></i>
@@ -164,6 +178,14 @@
               </div>
 
               <div class="flex flex-col gap-1.5 pt-1">
+                @if (t.estado.codigo === 'enviado') {
+                  <button (click)="openBypassModal(t)" 
+                          type="button" 
+                          class="w-full py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-bolt text-indigo-600"></i>
+                    <span>Validar Directo (Gestor)</span>
+                  </button>
+                }
                 @if (t.estado.codigo === 'reparado') {
                   <button (click)="cerrarTicket(t.id)" 
                           [disabled]="submitting()" 
@@ -189,40 +211,57 @@
         <table class="w-full text-left text-sm text-slate-700">
           <thead class="text-xs font-mono uppercase bg-slate-100 text-slate-600 border-b border-slate-200">
             <tr>
-              <th class="px-4 py-3">Folio</th>
+              <th class="px-4 py-3 whitespace-nowrap">Folio</th>
               <th class="px-4 py-3">Problema / Reportado Por</th>
-              <th class="px-4 py-3">Ubicación</th>
-              <th class="px-4 py-3">Urgencia</th>
-              <th class="px-4 py-3">Asignado a</th>
-              <th class="px-4 py-3 text-right">Acción Gestor</th>
+              <th class="px-4 py-3 whitespace-nowrap">Ubicación</th>
+              <th class="px-4 py-3 whitespace-nowrap">Urgencia</th>
+              <th class="px-4 py-3 whitespace-nowrap">Responsable / Asignado</th>
+              <th class="px-4 py-3 text-right whitespace-nowrap">Acción Gestor</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
             @for (t of tickets(); track t.id) {
               <tr class="hover:bg-slate-50 transition-colors">
-                <td class="px-4 py-3.5 font-mono text-xs font-bold">
-                  <a [routerLink]="['/gestor/tickets', t.id]" class="text-slate-900 hover:text-amber-600 hover:underline flex items-center gap-1">
+                <td class="px-4 py-3.5 font-mono text-xs font-bold whitespace-nowrap">
+                  <a [routerLink]="['/gestor/tickets', t.id]" class="text-slate-900 hover:text-amber-600 hover:underline inline-flex items-center gap-1">
                     <span>{{ t.folio }}</span>
                     <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-60"></i>
                   </a>
                 </td>
-                <td class="px-4 py-3.5 max-w-[260px] lg:max-w-[340px] xl:max-w-[420px]">
-                  <a [routerLink]="['/gestor/tickets', t.id]" class="font-semibold text-slate-900 hover:text-indigo-600 hover:underline block break-words leading-snug line-clamp-2" [title]="t.titulo">
+                <td class="px-4 py-3.5 max-w-[240px] xl:max-w-[320px] 2xl:max-w-[420px]">
+                  <a [routerLink]="['/gestor/tickets', t.id]" 
+                     class="font-semibold text-slate-900 hover:text-indigo-600 hover:underline block break-words leading-snug line-clamp-2" 
+                     [title]="t.titulo">
                     {{ t.titulo }}
                   </a>
-                  <p class="text-xs text-slate-400 font-mono mt-0.5 truncate">Por: {{ t.creado_por.first_name }} {{ t.creado_por.last_name }}</p>
+                  <p class="text-[11px] text-slate-400 font-mono mt-0.5 truncate">
+                    Por: {{ t.creado_por.first_name }} {{ t.creado_por.last_name }} ({{ t.creado_por.rol?.nombre || 'Usuario' }})
+                  </p>
                 </td>
-                <td class="px-4 py-3.5 text-xs text-slate-700">
-                  {{ t.ubicacion.nombre }}
-                  <span class="block text-[11px] text-slate-400">{{ t.ubicacion.edificio_nombre }}</span>
+                <td class="px-4 py-3.5 text-xs text-slate-700 max-w-[180px]">
+                  <div class="font-medium text-slate-800 truncate" [title]="t.ubicacion.nombre">{{ t.ubicacion.nombre }}</div>
+                  <div class="text-[11px] text-slate-400 font-mono truncate">{{ t.ubicacion.edificio_nombre }} - Piso {{ t.ubicacion.piso_numero }}</div>
                 </td>
-                <td class="px-4 py-3.5">
-                  <span [class]="'px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
+                <td class="px-4 py-3.5 whitespace-nowrap">
+                  <span class="px-2.5 py-1 rounded-full text-[11px] font-bold border capitalize font-mono inline-block"
+                        [ngClass]="getUrgenciaBadgeClass(t.urgencia)">
                     {{ t.urgencia }}
                   </span>
                 </td>
-                <td class="px-4 py-3.5 text-xs">
-                  @if (t.estado.codigo === 'rechazado') {
+                <td class="px-4 py-3.5 text-xs whitespace-nowrap">
+                  @if (t.estado.codigo === 'enviado') {
+                    @if (t.guardia_asignado) {
+                      <span class="text-[11px] text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 font-mono inline-flex items-center gap-1 font-medium">
+                        <i class="fa-solid fa-person-military-pointing text-amber-600"></i>
+                        <span>Ronda: {{ t.guardia_asignado.first_name }}</span>
+                      </span>
+                    } @else {
+                      <span class="text-[11px] text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 font-mono inline-flex items-center gap-1 font-bold">
+                        <i class="fa-solid fa-triangle-exclamation text-rose-600 animate-pulse"></i>
+                        <span>Sin Guardia</span>
+                      </span>
+                    }
+                  } @else if (t.estado.codigo === 'rechazado') {
                     @if (t.subestado_rechazo === 'falsa_alarma' || (!t.subestado_rechazo && !t.asignado_a)) {
                       <span class="font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-flex items-center gap-1 font-mono text-[11px]">
                         <i class="fa-solid fa-bell-slash text-rose-600"></i>
@@ -236,12 +275,12 @@
                     } @else {
                       <span class="font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-flex items-center gap-1 font-mono text-[11px]">
                         <i class="fa-solid fa-ban text-rose-600"></i>
-                        <span>Inviable (No Reparable)</span>
+                        <span>Inviable</span>
                       </span>
                     }
                     @if (t.asignado_a) {
                       <span class="block text-[10px] text-slate-400 font-mono mt-0.5">
-                        Técnico: {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
+                        Técnico: {{ t.asignado_a.first_name }}
                       </span>
                     }
                   } @else if (t.estado.codigo === 'cerrado') {
@@ -251,17 +290,17 @@
                     </span>
                     @if (t.asignado_a) {
                       <span class="block text-[10px] text-slate-400 font-mono mt-0.5">
-                        Reparado por: {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
+                        Reparado por: {{ t.asignado_a.first_name }}
                       </span>
                     }
                   } @else if (t.estado.codigo === 'reparado') {
                     <span class="font-bold text-teal-800 bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200 inline-flex items-center gap-1 font-mono text-[11px]">
                       <i class="fa-solid fa-clipboard-check text-teal-600"></i>
-                      <span>Reparación Finalizada</span>
+                      <span>Reparación Lista</span>
                     </span>
                     @if (t.asignado_a) {
                       <span class="block text-[10px] text-slate-400 font-mono mt-0.5">
-                        Técnico: {{ t.asignado_a.first_name }} {{ t.asignado_a.last_name }}
+                        Técnico: {{ t.asignado_a.first_name }}
                       </span>
                     }
                   } @else if (t.asignado_a) {
@@ -270,30 +309,38 @@
                     </span>
                   } @else {
                     <select (change)="assignMantenedor(t.id, $any($event.target).value)" 
-                            class="px-2.5 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700">
+                            class="px-2.5 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 max-w-[180px]">
                       <option value="">-- Asignar Mantenedor --</option>
                       @for (m of mantenedores(); track m.id) {
                         <option [value]="m.id" [disabled]="!!m.inasistencia_activa">
-                          {{ m.first_name }} {{ m.last_name }}{{ m.inasistencia_activa ? ' (⚠️ Ausente / Licencia)' : '' }}
+                          {{ m.first_name }} {{ m.last_name }}{{ m.inasistencia_activa ? ' (⚠️ Ausente)' : '' }}
                         </option>
                       }
                     </select>
                   }
                 </td>
-                <td class="px-4 py-3.5 text-right">
+                <td class="px-4 py-3.5 text-right whitespace-nowrap">
                   <div class="flex items-center justify-end gap-1.5">
+                    @if (t.estado.codigo === 'enviado') {
+                      <button (click)="openBypassModal(t)" 
+                              type="button" 
+                              class="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 shadow-2xs transition-colors inline-flex items-center gap-1 cursor-pointer">
+                        <i class="fa-solid fa-bolt text-indigo-600"></i>
+                        <span>Validar Directo</span>
+                      </button>
+                    }
                     @if (t.estado.codigo === 'reparado') {
                       <button (click)="cerrarTicket(t.id)" 
                               [disabled]="submitting()" 
                               type="button" 
                               class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1 cursor-pointer">
                         <i class="fa-solid fa-circle-check"></i>
-                        <span>Aprobar Cierre Final</span>
+                        <span>Aprobar Cierre</span>
                       </button>
                     }
                     <a [routerLink]="['/gestor/tickets', t.id]" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors inline-flex items-center gap-1">
                       <i class="fa-solid fa-eye text-[10px]"></i>
-                      <span>Ver Trazabilidad</span>
+                      <span>Ver</span>
                     </a>
                   </div>
                 </td>
@@ -305,5 +352,111 @@
     }
 
   </div>
+
+  <!-- MODAL DE VALIDACIÓN DIRECTA / BYPASS DEL GESTOR -->
+  @if (selectedBypassTicket(); as ticket) {
+    <div class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center font-bold text-sm">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 font-mono uppercase">Validación Directa / Bypass</h3>
+              <p class="text-[11px] text-slate-500 font-mono">Folio: {{ ticket.folio }}</p>
+            </div>
+          </div>
+          <button (click)="closeBypassModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs">
+          <strong class="text-slate-900 block font-bold">{{ ticket.titulo }}</strong>
+          <p class="text-slate-600 text-[11px] line-clamp-2">{{ ticket.descripcion }}</p>
+          <p class="text-[10px] text-slate-400 font-mono pt-1">
+            📍 {{ ticket.ubicacion.nombre }} ({{ ticket.ubicacion.edificio_nombre }})
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1.5">Resultado de la Validación *</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button (click)="bypassValido = true"
+                      type="button"
+                      [ngClass]="bypassValido ? 'bg-emerald-600 text-white font-bold border-emerald-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'"
+                      class="py-2 px-3 rounded-xl border text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors">
+                <i class="fa-solid fa-check"></i>
+                <span>Incidente Válido</span>
+              </button>
+              <button (click)="bypassValido = false"
+                      type="button"
+                      [ngClass]="!bypassValido ? 'bg-rose-600 text-white font-bold border-rose-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'"
+                      class="py-2 px-3 rounded-xl border text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+                <span>Rechazar / Inválido</span>
+              </button>
+            </div>
+          </div>
+
+          @if (bypassValido) {
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">
+                Asignar a Mantenedor Inmediatamente (Opcional)
+              </label>
+              <select [(ngModel)]="bypassMantenedorId" 
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500">
+                <option value="">-- Dejar solo Validado (Asignar después) --</option>
+                @for (m of mantenedores(); track m.id) {
+                  <option [value]="m.id" [disabled]="!!m.inasistencia_activa">
+                    {{ m.first_name }} {{ m.last_name }}{{ m.inasistencia_activa ? ' (⚠️ Ausente / Licencia)' : '' }}
+                  </option>
+                }
+              </select>
+            </div>
+          } @else {
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Motivo de Rechazo *</label>
+              <select [(ngModel)]="bypassSubestadoRechazo" 
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-rose-500">
+                <option value="falsa_alarma">Falsa Alarma / Incidente Inválido</option>
+                <option value="duplicado">Ticket Duplicado</option>
+                <option value="requiere_proveedor_externo">Requiere Empresa Externa / Cotización</option>
+                <option value="otro">Otro Motivo</option>
+              </select>
+            </div>
+          }
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Observaciones / Justificación</label>
+            <textarea [(ngModel)]="bypassObservacion" 
+                      rows="2" 
+                      placeholder="Motivo del bypass o instrucciones de contingencia..." 
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500"></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button (click)="closeBypassModal()" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer">
+            Cancelar
+          </button>
+          <button (click)="submitBypass()" 
+                  [disabled]="submitting()"
+                  type="button" 
+                  class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs shadow-xs inline-flex items-center gap-1.5 cursor-pointer">
+            @if (submitting()) {
+              <i class="fa-solid fa-circle-notch fa-spin"></i>
+            }
+            <i class="fa-solid fa-check-double"></i>
+            <span>Confirmar Validación Gestor</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
 
 </div>

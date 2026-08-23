@@ -26,6 +26,19 @@
     </div>
   </div>
 
+  <!-- Alerta de Licencia / Ausencia Activa -->
+  @if (inasistenciaActiva()) {
+    <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center gap-3.5 shadow-2xs">
+      <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-lg flex-shrink-0 font-bold shadow-xs">
+        <i class="fa-solid fa-calendar-check"></i>
+      </div>
+      <div>
+        <strong class="text-sm font-bold block text-amber-950">Permiso / Licencia Médica Activa para Hoy</strong>
+        <span class="text-amber-800">El sistema tiene registrada tu inasistencia aprobada; no se te asignarán nuevas órdenes de trabajo durante este período.</span>
+      </div>
+    </div>
+  }
+
   <!-- Métricas Mantención -->
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center justify-between">

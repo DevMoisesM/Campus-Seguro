@@ -75,6 +75,45 @@ export class GestorDashboardComponent implements OnInit {
     });
   }
 
+  // Modal de Bypass / Validación Directa de Emergencia por Gestor
+  selectedBypassTicket = signal<Ticket | null>(null);
+  bypassObservacion = '';
+  bypassValido = true;
+  bypassMantenedorId = '';
+  bypassSubestadoRechazo = 'falsa_alarma';
+
+  openBypassModal(ticket: Ticket): void {
+    this.selectedBypassTicket.set(ticket);
+    this.bypassObservacion = '';
+    this.bypassValido = true;
+    this.bypassMantenedorId = '';
+    this.bypassSubestadoRechazo = 'falsa_alarma';
+  }
+
+  closeBypassModal(): void {
+    this.selectedBypassTicket.set(null);
+  }
+
+  submitBypass(): void {
+    const ticket = this.selectedBypassTicket();
+    if (!ticket) return;
+
+    this.submitting.set(true);
+    this.ticketService.validarGestorDirecto(ticket.id, {
+      observacion: this.bypassObservacion.trim() || undefined,
+      valido: this.bypassValido,
+      mantenedor_id: this.bypassValido && this.bypassMantenedorId ? Number(this.bypassMantenedorId) : undefined,
+      subestado_rechazo: !this.bypassValido ? this.bypassSubestadoRechazo : undefined
+    }).subscribe({
+      next: () => {
+        this.submitting.set(false);
+        this.closeBypassModal();
+        this.loadData();
+      },
+      error: () => this.submitting.set(false)
+    });
+  }
+
   getUrgenciaBadgeClass(urgencia: string): string {
     switch (urgencia) {
       case 'critica': return 'bg-rose-50 text-rose-700 border-rose-200';

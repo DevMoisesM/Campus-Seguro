@@ -36,12 +36,27 @@ export class MantencionDashboardComponent implements OnInit {
   ]);
 
   // Métricas para Mantenedor
+  inasistenciaActiva = computed(() => {
+    // 1. Revisar perfil en sesión
+    const user = this.authService.currentUser();
+    if (user?.inasistencia_activa) return true;
+
+    // 2. Revisar inasistencias en tiempo real
+    const today = new Date().toISOString().split('T')[0];
+    return this.misInasistencias().some(i => {
+      const aprobada = i.estado === 'aprobada';
+      const enRango = i.fecha_desde <= today && today <= i.fecha_hasta;
+      return aprobada && enRango;
+    });
+  });
+
   ordenesPendientes = computed(() => this.tickets().filter(t => t.estado.codigo === 'validado' || t.estado.codigo === 'en_mantencion').length);
   ordenesReparadas = computed(() => this.tickets().filter(t => t.estado.codigo === 'reparado' || t.estado.codigo === 'cerrado').length);
 
   ngOnInit(): void {
     this.loadTickets();
     this.loadMaterialesCatalog();
+    this.loadMisInasistencias();
   }
 
   loadTickets(): void {

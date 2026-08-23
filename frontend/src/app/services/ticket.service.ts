@@ -67,6 +67,18 @@ export class TicketService {
     );
   }
 
+  validarGestorDirecto(ticketId: number, data: {
+    observacion?: string;
+    valido?: boolean;
+    mantenedor_id?: number;
+    subestado_rechazo?: string;
+  }): Observable<{ status: string; estado: string; asignado_a?: string }> {
+    return this.http.post<{ status: string; estado: string; asignado_a?: string }>(
+      `${this.apiUrl}/tickets/${ticketId}/validar_gestor_directo/`,
+      data
+    );
+  }
+
   derivarMantencion(ticketId: number, mantenedorId?: number): Observable<{ status: string; asignado_a?: string }> {
     return this.http.post<{ status: string; asignado_a?: string }>(
       `${this.apiUrl}/tickets/${ticketId}/derivar_mantencion/`,
