@@ -30,7 +30,7 @@
             Tu campus siempre <span class="bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent">en orden</span> y protegido.
           </h1>
           <p class="text-xs lg:text-sm text-slate-700 mt-4 leading-relaxed font-medium">
-            Plataforma ERP institucional para la gestión proactiva de incidentes, mantenimiento y seguridad.
+            Plataforma ERP para la gestión proactiva de incidentes, mantenimiento y seguridad en el campus.
           </p>
         </div>
       </div>
@@ -38,7 +38,7 @@
       <!-- Footer Branding (Visible en desktop) -->
       <div class="relative z-10 mt-8 pt-6 border-t border-amber-300/40 hidden md:block">
         <p class="text-[11px] font-mono text-slate-600 font-medium">
-          &copy; 2026 Duoc UC — Todos los derechos reservados.
+          &copy; 2026 Campus Seguro — Todos los derechos reservados.
         </p>
       </div>
     </div>
@@ -48,7 +48,7 @@
       
       <div class="mb-5 sm:mb-6">
         <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">Iniciar Sesión</h3>
-        <p class="text-xs text-slate-500 mt-0.5 font-medium">Ingresa tus credenciales institucionales o de acceso rápido.</p>
+        <p class="text-xs text-slate-500 mt-0.5 font-medium">Ingresa tus credenciales o usa el acceso rápido de prueba.</p>
       </div>
 
       <!-- Alerta de Error -->
@@ -93,11 +93,13 @@
 
         <button [disabled]="loading()" 
                 type="submit" 
-                class="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-sm">
+                class="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-50">
           @if (loading()) {
             <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+          } @else {
+            <i class="fa-solid fa-right-to-bracket text-xs"></i>
           }
-          <span>{{ loading() ? 'Ingresando...' : 'Ingresar con cuenta local' }}</span>
+          <span>{{ loading() ? 'Ingresando...' : 'Iniciar Sesión' }}</span>
         </button>
       </form>
 
