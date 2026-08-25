@@ -43,6 +43,35 @@ export class AuthService {
     );
   }
 
+  register(data: {
+    first_name: string;
+    last_name: string;
+    username: string;
+    email: string;
+    password: string;
+    telefono?: string;
+    rut?: string;
+  }): Observable<TokenResponse> {
+    return this.http.post<TokenResponse>(`${this.apiUrl}/usuarios/register/`, data).pipe(
+      tap((res) => {
+        this.saveTokens(res.access, res.refresh);
+        const userObj: User = {
+          id: res.user.id,
+          username: res.user.username,
+          email: res.user.email,
+          first_name: res.user.first_name,
+          last_name: res.user.last_name,
+          rut: res.user.rut,
+          rol_codigo: res.user.rol_codigo,
+          rol_nombre: res.user.rol_nombre,
+          estado_cuenta: res.user.estado_cuenta,
+        };
+        this.currentUser.set(userObj);
+        localStorage.setItem('user_data', JSON.stringify(userObj));
+      })
+    );
+  }
+
   ssoLoginOrProvision(ssoData: { email: string; first_name?: string; last_name?: string; sub?: string }): Observable<User> {
     return this.http.post<User>(`${this.apiUrl}/usuarios/sso_login_or_provision/`, ssoData).pipe(
       tap((user) => {

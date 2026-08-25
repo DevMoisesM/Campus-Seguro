@@ -113,6 +113,76 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         serializer = UsuarioSerializer(usuario)
         return Response(serializer.data, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
 
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    def register(self, request):
+        """
+        Registro público de nuevos usuarios (Comunidad / Estudiantes).
+        Acepta cualquier email válido, genera cuenta activa con rol 'usuario' y retorna tokens JWT.
+        """
+        username = request.data.get('username', '').strip()
+        email = request.data.get('email', '').strip()
+        password = request.data.get('password', '').strip()
+        first_name = request.data.get('first_name', '').strip()
+        last_name = request.data.get('last_name', '').strip()
+        telefono = request.data.get('telefono', '').strip()
+        rut = request.data.get('rut', '').strip()
+
+        if not username or not password or not email or not first_name or not last_name:
+            return Response({'error': 'Nombre, apellido, usuario, correo y contraseña son campos obligatorios.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if len(password) < 6:
+            return Response({'error': 'La contraseña debe tener al menos 6 caracteres.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if Usuario.objects.filter(username__iexact=username).exists():
+            return Response({'error': f'El nombre de usuario "{username}" ya está en uso. Por favor elige otro.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if Usuario.objects.filter(correo_institucional__iexact=email).exists() or Usuario.objects.filter(email__iexact=email).exists():
+            return Response({'error': f'El correo electrónico "{email}" ya se encuentra registrado.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if rut and Usuario.objects.filter(rut__iexact=rut).exists():
+            return Response({'error': f'El RUT "{rut}" ya está registrado en el sistema.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        rol_usuario = Rol.objects.filter(codigo='usuario').first()
+
+        user = Usuario.objects.create_user(
+            username=username,
+            email=email,
+            correo_institucional=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            telefono=telefono or None,
+            rut=rut or None,
+            rol=rol_usuario,
+            estado_cuenta='activa',
+            is_active=True
+        )
+
+        # Generar tokens JWT para auto-login inmediato
+        from rest_framework_simplejwt.tokens import RefreshToken
+        refresh = RefreshToken.for_user(user)
+
+        user_data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.correo_institucional or user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'rut': user.rut,
+            'rol_codigo': user.rol.codigo if user.rol else 'usuario',
+            'rol_nombre': user.rol.nombre if user.rol else 'Usuario Base',
+            'estado_cuenta': user.estado_cuenta,
+            'inasistencia_activa': None,
+        }
+
+        return Response({
+            'status': 'ok',
+            'message': 'Usuario registrado exitosamente',
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': user_data
+        }, status=status.HTTP_201_CREATED)
+
     @action(detail=True, methods=['post'])
     def aprobar_cuenta(self, request, pk=None):
         usuario = self.get_object()
