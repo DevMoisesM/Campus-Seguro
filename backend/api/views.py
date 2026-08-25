@@ -466,33 +466,53 @@ class TicketViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def derivar_mantencion(self, request, pk=None):
         """
-        Acción del Gestor para asignar un ticket a un mantenedor específico.
+        Acción del Gestor para asignar o reasignar un ticket a un mantenedor específico.
         """
         ticket = self.get_object()
-        if ticket.estado and ticket.estado.codigo == 'rechazado':
-            return Response({'error': 'No se puede asignar ni derivar a mantención un ticket que fue rechazado.'}, status=status.HTTP_400_BAD_REQUEST)
+        if ticket.estado and ticket.estado.codigo in ['rechazado', 'cerrado']:
+            return Response({'error': f'No se puede asignar ni derivar a mantención un ticket en estado {ticket.estado.codigo}.'}, status=status.HTTP_400_BAD_REQUEST)
 
         mantenedor_id = request.data.get('mantenedor_id')
+        motivo = request.data.get('motivo')
+        motivo_display = request.data.get('motivo_display') or motivo
+        observacion = request.data.get('observacion', '').strip()
 
         if not mantenedor_id:
             return Response({'error': 'Se debe especificar un mantenedor'}, status=status.HTTP_400_BAD_REQUEST)
 
         mantenedor = get_object_or_404(Usuario, id=mantenedor_id)
+        mantenedor_anterior = ticket.asignado_a
         estado_en_mantencion = EstadoCatalogo.objects.filter(entidad='ticket', codigo='en_mantencion').first()
 
         ticket.asignado_a = mantenedor
-        if estado_en_mantencion:
+        if estado_en_mantencion and ticket.estado.codigo in ['validado', 'enviado']:
             ticket.estado = estado_en_mantencion
         ticket.save()
+
+        # Construir detalle para log de auditoría
+        if mantenedor_anterior and mantenedor_anterior.id != mantenedor.id:
+            detalle_accion = f'Ticket reasignado de {mantenedor_anterior.get_full_name()} a {mantenedor.get_full_name()}'
+            if motivo_display:
+                detalle_accion += f' | Motivo: {motivo_display}'
+            if observacion:
+                detalle_accion += f' | Obs: {observacion}'
+        else:
+            detalle_accion = f'Ticket asignado a {mantenedor.get_full_name()}'
+            if observacion:
+                detalle_accion += f' | Obs: {observacion}'
 
         LogAuditoria.objects.create(
             ticket=ticket,
             usuario=request.user,
-            accion=f'Ticket asignado a {mantenedor.get_full_name()}',
-            estado_nuevo=estado_en_mantencion.nombre_display if estado_en_mantencion else ''
+            accion=detalle_accion,
+            estado_nuevo=ticket.estado.nombre_display if ticket.estado else ''
         )
 
-        return Response({'status': 'ok', 'asignado_a': mantenedor.get_full_name()}, status=status.HTTP_200_OK)
+        return Response({
+            'status': 'ok',
+            'asignado_a': mantenedor.get_full_name(),
+            'estado': ticket.estado.codigo if ticket.estado else None
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def registrar_avance(self, request, pk=None):

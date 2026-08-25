@@ -123,17 +123,19 @@
           <div class="bg-white border border-slate-200 border-l-4 border-l-purple-500 rounded-2xl p-5 shadow-xs">
             <p class="text-xs font-bold text-slate-400 uppercase font-mono">Riesgos Detectados</p>
             <h3 class="text-3xl font-black text-slate-900 font-sora mt-1">{{ metrics()?.riesgos?.total || 0 }}</h3>
-            <p class="text-[11px] text-slate-500 font-mono mt-1">
-              ⚡ {{ metrics()?.riesgos?.electricos || 0 }} · 🏗️ {{ metrics()?.riesgos?.estructurales || 0 }} · ♿ {{ metrics()?.riesgos?.accesibilidad || 0 }}
+            <p class="text-[11px] text-slate-500 font-mono mt-1 flex items-center gap-2">
+              <span class="inline-flex items-center gap-1"><i class="fa-solid fa-bolt text-rose-500"></i> {{ metrics()?.riesgos?.electricos || 0 }}</span> · 
+              <span class="inline-flex items-center gap-1"><i class="fa-solid fa-cubes-stacked text-purple-500"></i> {{ metrics()?.riesgos?.estructurales || 0 }}</span> · 
+              <span class="inline-flex items-center gap-1"><i class="fa-solid fa-wheelchair text-blue-500"></i> {{ metrics()?.riesgos?.accesibilidad || 0 }}</span>
             </p>
           </div>
 
           <div class="bg-white border border-slate-200 border-l-4 border-l-rose-500 rounded-2xl p-5 shadow-xs">
             <p class="text-xs font-bold text-slate-400 uppercase font-mono">Tickets Rechazados</p>
             <h3 class="text-3xl font-black text-rose-700 font-sora mt-1">{{ metrics()?.rechazados || 0 }}</h3>
-            <p class="text-[11px] text-slate-500 font-mono mt-1 flex items-center gap-1">
-              <span>🚨 {{ metrics()?.rechazo_metrics?.falsas_alarmas || 0 }} falsas</span> · 
-              <span>📦 {{ metrics()?.rechazo_metrics?.requiere_externo || 0 }} ext.</span>
+            <p class="text-[11px] text-slate-500 font-mono mt-1 flex items-center gap-2">
+              <span class="inline-flex items-center gap-1"><i class="fa-solid fa-bell-slash text-rose-500"></i> {{ metrics()?.rechazo_metrics?.falsas_alarmas || 0 }} falsas</span> · 
+              <span class="inline-flex items-center gap-1"><i class="fa-solid fa-boxes-packing text-amber-500"></i> {{ metrics()?.rechazo_metrics?.requiere_externo || 0 }} ext.</span>
             </p>
           </div>
         </div>
@@ -310,7 +312,9 @@
         <!-- 3 Tarjetas de Alerta de Riesgos en Terreno -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-bold">⚡</div>
+            <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-bold">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
             <div>
               <h4 class="text-2xl font-black text-slate-900 font-sora">{{ metrics()?.riesgos?.electricos || 0 }}</h4>
               <p class="text-xs text-amber-900 font-bold">Riesgos Eléctricos Detectados</p>
@@ -318,7 +322,9 @@
           </div>
 
           <div class="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl font-bold">🏗️</div>
+            <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl font-bold">
+              <i class="fa-solid fa-cubes-stacked"></i>
+            </div>
             <div>
               <h4 class="text-2xl font-black text-slate-900 font-sora">{{ metrics()?.riesgos?.estructurales || 0 }}</h4>
               <p class="text-xs text-blue-900 font-bold">Riesgos Estructurales Detectados</p>
@@ -326,7 +332,9 @@
           </div>
 
           <div class="p-4 bg-purple-50 border border-purple-200 rounded-2xl flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl font-bold">♿</div>
+            <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl font-bold">
+              <i class="fa-solid fa-wheelchair"></i>
+            </div>
             <div>
               <h4 class="text-2xl font-black text-slate-900 font-sora">{{ metrics()?.riesgos?.accesibilidad || 0 }}</h4>
               <p class="text-xs text-purple-900 font-bold">Problemas de Accesibilidad</p>

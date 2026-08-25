@@ -79,15 +79,27 @@ export class TicketService {
     );
   }
 
-  derivarMantencion(ticketId: number, mantenedorId?: number): Observable<{ status: string; asignado_a?: string }> {
+  derivarMantencion(
+    ticketId: number, 
+    mantenedorId?: number,
+    data?: { motivo?: string; motivo_display?: string; observacion?: string }
+  ): Observable<{ status: string; asignado_a?: string }> {
+    const payload = {
+      ...(mantenedorId ? { mantenedor_id: mantenedorId } : {}),
+      ...(data || {})
+    };
     return this.http.post<{ status: string; asignado_a?: string }>(
       `${this.apiUrl}/tickets/${ticketId}/derivar_mantencion/`,
-      mantenedorId ? { mantenedor_id: mantenedorId } : {}
+      payload
     );
   }
 
-  assignMantencion(ticketId: number, mantenedorId: number): Observable<{ status: string; asignado_a?: string }> {
-    return this.derivarMantencion(ticketId, mantenedorId);
+  assignMantencion(
+    ticketId: number, 
+    mantenedorId: number,
+    data?: { motivo?: string; motivo_display?: string; observacion?: string }
+  ): Observable<{ status: string; asignado_a?: string }> {
+    return this.derivarMantencion(ticketId, mantenedorId, data);
   }
 
   registrarMantencion(ticketId: number, data: {

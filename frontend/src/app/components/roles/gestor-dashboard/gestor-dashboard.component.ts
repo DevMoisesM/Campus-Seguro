@@ -50,18 +50,32 @@ export class GestorDashboardComponent implements OnInit {
     });
   }
 
-  // Modal de Asignación de Mantenedor
+  // Modal de Asignación / Reasignación de Mantenedor
   selectedAssignTicket = signal<Ticket | null>(null);
   selectedMantenedorId = signal<number | null>(null);
+  reassignMotivo = signal<string>('licencia_medica');
+  reassignObservacion = signal<string>('');
+
+  motivosReasignacion = [
+    { codigo: 'licencia_medica', label: 'Inasistencia / Licencia médica del técnico actual' },
+    { codigo: 'sobrecarga_trabajo', label: 'Sobrecarga de trabajo / Balance de turnos' },
+    { codigo: 'requiere_especialista', label: 'Se requiere técnico con otra especialidad' },
+    { codigo: 'demora_inactividad', label: 'Demora / Sin avances en el tiempo esperado' },
+    { codigo: 'otro', label: 'Otro motivo' }
+  ];
 
   openAssignModal(ticket: Ticket): void {
     this.selectedAssignTicket.set(ticket);
     this.selectedMantenedorId.set(null);
+    this.reassignMotivo.set('licencia_medica');
+    this.reassignObservacion.set('');
   }
 
   closeAssignModal(): void {
     this.selectedAssignTicket.set(null);
     this.selectedMantenedorId.set(null);
+    this.reassignMotivo.set('licencia_medica');
+    this.reassignObservacion.set('');
   }
 
   confirmarAsignacion(): void {
@@ -70,7 +84,19 @@ export class GestorDashboardComponent implements OnInit {
     if (!ticket || !mantenedorId) return;
 
     this.submitting.set(true);
-    this.ticketService.assignMantencion(ticket.id, Number(mantenedorId)).subscribe({
+
+    const isReassignment = !!ticket.asignado_a && ticket.asignado_a.id !== mantenedorId;
+    const motivoObj = this.motivosReasignacion.find(m => m.codigo === this.reassignMotivo());
+
+    const payload = isReassignment ? {
+      motivo: this.reassignMotivo(),
+      motivo_display: motivoObj ? motivoObj.label : this.reassignMotivo(),
+      observacion: this.reassignObservacion().trim() || undefined
+    } : {
+      observacion: this.reassignObservacion().trim() || undefined
+    };
+
+    this.ticketService.assignMantencion(ticket.id, Number(mantenedorId), payload).subscribe({
       next: () => {
         this.submitting.set(false);
         this.closeAssignModal();
@@ -165,13 +191,20 @@ export class GestorDashboardComponent implements OnInit {
 
   getCargaLabel(m: User): string {
     if (m.inasistencia_activa) {
-      return '⛔ Ausente (Licencia)';
+      return 'Ausente (Licencia)';
     }
     const activas = m.carga_activa ?? 0;
     const reparadas = m.reparados_hoy ?? 0;
-    const estadoIcon = activas === 0 ? '🟢' : activas <= 2 ? '🟡' : '🔴';
     const activasText = activas === 0 ? '0 en curso' : `${activas} en curso`;
     const reparadasText = `${reparadas} ${reparadas === 1 ? 'resuelta hoy' : 'resueltas hoy'}`;
-    return `${estadoIcon} ${activasText} • ${reparadasText}`;
+    return `${activasText} • ${reparadasText}`;
+  }
+
+  getCargaIcon(m: User): string {
+    if (m.inasistencia_activa) return 'fa-solid fa-ban text-rose-500';
+    const activas = m.carga_activa ?? 0;
+    if (activas === 0) return 'fa-solid fa-circle-check text-emerald-600';
+    if (activas <= 2) return 'fa-solid fa-clock text-amber-600';
+    return 'fa-solid fa-triangle-exclamation text-rose-600';
   }
 }

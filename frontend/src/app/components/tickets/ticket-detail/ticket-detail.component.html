@@ -105,8 +105,9 @@
 
     <!-- 2. LÍNEA DE TIEMPO VISUAL DE ESTADOS (COMPACTA HORIZONTAL EN MÓVIL) -->
     <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-xs space-y-3">
-      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest font-mono">
-        📍 Flujo y Línea de Tiempo de Estados
+      <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest font-mono flex items-center gap-1.5">
+        <i class="fa-solid fa-timeline text-indigo-600"></i>
+        <span>Flujo y Línea de Tiempo de Estados</span>
       </h3>
 
       <div class="flex overflow-x-auto sm:grid sm:grid-cols-5 gap-2 sm:gap-3 pb-2 sm:pb-0 scrollbar-thin">
@@ -114,7 +115,7 @@
           <div [class]="'p-3 sm:p-4 rounded-xl border transition-all text-center flex flex-col items-center flex-shrink-0 w-28 sm:w-auto ' + 
                        (isStepCompleted(step.code) ? 'bg-emerald-50/60 border-emerald-300 text-emerald-900 shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-400')">
             <div [class]="'w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-base mb-1.5 sm:mb-2 font-bold ' + 
-                         (isStepCompleted(step.code) ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-200 text-slate-500')">
+                          (isStepCompleted(step.code) ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-200 text-slate-500')">
               <i [class]="'fa-solid ' + step.icon"></i>
             </div>
             <span class="text-[11px] sm:text-xs font-bold leading-tight line-clamp-1">{{ step.label }}</span>
@@ -145,23 +146,27 @@
             <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 font-mono">Evaluación de Riesgos Creada:</p>
             <div class="flex flex-wrap gap-2">
               @if (ticket()?.afecta_clase) {
-                <span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold">
-                  ⚠️ Afecta clases o uso de sala
+                <span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold inline-flex items-center gap-1.5">
+                  <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+                  <span>Afecta clases o uso de sala</span>
                 </span>
               }
               @if (ticket()?.riesgo_electrico) {
-                <span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold">
-                  ⚡ Riesgo Eléctrico
+                <span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold inline-flex items-center gap-1.5">
+                  <i class="fa-solid fa-bolt text-rose-600"></i>
+                  <span>Riesgo Eléctrico</span>
                 </span>
               }
               @if (ticket()?.riesgo_estructural) {
-                <span class="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 text-xs font-semibold">
-                  🧱 Riesgo Estructural
+                <span class="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 text-xs font-semibold inline-flex items-center gap-1.5">
+                  <i class="fa-solid fa-cubes-stacked text-purple-600"></i>
+                  <span>Riesgo Estructural</span>
                 </span>
               }
               @if (ticket()?.riesgo_accesibilidad) {
-                <span class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
-                  ♿ Problema de Accesibilidad
+                <span class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold inline-flex items-center gap-1.5">
+                  <i class="fa-solid fa-wheelchair text-blue-600"></i>
+                  <span>Problema de Accesibilidad</span>
                 </span>
               }
               @if (!ticket()?.afecta_clase && !ticket()?.riesgo_electrico && !ticket()?.riesgo_estructural && !ticket()?.riesgo_accesibilidad) {
