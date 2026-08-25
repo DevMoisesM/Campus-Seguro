@@ -895,11 +895,14 @@ class TicketViewSet(viewsets.ModelViewSet):
             repar = Ticket.objects.filter(asignado_a=t, estado__codigo='reparado').count()
             en_proc = Ticket.objects.filter(asignado_a=t, estado__codigo='en_mantencion').count()
             no_rep = Ticket.objects.filter(asignado_a=t, estado__codigo='rechazado').count()
-            reasig = Ticket.objects.filter(asignado_a=t, estado__codigo='validado').count()
+            nombre_tec = t.get_full_name() or t.username
+            reasig = LogAuditoria.objects.filter(
+                Q(accion__icontains=f'de {nombre_tec}') | Q(accion__icontains=f'a {nombre_tec}') | Q(accion__icontains=f'inasistencia de {nombre_tec}')
+            ).filter(accion__icontains='reasignad').count()
             inasist = Inasistencia.objects.filter(usuario=t, estado='aprobada').count()
             tablero_tecnicos.append({
                 'id': t.id,
-                'nombre': t.get_full_name() or t.username,
+                'nombre': nombre_tec,
                 'reparados': repar,
                 'en_proceso': en_proc,
                 'no_reparables': no_rep,
