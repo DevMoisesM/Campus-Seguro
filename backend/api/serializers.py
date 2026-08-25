@@ -148,6 +148,18 @@ class UsuarioCreateUpdateSerializer(serializers.ModelSerializer):
             user.especialidades.set(especialidades)
         return user
 
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        especialidades = validated_data.pop('especialidades', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        if especialidades is not None:
+            instance.especialidades.set(especialidades)
+        instance.save()
+        return instance
+
 
 # ═══════════════════════════════════════════════════════════════
 # 3. SERIALIZADORES DE INFRAESTRUCTURA (UBICACIONES)
