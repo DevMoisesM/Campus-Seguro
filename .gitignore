@@ -2,6 +2,8 @@
 backend/venv/
 backend/db.sqlite3
 backend/*.sqlite3
+backend/staticfiles/
+staticfiles/
 **/__pycache__/
 *.pyc
 *.pyo
