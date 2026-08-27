@@ -17,6 +17,11 @@ frontend/pnpm-debug.log*
 node_modules/
 dist/
 
+# Docker & Database
+postgres_data/
+*.dump
+*.sql
+
 # IDEs & System
 .vscode/
 .idea/
