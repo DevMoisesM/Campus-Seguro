@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Ticket, CategoriaTicket, TicketMetrics } from '../models/ticket.model';
+import { environment } from '../../environments/environment';
 
 export interface TicketCreateData {
   titulo: string;
@@ -29,7 +30,7 @@ export interface MaterialCatalog {
 })
 export class TicketService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://127.0.0.1:8000/api';
+  private apiUrl = environment.apiUrl;
 
   getTickets(params?: { estado?: string; urgencia?: string; search?: string }): Observable<Ticket[]> {
     let httpParams = new HttpParams();
