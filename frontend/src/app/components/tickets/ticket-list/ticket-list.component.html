@@ -1,0 +1,172 @@
+<div class="space-y-6">
+
+  <!-- Header y Botón Nuevo -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Gestión de Incidentes</h2>
+      <p class="text-xs text-slate-500">Listado completo de reportes registrados en el sistema</p>
+    </div>
+    <a [routerLink]="getRolePrefix() + '/nuevo-ticket'" 
+       class="py-3 px-5 rounded-xl bg-gradient-to-r from-[#FFB800] to-[#f59e0b] hover:from-[#e6a600] hover:to-[#d97706] text-slate-950 font-bold text-sm shadow-md shadow-[#FFB800]/20 transition-all flex items-center justify-center gap-2">
+      <i class="fa-solid fa-plus"></i>
+      <span>Reportar Nuevo Incidente</span>
+    </a>
+  </div>
+
+  <!-- Barra de Filtros y Búsqueda -->
+  <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <!-- Buscador libre -->
+    <div class="relative">
+      <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+      </span>
+      <input (input)="searchQuery.set($any($event.target).value)" 
+             type="text" 
+             placeholder="Buscar por folio, título o sala..." 
+             class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] text-xs font-medium" />
+    </div>
+
+    <!-- Filtro por Estado -->
+    <div>
+      <select (change)="selectedEstado.set($any($event.target).value)" 
+              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-[#FFB800] text-xs font-medium">
+        <option value="">-- Todos los Estados --</option>
+        <option value="enviado">Enviado (Pendiente)</option>
+        <option value="validado">Validado por Guardia</option>
+        <option value="en_mantencion">En Mantenimiento</option>
+        <option value="reparado">Reparado</option>
+        <option value="cerrado">Cerrado</option>
+      </select>
+    </div>
+
+    <!-- Filtro por Urgencia -->
+    <div>
+      <select (change)="selectedUrgencia.set($any($event.target).value)" 
+              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-[#FFB800] text-xs font-medium">
+        <option value="">-- Todas las Urgencias --</option>
+        <option value="baja">Baja</option>
+        <option value="media">Media</option>
+        <option value="alta">Alta</option>
+        <option value="critica">Crítica</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Contenedor Principal de la Tabla de Tickets -->
+  <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+    
+    @if (loading()) {
+      <div class="py-12 text-center text-slate-500">
+        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-[#FFB800]"></i>
+        <p class="text-xs font-mono">Cargando incidentes...</p>
+      </div>
+    }
+
+    @if (!loading() && filteredTickets().length === 0) {
+      <div class="py-12 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+        <i class="fa-solid fa-clipboard-check text-4xl mb-3 text-slate-400"></i>
+        <p class="text-sm font-semibold text-slate-700">No se encontraron incidentes</p>
+        <p class="text-xs text-slate-400 mt-1">Prueba cambiando los filtros de búsqueda.</p>
+      </div>
+    }
+
+    @if (!loading() && filteredTickets().length > 0) {
+      
+      <!-- VISTA EN TARJETAS COMPACTAS PARA MÓVILES Y TABLETS (< lg: 1024px) -->
+      <div class="block lg:hidden space-y-3">
+        @for (t of filteredTickets(); track t.id) {
+          <div class="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-3">
+            <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <span class="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg">
+                {{ t.folio }}
+              </span>
+              <div class="flex items-center gap-1.5">
+                <span [class]="'px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
+                  {{ t.urgencia }}
+                </span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 border border-slate-200 text-slate-800">
+                  <span class="w-1.5 h-1.5 rounded-full" [style.background-color]="t.estado.color_hex || '#3b82f6'"></span>
+                  {{ t.estado.nombre_display }}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-slate-900 text-sm sm:text-base leading-snug break-words">{{ t.titulo }}</h4>
+              <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                <i class="fa-solid fa-location-dot text-slate-400"></i>
+                <span class="break-words">{{ t.ubicacion.nombre }} ({{ t.ubicacion.edificio_nombre }})</span>
+              </p>
+              <p class="text-[11px] text-slate-400 font-mono mt-0.5">
+                Por: {{ t.creado_por.first_name ? (t.creado_por.first_name + ' ' + t.creado_por.last_name) : t.creado_por.username }}
+              </p>
+            </div>
+
+            <a [routerLink]="[getRolePrefix() + '/tickets', t.id]" 
+               class="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-1">
+              <i class="fa-solid fa-eye text-xs"></i>
+              <span>Ver</span>
+            </a>
+          </div>
+        }
+      </div>
+
+      <!-- VISTA EN TABLA PARA ESCRITORIO (>= lg: 1024px) -->
+      <div class="hidden lg:block overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-700">
+          <thead class="text-xs font-mono uppercase bg-slate-100 text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="px-4 py-3">Folio</th>
+              <th class="px-4 py-3">Título / Detalle</th>
+              <th class="px-4 py-3">Ubicación</th>
+              <th class="px-4 py-3">Urgencia</th>
+              <th class="px-4 py-3">Estado</th>
+              <th class="px-4 py-3 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (t of filteredTickets(); track t.id) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3.5 font-mono text-xs font-bold">
+                  <a [routerLink]="[getRolePrefix() + '/tickets', t.id]" class="text-slate-900 hover:text-amber-600 hover:underline flex items-center gap-1">
+                    <span>{{ t.folio }}</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-60"></i>
+                  </a>
+                </td>
+                <td class="px-4 py-3.5 max-w-[260px] lg:max-w-[340px] xl:max-w-[420px]">
+                  <a [routerLink]="[getRolePrefix() + '/tickets', t.id]" class="font-semibold text-slate-900 hover:text-indigo-600 hover:underline block break-words leading-snug line-clamp-2" [title]="t.titulo">
+                    {{ t.titulo }}
+                  </a>
+                  <p class="text-xs text-slate-400 font-mono mt-0.5 truncate">Creado por: {{ t.creado_por.first_name ? (t.creado_por.first_name + ' ' + t.creado_por.last_name) : t.creado_por.username }}</p>
+                </td>
+                <td class="px-4 py-3.5 text-xs text-slate-600 font-medium">
+                  {{ t.ubicacion.nombre }}
+                  <span class="block text-[11px] text-slate-400">{{ t.ubicacion.edificio_nombre }}</span>
+                </td>
+                <td class="px-4 py-3.5">
+                  <span [class]="'px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
+                    {{ t.urgencia }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 border border-slate-200 text-slate-800">
+                    <span class="w-2 h-2 rounded-full" [style.background-color]="t.estado.color_hex || '#3b82f6'"></span>
+                    {{ t.estado.nombre_display }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5 text-right">
+                  <a [routerLink]="[getRolePrefix() + '/tickets', t.id]" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors inline-flex items-center gap-1">
+                    <i class="fa-solid fa-eye text-[10px]"></i>
+                    <span>Ver</span>
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+  </div>
+
+</div>

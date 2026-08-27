@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface HealthResponse {
   status: string;
@@ -14,7 +15,7 @@ export interface HealthResponse {
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://127.0.0.1:8000/api';
+  private apiUrl = environment.apiUrl;
 
   getHealthCheck(): Observable<HealthResponse> {
     return this.http.get<HealthResponse>(`${this.apiUrl}/health/`);

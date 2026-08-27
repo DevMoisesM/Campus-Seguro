@@ -1,0 +1,322 @@
+<div class="space-y-6">
+
+  <!-- Notificación Toast Dinámica de Éxito / Error -->
+  @if (pageNotification()) {
+    <div [class]="pageNotification()?.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-800'"
+         class="p-4 rounded-2xl shadow-xs flex items-center justify-between gap-3 text-xs font-semibold">
+      <div class="flex items-center gap-2.5">
+        @if (pageNotification()?.type === 'success') {
+          <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+        } @else {
+          <i class="fa-solid fa-triangle-exclamation text-rose-600 text-base"></i>
+        }
+        <span>{{ pageNotification()?.message }}</span>
+      </div>
+      <button (click)="pageNotification.set(null)" type="button" class="text-slate-400 hover:text-slate-700 cursor-pointer">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  }
+
+  <!-- Header Módulo de Gestión de Usuarios y Personal -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-bold text-xs uppercase font-mono">
+          Directorio Institucional
+        </span>
+        <span class="text-xs text-slate-400 font-mono">Control de Cuentas</span>
+      </div>
+      <h1 class="text-2xl font-black text-slate-900 font-sora mt-1 tracking-tight">Usuarios & Personal Institucional</h1>
+      <p class="text-xs text-slate-500 font-medium">Crear nuevos usuarios, asignar roles (*Estudiante, Guardia, Mantenedor, Gestor*) y activar o desactivar accesos.</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button (click)="openCreateModal()" 
+              type="button" 
+              class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>Crear Nuevo Usuario</span>
+      </button>
+
+      <a routerLink="/gestor/dashboard" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors inline-flex items-center gap-1.5">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Volver a Dashboard</span>
+      </a>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="flex items-center justify-center py-20 text-slate-400 gap-3">
+      <i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#FFB800]"></i>
+      <span class="font-bold text-sm">Cargando directorio institucional...</span>
+    </div>
+  } @else {
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+      
+      <!-- Buscador y Filtro por Rol -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4">
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <input [(ngModel)]="searchTerm" 
+                 type="text" 
+                 placeholder="Buscar por nombre, usuario o correo..." 
+                 class="w-full sm:w-80 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-[#FFB800]" />
+        </div>
+
+        <div class="flex items-center gap-2 self-end sm:self-center">
+          <span class="text-xs font-bold text-slate-400 font-mono uppercase">Filtrar por Rol:</span>
+          <select [(ngModel)]="filterRol" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800">
+            <option value="todos">Todos los Roles ({{ usuarios().length }})</option>
+            <option value="usuario">Estudiantes / Base</option>
+            <option value="guardia">Guardias de Seguridad</option>
+            <option value="mantencion">Mantenedores Técnicos</option>
+            <option value="gestor">Gestores / Administradores</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tabla de Usuarios -->
+      <div class="table-wrap">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase font-mono">
+              <th class="py-3 px-4">Usuario</th>
+              <th class="py-3 px-4">Correo Institucional</th>
+              <th class="py-3 px-4 text-center">Rol Asignado</th>
+              <th class="py-3 px-4 text-center">Estado de Cuenta</th>
+              <th class="py-3 px-4 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-xs font-medium">
+            @for (u of usuariosFiltrados(); track u.id) {
+              <tr>
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center font-mono">
+                      {{ (u.first_name || 'U').charAt(0) }}{{ (u.last_name || '').charAt(0) }}
+                    </div>
+                    <div>
+                      <p class="font-bold text-slate-900">{{ u.first_name }} {{ u.last_name }}</p>
+                      <p class="text-[10px] text-slate-400 font-mono">&#64;{{ u.username }}</p>
+                      @if (u.rol_codigo === 'mantencion') {
+                        <div class="flex items-center gap-1 mt-1 flex-wrap">
+                          @if (u.especialidades && u.especialidades.length > 0) {
+                            @for (esp of u.especialidades; track esp.id) {
+                              <span class="text-[9px] text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded font-mono font-semibold">
+                                {{ esp.nombre }}
+                              </span>
+                            }
+                          } @else {
+                            <span class="text-[9px] text-slate-400 font-mono">Técnico General</span>
+                          }
+                          <button (click)="openEspecialidadesModal(u)" 
+                                  type="button" 
+                                  class="text-[10px] text-purple-600 hover:text-purple-800 font-bold ml-1 inline-flex items-center gap-0.5 cursor-pointer"
+                                  title="Editar Especialidades">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                            <span>Editar</span>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-4 font-mono text-slate-600">{{ u.correo_institucional }}</td>
+                <td class="py-3 px-4 text-center">
+                  <select [value]="u.rol_codigo || 'usuario'" (change)="cambiarRol(u, $event)" class="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 shadow-2xs">
+                    <option value="usuario">Estudiante / Base</option>
+                    <option value="guardia">Guardia de Seguridad</option>
+                    <option value="mantencion">Mantenedor Técnico</option>
+                    <option value="gestor">Gestor / Admin</option>
+                  </select>
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <span [class]="u.is_active ? 'px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold font-mono border border-emerald-200 text-[10px] uppercase' : 'px-2.5 py-0.5 rounded bg-rose-50 text-rose-700 font-bold font-mono border border-rose-200 text-[10px] uppercase'">
+                    {{ u.is_active ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-right">
+                  <button (click)="toggleActivo(u)" 
+                          type="button" 
+                          [class]="u.is_active ? 'px-3 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors' : 'px-3 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200 transition-colors'">
+                    {{ u.is_active ? 'Desactivar Acceso' : 'Activar Acceso' }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  }
+
+  <!-- MODAL PARA CREAR NUEVO USUARIO -->
+  @if (showCreateModal()) {
+    <div class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-sm font-bold text-slate-900 uppercase font-mono tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-user-plus text-purple-600"></i>
+            <span>Crear Nuevo Usuario Institucional</span>
+          </h3>
+          <button (click)="closeCreateModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <!-- Alerta de Error en Modal de Creación -->
+          @if (modalError()) {
+            <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+              <i class="fa-solid fa-triangle-exclamation text-rose-500 flex-shrink-0"></i>
+              <span>{{ modalError() }}</span>
+            </div>
+          }
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Nombre *</label>
+              <input [(ngModel)]="newUser.first_name" type="text" placeholder="ej: Carlos" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-[#FFB800]" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Apellido *</label>
+              <input [(ngModel)]="newUser.last_name" type="text" placeholder="ej: Morales" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-[#FFB800]" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Correo Institucional *</label>
+            <input [(ngModel)]="newUser.correo_institucional" type="email" placeholder="c.morales@duocuc.cl" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-[#FFB800]" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Contraseña Inicial *</label>
+            <input [(ngModel)]="newUser.password" type="password" placeholder="••••••••" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-[#FFB800]" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Rol a Asignar *</label>
+            <select [(ngModel)]="newUser.rol_codigo" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900">
+              <option value="usuario">Estudiante / Usuario Base</option>
+              <option value="guardia">Guardia de Seguridad</option>
+              <option value="mantencion">Mantenedor Técnico</option>
+              <option value="gestor">Gestor / Administrador</option>
+            </select>
+          </div>
+
+          @if (newUser.rol_codigo === 'mantencion') {
+            <div class="p-3 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2">
+              <label class="block text-xs font-bold text-blue-900 uppercase font-mono">
+                Especialidades Técnicas (Opcional):
+              </label>
+              <div class="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto">
+                @for (esp of especialidades(); track esp.id) {
+                  <button (click)="toggleEspecialidadNewUser(esp.id)"
+                          type="button"
+                          [ngClass]="isEspecialidadSelectedNewUser(esp.id) ? 'bg-blue-600 text-white font-bold border-blue-600 shadow-2xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'"
+                          class="py-1.5 px-2.5 rounded-lg border text-[11px] flex items-center justify-between gap-1 cursor-pointer transition-colors text-left">
+                    <span>{{ esp.nombre }}</span>
+                    @if (isEspecialidadSelectedNewUser(esp.id)) {
+                      <i class="fa-solid fa-check text-[9px]"></i>
+                    }
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button (click)="closeCreateModal()" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer">
+            Cancelar
+          </button>
+          <button (click)="submitCreateUser()" 
+                  [disabled]="submitting()" 
+                  type="button" 
+                  class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5">
+            @if (submitting()) {
+              <i class="fa-solid fa-circle-notch fa-spin"></i>
+              <span>Guardando...</span>
+            } @else {
+              <i class="fa-solid fa-user-plus"></i>
+              <span>Guardar Usuario</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL PARA EDITAR ESPECIALIDADES DE MANTENEDOR -->
+  @if (selectedMantenedor()) {
+    <div class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 uppercase font-mono tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-wrench text-blue-600"></i>
+              <span>Especialidades del Mantenedor</span>
+            </h3>
+            <p class="text-xs text-slate-500 font-medium mt-0.5">
+              {{ selectedMantenedor()?.first_name }} {{ selectedMantenedor()?.last_name }} (&#64;{{ selectedMantenedor()?.username }})
+            </p>
+          </div>
+          <button (click)="closeEspecialidadesModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <!-- Alerta de Error en Modal Especialidades -->
+          @if (especialidadesModalError()) {
+            <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+              <i class="fa-solid fa-triangle-exclamation text-rose-500 flex-shrink-0"></i>
+              <span>{{ especialidadesModalError() }}</span>
+            </div>
+          }
+
+          <label class="block text-xs font-bold text-slate-700 uppercase font-mono">
+            Selecciona las áreas de especialidad del técnico:
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            @for (esp of especialidades(); track esp.id) {
+              <button (click)="toggleEspecialidadEdit(esp.id)"
+                      type="button"
+                      [ngClass]="isEspecialidadSelectedEdit(esp.id) ? 'bg-blue-600 text-white font-bold border-blue-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'"
+                      class="py-2 px-3 rounded-xl border text-xs flex items-center justify-between gap-1.5 cursor-pointer transition-colors text-left">
+                <span>{{ esp.nombre }}</span>
+                @if (isEspecialidadSelectedEdit(esp.id)) {
+                  <i class="fa-solid fa-check text-[10px]"></i>
+                }
+              </button>
+            }
+          </div>
+          <p class="text-[11px] text-slate-400">
+            Si no se selecciona ninguna especialidad, figurará como Técnico General.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button (click)="closeEspecialidadesModal()" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer">
+            Cancelar
+          </button>
+          <button (click)="submitEspecialidades()" 
+                  [disabled]="submittingEspecialidades()" 
+                  type="button" 
+                  class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5">
+            @if (submittingEspecialidades()) {
+              <i class="fa-solid fa-circle-notch fa-spin"></i>
+              <span>Guardando...</span>
+            } @else {
+              <i class="fa-solid fa-check"></i>
+              <span>Guardar Especialidades</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

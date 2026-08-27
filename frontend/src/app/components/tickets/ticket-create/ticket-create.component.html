@@ -1,0 +1,277 @@
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <!-- Header del Formulario -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Reportar Nuevo Incidente</h2>
+      <p class="text-xs text-slate-500">Ingresa la información detallada del problema detectado en el campus</p>
+    </div>
+    <a [routerLink]="authService.userRole() === 'usuario' ? '/estudiante/mis-tickets' : authService.userRole() === 'guardia' ? '/guardia/mis-tickets' : authService.userRole() === 'mantencion' ? '/mantencion/mis-tickets' : '/gestor/mis-tickets'" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-2">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Volver a mis tickets</span>
+    </a>
+  </div>
+
+  <!-- Mensajes de Alerta -->
+  @if (errorMessage()) {
+    <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-3">
+      <i class="fa-solid fa-triangle-exclamation text-lg flex-shrink-0 text-rose-500"></i>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm flex items-center gap-3">
+      <i class="fa-solid fa-circle-check text-lg flex-shrink-0 text-emerald-500"></i>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <!-- Formulario Principal de Reporte -->
+  <form (ngSubmit)="onSubmit()" class="bg-white border border-slate-200 rounded-2xl p-6 lg:p-8 shadow-xs space-y-6">
+    
+    <!-- 1. Título y Descripción -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono flex items-center gap-2">
+        <span class="w-6 h-6 rounded-lg bg-[#FFB800]/20 text-slate-900 font-black text-xs flex items-center justify-center">1</span>
+        <span>Información del Problema</span>
+      </h3>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Título / Asunto del Incidente *</label>
+        <input [(ngModel)]="titulo" 
+               name="titulo" 
+               type="text" 
+               required
+               placeholder="ej: Enchufe suelto o fuga de agua en baño de hombres"
+               class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/30 transition-colors text-sm font-medium" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Descripción Detallada *</label>
+        <textarea [(ngModel)]="descripcion" 
+                  name="descripcion" 
+                  rows="4" 
+                  required
+                  placeholder="Explica detalladamente lo que ocurre para ayudar al equipo de mantención..."
+                  class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/30 transition-colors text-sm font-medium"></textarea>
+      </div>
+
+      <!-- Evidencia Fotográfica Inicial (Múltiples Fotos Opcionales) -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+            Adjuntar Fotos de Evidencia (Opcional)
+          </label>
+          <span class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 font-mono">
+            {{ imagenesUrls().length }} {{ imagenesUrls().length === 1 ? 'Foto adjunta' : 'Fotos adjuntas' }}
+          </span>
+        </div>
+        
+        <div class="border-2 border-dashed border-slate-300 hover:border-[#FFB800] rounded-2xl p-4 bg-slate-50 transition-colors text-center relative group">
+          <input type="file" 
+                 accept="image/*" 
+                 multiple
+                 (change)="onFileSelected($event)" 
+                 class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+          
+          <div class="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+            <div class="w-10 h-10 rounded-full bg-[#FFB800]/10 text-slate-800 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-images"></i>
+            </div>
+            <p class="text-xs font-bold text-slate-800">Haz clic o arrastra 1 o varias imágenes desde tu equipo</p>
+            <p class="text-[11px] text-slate-400">Puedes seleccionar múltiples archivos JPG, PNG, WEBP simultáneamente</p>
+          </div>
+        </div>
+
+        <!-- Galería de Miniaturas -->
+        @if (imagenesUrls().length > 0) {
+          <div class="mt-4 space-y-2">
+            <p class="text-[11px] font-bold text-slate-400 uppercase font-mono tracking-wider">Galería de Evidencias Adjuntas:</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              @for (img of imagenesUrls(); track $index) {
+                <div class="p-2.5 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 shadow-xs">
+                  <div (click)="openPreviewModal(img)" class="flex items-center gap-2.5 overflow-hidden cursor-pointer group/img relative" title="Haz clic para ampliar">
+                    <div class="relative flex-shrink-0">
+                      <img [src]="img" alt="Vista previa" class="w-14 h-14 object-cover rounded-lg border border-slate-300 shadow-xs transition-transform group-hover/img:scale-105" />
+                      <div class="absolute inset-0 bg-slate-900/30 rounded-lg opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white text-xs transition-opacity">
+                        <i class="fa-solid fa-magnifying-glass-plus"></i>
+                      </div>
+                    </div>
+                    <div class="text-xs overflow-hidden">
+                      <span class="font-bold text-slate-900 block font-mono text-[11px] group-hover/img:text-amber-600 transition-colors">Foto #{{ $index + 1 }}</span>
+                      <span class="text-emerald-700 font-bold text-[10px] block flex items-center gap-1 mt-0.5">
+                        <i class="fa-solid fa-circle-check text-[10px]"></i>
+                        <span>Clic para ampliar</span>
+                      </span>
+                    </div>
+                  </div>
+                  <button (click)="removeFile($index)" type="button" class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-[11px] border border-rose-200 transition-colors flex-shrink-0">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- 2. Ubicación Física en Cascada -->
+    <div class="space-y-4 pt-4 border-t border-slate-100">
+      <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono flex items-center gap-2">
+        <span class="w-6 h-6 rounded-lg bg-[#FFB800]/20 text-slate-900 font-black text-xs flex items-center justify-center">2</span>
+        <span>Ubicación Exacta en Campus (Cascada)</span>
+      </h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Sede -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Sede *</label>
+          <select (change)="onSedeChange($any($event.target).value)" 
+                  class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/30 text-xs font-medium">
+            <option value="">-- Selecciona Sede --</option>
+            @for (s of sedes(); track s.id) {
+              <option [value]="s.id">{{ s.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Edificio -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Edificio *</label>
+          <select [disabled]="!selectedSedeId" 
+                  (change)="onEdificioChange($any($event.target).value)" 
+                  class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/30 text-xs font-medium disabled:opacity-50">
+            <option value="">-- Selecciona Edificio --</option>
+            @for (e of edificios(); track e.id) {
+              <option [value]="e.id">{{ e.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Piso -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Piso / Nivel *</label>
+          <select [disabled]="!selectedEdificioId" 
+                  (change)="onPisoChange($any($event.target).value)" 
+                  class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/30 text-xs font-medium disabled:opacity-50">
+            <option value="">-- Selecciona Piso --</option>
+            @for (p of pisos(); track p.id) {
+              <option [value]="p.id">Piso {{ p.numero }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Sala / Ubicación Específica -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Sala / Ubicación *</label>
+          <select [disabled]="!selectedPisoId" 
+                  [(ngModel)]="selectedUbicacionId" 
+                  name="selectedUbicacionId" 
+                  class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/30 text-xs font-medium disabled:opacity-50">
+            <option [value]="null">-- Selecciona Sala --</option>
+            @for (u of ubicaciones(); track u.id) {
+              <option [value]="u.id">{{ u.nombre }} ({{ u.tipo_nombre }})</option>
+            }
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 3. Clasificación y Nivel de Urgencia -->
+    <div class="space-y-4 pt-4 border-t border-slate-100">
+      <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono flex items-center gap-2">
+        <span class="w-6 h-6 rounded-lg bg-[#FFB800]/20 text-slate-900 font-black text-xs flex items-center justify-center">3</span>
+        <span>Clasificación y Evaluación de Riesgos</span>
+      </h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Categoría -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Categoría del Incidente</label>
+          <select [(ngModel)]="selectedCategoriaId" 
+                  name="selectedCategoriaId" 
+                  class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-[#FFB800] text-xs font-medium">
+            <option [value]="null">-- Selecciona Categoría --</option>
+            @for (c of categorias(); track c.id) {
+              <option [value]="c.id">{{ c.nombre_display }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Nivel de Urgencia -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Nivel de Urgencia Estimado</label>
+          <select [(ngModel)]="urgencia" 
+                  name="urgencia" 
+                  class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-[#FFB800] text-xs font-medium">
+            <option value="baja">🔵 Baja (Mantenimiento preventivo)</option>
+            <option value="media">🟡 Media (Requiere atención en el día)</option>
+            <option value="alta">🟠 Alta (Afecta el uso de la sala)</option>
+            <option value="critica">🔴 Crítica (Peligro de seguridad / Interrumpe clases)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Checkboxes de Riesgo -->
+      <div class="pt-2">
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Evaluación de Riesgo Inicial (Selecciona los que apliquen):</label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          
+          <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer text-xs font-medium text-slate-800">
+            <input type="checkbox" [(ngModel)]="afectaClase" name="afectaClase" class="rounded text-[#FFB800] focus:ring-[#FFB800]" />
+            <span>Afecta clases o actividades</span>
+          </label>
+
+          <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer text-xs font-medium text-slate-800">
+            <input type="checkbox" [(ngModel)]="riesgoElectrico" name="riesgoElectrico" class="rounded text-[#FFB800] focus:ring-[#FFB800]" />
+            <span>Riesgo Eléctrico</span>
+          </label>
+
+          <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer text-xs font-medium text-slate-800">
+            <input type="checkbox" [(ngModel)]="riesgoEstructural" name="riesgoEstructural" class="rounded text-[#FFB800] focus:ring-[#FFB800]" />
+            <span>Riesgo Estructural</span>
+          </label>
+
+          <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer text-xs font-medium text-slate-800">
+            <input type="checkbox" [(ngModel)]="riesgoAccesibilidad" name="riesgoAccesibilidad" class="rounded text-[#FFB800] focus:ring-[#FFB800]" />
+            <span>Problema de Accesibilidad</span>
+          </label>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Botón de Envío -->
+    <div class="pt-6 border-t border-slate-100 flex items-center justify-end gap-3">
+      <a routerLink="/tickets" class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
+        Cancelar
+      </a>
+      <button [disabled]="loading()" 
+              type="submit" 
+              class="px-6 py-3 rounded-xl bg-gradient-to-r from-[#FFB800] to-[#f59e0b] hover:from-[#e6a600] hover:to-[#d97706] text-slate-950 font-bold text-sm shadow-md shadow-[#FFB800]/30 transition-all flex items-center gap-2 disabled:opacity-50">
+        @if (loading()) {
+          <i class="fa-solid fa-circle-notch fa-spin text-sm"></i>
+        }
+        <span>{{ loading() ? 'Enviando ticket...' : 'Enviar Reporte de Incidente' }}</span>
+      </button>
+    </div>
+
+  </form>
+
+  <!-- MODAL LIGHTBOX PARA VER FOTO AMPLADA -->
+  @if (previewModalImage()) {
+    <div class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4" (click)="closePreviewModal()">
+      <div class="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center justify-center p-2" (click)="$event.stopPropagation()">
+        <button (click)="closePreviewModal()" type="button" class="self-end text-white hover:text-amber-400 text-2xl font-bold mb-2 transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <img [src]="previewModalImage()" alt="Vista ampliada" class="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl border border-slate-700 bg-slate-900" />
+      </div>
+    </div>
+  }
+
+</div>

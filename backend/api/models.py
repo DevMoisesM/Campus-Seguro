@@ -260,6 +260,22 @@ class CategoriaMaterial(models.Model):
         return self.nombre_display
 
 
+class Material(models.Model):
+    nombre = models.CharField(max_length=150, unique=True)
+    categoria = models.ForeignKey(CategoriaMaterial, on_delete=models.SET_NULL, null=True, blank=True)
+    unidad_defecto = models.CharField(max_length=30, default="unidades")
+    stock_disponible = models.PositiveIntegerField(default=100)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Material de Pañol'
+        verbose_name_plural = 'Materiales de Pañol'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+
 # ═══════════════════════════════════════════════════════════════
 # 5. TICKETS Y PROCESO DE MANTENIMIENTO
 # ═══════════════════════════════════════════════════════════════
@@ -272,6 +288,13 @@ class Ticket(models.Model):
         ('critica', 'Crítica'),
     ]
 
+    SUBESTADO_RECHAZO_CHOICES = [
+        ('falsa_alarma', 'Falsa Alarma / Incidente Inválido'),
+        ('requiere_proveedor_externo', 'Requiere Cotización / Empresa Externa'),
+        ('duplicado', 'Ticket Duplicado'),
+        ('otro', 'Otro Motivo'),
+    ]
+
     folio = models.CharField(max_length=20, unique=True, editable=False)
     titulo = models.CharField(max_length=150, verbose_name="Título del Incidente")
     descripcion = models.TextField(verbose_name="Descripción Detallada")
@@ -280,9 +303,17 @@ class Ticket(models.Model):
     ubicacion = models.ForeignKey(Ubicacion, on_delete=models.PROTECT, related_name="tickets")
     urgencia = models.CharField(max_length=20, choices=URGENCIA_CHOICES, default='media')
     estado = models.ForeignKey(EstadoCatalogo, on_delete=models.PROTECT, related_name="tickets")
+    subestado_rechazo = models.CharField(
+        max_length=40,
+        choices=SUBESTADO_RECHAZO_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Sub-estado de Rechazo / Inviabilidad"
+    )
 
     # Personas involucradas
     creado_por = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name="tickets_creados")
+    guardia_asignado = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name="tickets_inspeccion")
     validado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name="tickets_validados")
     asignado_a = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name="tickets_asignados")
 
@@ -329,11 +360,18 @@ class ValidacionGuardia(models.Model):
 
 
 class SesionTrabajo(models.Model):
+    TIPO_CHOICES = [
+        ('avance', 'Avance Diario'),
+        ('final', 'Informe Final de Reparación'),
+    ]
+
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="sesiones_trabajo")
     mantenedor = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name="sesiones_mantenimiento")
     inicio = models.DateTimeField(default=timezone.now)
     fin = models.DateTimeField(null=True, blank=True)
     observaciones = models.TextField(blank=True, null=True)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='avance')
+    es_final = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Sesión de Trabajo"
@@ -342,6 +380,7 @@ class SesionTrabajo(models.Model):
 
 class MaterialUtilizado(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="materiales_utilizados")
+    sesion = models.ForeignKey(SesionTrabajo, on_delete=models.SET_NULL, null=True, blank=True, related_name="materiales")
     nombre_material = models.CharField(max_length=150)
     categoria = models.ForeignKey(CategoriaMaterial, on_delete=models.SET_NULL, null=True, blank=True)
     cantidad = models.PositiveIntegerField(default=1)
@@ -360,8 +399,9 @@ class EvidenciaFotografica(models.Model):
     ]
 
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="evidencias")
+    sesion = models.ForeignKey(SesionTrabajo, on_delete=models.SET_NULL, null=True, blank=True, related_name="evidencias")
     fase = models.CharField(max_length=20, choices=FASE_CHOICES, default='reporte')
-    imagen_url = models.URLField(max_length=500, verbose_name="URL de Imagen o Evidencia")
+    imagen_url = models.TextField(blank=True, null=True, verbose_name="URL o Data Base64 de Imagen")
     creado_por = models.ForeignKey(Usuario, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -384,3 +424,26 @@ class LogAuditoria(models.Model):
         verbose_name = "Log de Auditoría"
         verbose_name_plural = "Logs de Auditoría"
         ordering = ["-created_at"]
+
+
+class Inasistencia(models.Model):
+    ESTADO_CHOICES = (
+        ('pendiente', 'Pendiente'),
+        ('aprobada', 'Aprobada'),
+        ('rechazada', 'Rechazada'),
+    )
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='inasistencias')
+    motivo = models.TextField()
+    fecha_desde = models.DateField()
+    fecha_hasta = models.DateField()
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    observacion_gestor = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Inasistencia"
+        verbose_name_plural = "Inasistencias"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.usuario.get_full_name()} ({self.fecha_desde} a {self.fecha_hasta}) - {self.estado}"

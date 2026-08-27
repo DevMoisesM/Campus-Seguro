@@ -1,0 +1,552 @@
+<div class="space-y-6">
+
+  <!-- Banner Hero Mantención -->
+  <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 rounded-2xl p-6 lg:p-8 relative overflow-hidden shadow-md text-white">
+    <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-blue-500/20 blur-[80px] rounded-full pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <h2 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
+            Panel de Órdenes de Trabajo & Pañol
+          </h2>
+          <span class="px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border-blue-500/30">
+            Mantenedor
+          </span>
+        </div>
+        <p class="text-slate-300 text-sm max-w-xl">
+          Gestión de reparaciones activas, consumo de insumos del pañol y cierre de incidentes.
+        </p>
+      </div>
+
+      <a routerLink="/mantencion/nuevo-ticket" class="px-4 py-2.5 rounded-xl bg-[#FFB800] hover:bg-[#E6A600] text-slate-950 font-bold text-xs shadow-md transition-all inline-flex items-center gap-2 self-start md:self-center">
+        <i class="fa-solid fa-plus font-black"></i>
+        <span>Reportar Incidente</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Alerta de Licencia / Ausencia Activa -->
+  @if (inasistenciaActiva()) {
+    <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center gap-3.5 shadow-2xs">
+      <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-lg flex-shrink-0 font-bold shadow-xs">
+        <i class="fa-solid fa-calendar-check"></i>
+      </div>
+      <div>
+        <strong class="text-sm font-bold block text-amber-950">Permiso / Licencia Médica Activa para Hoy</strong>
+        <span class="text-amber-800">El sistema tiene registrada tu inasistencia aprobada; no se te asignarán nuevas órdenes de trabajo durante este período.</span>
+      </div>
+    </div>
+  }
+
+  <!-- Métricas Mantención -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">Órdenes Activas / Por Iniciar</p>
+        <h3 class="text-3xl font-black text-indigo-600 mt-1">{{ ordenesPendientes() }}</h3>
+        <p class="text-[11px] text-slate-400 mt-1">Requieren intervención técnica</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold border border-indigo-100">
+        <i class="fa-solid fa-wrench"></i>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center justify-between">
+      <div>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">Trabajos Reparados</p>
+        <h3 class="text-3xl font-black text-emerald-600 mt-1">{{ ordenesReparadas() }}</h3>
+        <p class="text-[11px] text-slate-400 mt-1">Mantenimientos completados</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold border border-emerald-100">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Órdenes de Trabajo -->
+  <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h3 class="text-lg font-extrabold text-slate-900 tracking-tight">Órdenes de Trabajo Asignadas</h3>
+        <p class="text-xs text-slate-500">Inicia el trabajo en terreno o registra los materiales utilizados del pañol para finalizar</p>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="py-12 text-center text-slate-500">
+        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-[#FFB800]"></i>
+        <p class="text-xs font-mono">Cargando órdenes de trabajo...</p>
+      </div>
+    }
+
+    @if (!loading() && tickets().length === 0) {
+      <div class="py-12 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+        <i class="fa-solid fa-screwdriver-wrench text-4xl mb-3 text-indigo-400"></i>
+        <p class="text-sm font-semibold text-slate-700">No tienes órdenes de trabajo pendientes</p>
+        <p class="text-xs text-slate-400 mt-1">Todos los mantenimientos asignados están al día.</p>
+      </div>
+    }
+
+    @if (!loading() && tickets().length > 0) {
+      
+      <!-- VISTA MÓVIL Y TABLET EN TARJETAS (< lg: 1024px) -->
+      <div class="block lg:hidden space-y-3">
+        @for (t of tickets(); track t.id) {
+          <div class="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-3">
+            <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <span class="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg">
+                {{ t.folio }}
+              </span>
+              <div class="flex items-center gap-1.5">
+                <span [class]="'px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
+                  {{ t.urgencia }}
+                </span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 border border-slate-200 text-slate-800">
+                  <span class="w-1.5 h-1.5 rounded-full" [style.background-color]="t.estado.color_hex || '#3b82f6'"></span>
+                  {{ t.estado.nombre_display }}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-slate-900 text-sm sm:text-base leading-snug break-words">{{ t.titulo }}</h4>
+              <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                <i class="fa-solid fa-location-dot text-slate-400"></i>
+                <span class="break-words">{{ t.ubicacion.nombre }} ({{ t.ubicacion.edificio_nombre }})</span>
+              </p>
+            </div>
+
+            <div class="flex flex-col gap-2 pt-1">
+              @if (t.estado.codigo === 'validado') {
+                <button (click)="iniciarTrabajo(t)" 
+                        [disabled]="submitting()" 
+                        type="button" 
+                        class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-play text-xs"></i>
+                  <span>Iniciar Mantención</span>
+                </button>
+              }
+
+              @if (t.estado.codigo === 'en_mantencion' || t.estado.codigo === 'validado') {
+                <div class="grid grid-cols-2 gap-2">
+                  <button (click)="openAvanceModal(t)" 
+                          type="button" 
+                          class="w-full py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Avance Diario</span>
+                  </button>
+
+                  <button (click)="openRegisterModal(t)" 
+                          type="button" 
+                          class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Finalizar</span>
+                  </button>
+                </div>
+
+                <button (click)="openInviableModal(t)" 
+                        type="button" 
+                        class="w-full py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <span>Declarar No Reparable</span>
+                </button>
+              }
+
+              <a [routerLink]="['/mantencion/tickets', t.id]" 
+                 class="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-1">
+                <i class="fa-solid fa-eye text-xs"></i>
+                <span>Ver</span>
+              </a>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- VISTA ESCRITORIO EN TABLA (>= lg: 1024px) -->
+      <div class="hidden lg:block overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-700">
+          <thead class="text-xs font-mono uppercase bg-slate-100 text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="px-4 py-3">Folio</th>
+              <th class="px-4 py-3">Título / Detalle</th>
+              <th class="px-4 py-3">Ubicación</th>
+              <th class="px-4 py-3">Urgencia</th>
+              <th class="px-4 py-3">Estado</th>
+              <th class="px-4 py-3 text-right">Acción Técnica</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (t of tickets(); track t.id) {
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3.5 font-mono text-xs font-bold font-mono">
+                  <a [routerLink]="['/mantencion/tickets', t.id]" class="text-slate-900 hover:text-amber-600 hover:underline flex items-center gap-1">
+                    <span>{{ t.folio }}</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-60"></i>
+                  </a>
+                </td>
+                <td class="px-4 py-3.5 font-semibold text-slate-900 max-w-[260px] lg:max-w-[340px] xl:max-w-[420px]">
+                  <a [routerLink]="['/mantencion/tickets', t.id]" class="hover:text-indigo-600 hover:underline block break-words leading-snug line-clamp-2" [title]="t.titulo">
+                    {{ t.titulo }}
+                  </a>
+                </td>
+                <td class="px-4 py-3.5 text-xs text-slate-700 font-bold">
+                  {{ t.ubicacion.nombre }}
+                  <span class="block text-[11px] font-normal text-slate-400">{{ t.ubicacion.edificio_nombre }}</span>
+                </td>
+                <td class="px-4 py-3.5">
+                  <span [class]="'px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider ' + getUrgenciaBadgeClass(t.urgencia)">
+                    {{ t.urgencia }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 border border-slate-200 text-slate-800">
+                    <span class="w-2 h-2 rounded-full" [style.background-color]="t.estado.color_hex || '#3b82f6'"></span>
+                    {{ t.estado.nombre_display }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    
+                    @if (t.estado.codigo === 'validado') {
+                      <button (click)="iniciarTrabajo(t)" 
+                              [disabled]="submitting()" 
+                              type="button" 
+                              class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1 cursor-pointer">
+                        <i class="fa-solid fa-play text-[10px]"></i>
+                        <span>Iniciar Mantención</span>
+                      </button>
+                    }
+
+                    @if (t.estado.codigo === 'en_mantencion' || t.estado.codigo === 'validado') {
+                      <button (click)="openAvanceModal(t)" 
+                              type="button" 
+                              class="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                              title="Registrar avance sin cerrar el ticket">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>Avance Diario</span>
+                      </button>
+
+                      <button (click)="openRegisterModal(t)" 
+                              type="button" 
+                              class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1 cursor-pointer"
+                              title="Marcar incidente como 100% reparado">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span>Finalizar Reparación</span>
+                      </button>
+
+                      <button (click)="openInviableModal(t)" 
+                              type="button" 
+                              class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                              title="Declarar incidente como no reparable / inviable">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>No Reparable</span>
+                      </button>
+                    }
+
+                    <a [routerLink]="['/mantencion/tickets', t.id]" 
+                       class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-1">
+                      <i class="fa-solid fa-eye text-[10px]"></i>
+                      <span>Ver</span>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+  </div>
+
+  <!-- MODAL DE REGISTRO DE MANTENIMIENTO Y MATERIALES DEL PAÑOL -->
+  @if (selectedTicket()) {
+    <div class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white border border-slate-200 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div [class]="isAvanceDiario() ? 'flex items-center gap-2 text-blue-600 font-bold text-base' : 'flex items-center gap-2 text-emerald-600 font-bold text-base'">
+            <i [class]="isAvanceDiario() ? 'fa-solid fa-pen-to-square text-lg' : 'fa-solid fa-circle-check text-lg'"></i>
+            <span>{{ isAvanceDiario() ? 'Registrar Avance Diario de Trabajo' : 'Finalizar y Marcar como Reparado' }}: {{ selectedTicket()?.folio }}</span>
+          </div>
+          <button (click)="closeRegisterModal()" class="text-slate-400 hover:text-slate-700 text-lg">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+          <p><span class="font-bold text-slate-800">Orden de Trabajo:</span> {{ selectedTicket()?.titulo }}</p>
+          <p><span class="font-bold text-slate-800">Ubicación:</span> {{ selectedTicket()?.ubicacion?.nombre }} ({{ selectedTicket()?.ubicacion?.edificio_nombre }})</p>
+        </div>
+
+        <!-- Insumos y Materiales Retirados del Pañol -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
+              Materiales Consumidos del Pañol:
+            </label>
+            <button (click)="addMaterialRow()" type="button" class="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-1">
+              <i class="fa-solid fa-plus"></i>
+              <span>Añadir Insumo</span>
+            </button>
+          </div>
+
+          <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+            @for (m of materiales(); track $index) {
+              <div class="flex items-center gap-2">
+                <select [(ngModel)]="m.nombre_material" 
+                        (change)="onMaterialSelect(m)"
+                        class="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500">
+                  <option value="">-- Seleccionar Material del Pañol --</option>
+                  @for (mat of catalogoMateriales(); track mat.id) {
+                    <option [value]="mat.nombre">{{ mat.nombre }} ({{ mat.unidad_defecto }})</option>
+                  }
+                </select>
+                
+                <input [(ngModel)]="m.cantidad" 
+                       type="number" 
+                       min="1" 
+                       title="Cantidad"
+                       class="w-16 px-2 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 text-center" />
+
+                <input [(ngModel)]="m.unidad" 
+                       type="text" 
+                       placeholder="unidad"
+                       title="Unidad de medida"
+                       class="w-24 px-2 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900" />
+
+                <button (click)="removeMaterialRow($index)" type="button" class="text-rose-500 hover:text-rose-700 p-2">
+                  <i class="fa-solid fa-trash text-xs"></i>
+                </button>
+              </div>
+            }
+          </div>
+
+          <!-- Horas Trabajadas y Observaciones -->
+          <div class="grid grid-cols-3 gap-3 pt-2">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">Horas Invertidas</label>
+              <input [(ngModel)]="horasTrabajadas" type="number" min="0.5" step="0.5" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900" />
+            </div>
+            <div class="col-span-2">
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">Informe Técnico de Cierre</label>
+              <input [(ngModel)]="observacionesTecnicas" type="text" placeholder="ej: Cambio de enchufe y pruebas de voltaje ok" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900" />
+            </div>
+          </div>
+
+          <!-- Evidencia Fotográfica de Reparación -->
+          <div class="pt-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">
+              Adjuntar Foto de Reparación Finalizada (Opcional)
+            </label>
+            <div class="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-3 bg-slate-50 text-center relative group">
+              <input type="file" 
+                     accept="image/*" 
+                     (change)="onFileSelected($event)" 
+                     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+              <div class="flex items-center justify-center gap-2 pointer-events-none text-xs text-slate-600">
+                <i class="fa-solid fa-camera text-indigo-500 text-sm"></i>
+                <span class="font-semibold">Seleccionar foto desde tu equipo</span>
+              </div>
+            </div>
+            @if (imagenUrl()) {
+              <div class="mt-2 p-2 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-2 shadow-xs">
+                <div class="flex items-center gap-2 overflow-hidden">
+                  <img [src]="imagenUrl()" alt="Foto reparación" class="w-12 h-12 object-cover rounded-lg border border-slate-300 flex-shrink-0" />
+                  <span class="text-xs font-bold text-emerald-700">Foto de reparación adjunta</span>
+                </div>
+                <button (click)="removeFile()" type="button" class="text-rose-600 hover:text-rose-800 text-xs font-bold px-2 py-1 bg-rose-50 rounded border border-rose-200">
+                  <i class="fa-solid fa-trash mr-1"></i> Quitar
+                </button>
+              </div>
+            }
+          </div>
+
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button (click)="closeRegisterModal()" type="button" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200">
+            Cancelar
+          </button>
+          <button [disabled]="submitting()" 
+                  (click)="submitRegistro()" 
+                  type="button" 
+                  [class]="isAvanceDiario() ? 'px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2' : 'px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2'">
+            @if (submitting()) {
+              <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+            }
+            <span>{{ isAvanceDiario() ? 'Guardar Avance Diario' : 'Finalizar Reparación' }}</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- MODAL DE SOLICITAR LICENCIA / PERMISO -->
+  @if (showInasistenciaModal()) {
+    <div class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-4">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-sm font-bold text-slate-900 uppercase font-mono tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-calendar-plus text-blue-600 text-base"></i>
+            <span>Solicitar Permiso / Licencia Médica</span>
+          </h3>
+          <button (click)="closeInasistenciaModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Banner de Éxito / Error -->
+        @if (inasistenciaSuccess()) {
+          <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 shadow-2xs animate-fade-in">
+            <i class="fa-solid fa-circle-check text-emerald-600 text-base shrink-0"></i>
+            <div>
+              <strong class="block font-bold">¡Solicitud enviada con éxito!</strong>
+              <span>{{ inasistenciaSuccess() }}</span>
+            </div>
+          </div>
+        }
+        @if (inasistenciaError()) {
+          <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2.5 shadow-2xs animate-fade-in">
+            <i class="fa-solid fa-circle-exclamation text-rose-600 text-base shrink-0"></i>
+            <span>{{ inasistenciaError() }}</span>
+          </div>
+        }
+
+        <div class="space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Fecha Desde *</label>
+              <input [(ngModel)]="inasiFechaDesde" type="date" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Fecha Hasta *</label>
+              <input [(ngModel)]="inasiFechaHasta" type="date" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase font-mono mb-1">Motivo o Justificación *</label>
+            <textarea [(ngModel)]="inasiMotivo" 
+                      rows="3" 
+                      placeholder="Explica la razón de tu ausencia o adjunta número de licencia médica..." 
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500"></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button (click)="closeInasistenciaModal()" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer">
+            Cerrar
+          </button>
+          <button (click)="submitInasistencia()" 
+                  [disabled]="submittingInasistencia()"
+                  type="button" 
+                  class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs shadow-xs inline-flex items-center gap-1.5 cursor-pointer">
+            @if (submittingInasistencia()) {
+              <i class="fa-solid fa-circle-notch fa-spin"></i>
+            }
+            <span>Enviar Solicitud</span>
+          </button>
+        </div>
+
+        <!-- Historial de Solicitudes (Cards Responsivos) -->
+        @if (misInasistencias().length > 0) {
+          <div class="pt-3 border-t border-slate-100 space-y-2.5">
+            <h4 class="text-xs font-bold text-slate-700 uppercase font-mono flex items-center gap-1.5">
+              <i class="fa-solid fa-clock-rotate-left text-slate-400"></i>
+              <span>Mis Solicitudes Registradas ({{ misInasistencias().length }})</span>
+            </h4>
+            <div class="max-h-56 overflow-y-auto space-y-2.5 pr-1 scrollbar-thin">
+              @for (ina of misInasistencias(); track ina.id) {
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-2 shadow-2xs">
+                  <div class="flex items-start justify-between gap-2">
+                    <span class="font-mono text-[11px] text-slate-600 bg-white px-2 py-0.5 rounded-md border border-slate-200 inline-flex items-center gap-1">
+                      <i class="fa-solid fa-calendar-days text-blue-500"></i>
+                      <span>{{ ina.fecha_desde }} al {{ ina.fecha_hasta }}</span>
+                    </span>
+                    <span [class]="ina.estado === 'aprobada' ? 'px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold font-mono text-[10px] border border-emerald-200 inline-flex items-center gap-1' : ina.estado === 'rechazada' ? 'px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 font-bold font-mono text-[10px] border border-rose-200 inline-flex items-center gap-1' : 'px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-bold font-mono text-[10px] border border-amber-200 inline-flex items-center gap-1'">
+                      <i [class]="ina.estado === 'aprobada' ? 'fa-solid fa-check' : ina.estado === 'rechazada' ? 'fa-solid fa-xmark' : 'fa-solid fa-clock'"></i>
+                      <span>{{ ina.estado | uppercase }}</span>
+                    </span>
+                  </div>
+                  <p class="text-slate-800 text-xs font-medium">{{ ina.motivo }}</p>
+                  @if (ina.observacion_gestor) {
+                    <div class="text-[11px] text-slate-700 bg-white p-2 rounded-xl border border-slate-200 flex items-start gap-1.5">
+                      <i class="fa-solid fa-clipboard-user text-indigo-500 mt-0.5"></i>
+                      <div>
+                        <strong class="text-slate-900">Gestor:</strong> {{ ina.observacion_gestor }}
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+      </div>
+    </div>
+  }
+
+  <!-- MODAL DECLARAR NO REPARABLE / INVIABLE -->
+  @if (showInviableModal()) {
+    <div class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 max-w-lg w-full shadow-2xl space-y-4">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-sm font-bold text-rose-700 uppercase font-mono tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-rose-600 text-base"></i>
+            <span>Declarar Incidente como No Reparable</span>
+          </h3>
+          <button (click)="closeInviableModal()" type="button" class="text-slate-400 hover:text-slate-700 text-lg">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="bg-rose-50 p-3 rounded-xl border border-rose-200 text-xs text-rose-900 font-medium leading-relaxed">
+          <strong>Atención:</strong> Al declarar este incidente como No Reparable, el ticket pasará al estado <span class="font-bold font-mono">RECHAZADO</span> y se notificará la imposibilidad técnica al usuario reportante y al Gestor.
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block font-bold text-slate-700 uppercase font-mono mb-1">
+              Categoría de Inviabilidad / Acción Requerida *
+            </label>
+            <select [(ngModel)]="subestadoRechazo" 
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-900 focus:outline-none focus:border-rose-500">
+              <option value="requiere_proveedor_externo">Requiere Empresa / Proveedor / Cotización Externa</option>
+              <option value="otro">Inviable Técnicamente / Reemplazo Total de Equipo</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 uppercase font-mono mb-1">
+              Justificación Técnica del Motivo *
+            </label>
+            <textarea [(ngModel)]="inviableMotivo" 
+                      rows="3" 
+                      placeholder="Explica detalladamente por qué no es posible reparar la falla (ej: requiere repuesto descontinuado, cotización externa especial, reemplazo completo de equipo)..." 
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 focus:outline-none focus:border-rose-500"></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button (click)="closeInviableModal()" type="button" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs">
+            Cancelar
+          </button>
+          <button [disabled]="submitting()" (click)="submitInviable()" type="button" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer">
+            @if (submitting()) {
+              <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+            }
+            <span>Confirmar No Reparable</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>
