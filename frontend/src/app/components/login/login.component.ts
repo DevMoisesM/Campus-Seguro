@@ -57,8 +57,13 @@ export class LoginComponent implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        const msg = err?.error?.detail || 'Credenciales incorrectas. Verifica tu usuario y contraseña.';
-        this.errorMessage.set(msg);
+        if (err.status === 0) {
+          this.errorMessage.set('No se pudo conectar con el servidor backend (puerto 8000). Asegúrate de iniciar Django con runserver.');
+        } else if (err.status === 401) {
+          this.errorMessage.set(err?.error?.detail || 'Credenciales incorrectas. Verifica tu usuario y contraseña.');
+        } else {
+          this.errorMessage.set(err?.error?.detail || err?.error?.error || 'Error al iniciar sesión. Intenta nuevamente.');
+        }
       }
     });
   }
