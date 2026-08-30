@@ -72,7 +72,8 @@
                    type="text" 
                    required
                    placeholder="ej: gestor1"
-                   class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 text-xs font-mono" />
+                   [class]="'w-full pl-9 pr-4 py-2.5 rounded-xl placeholder-slate-400 focus:outline-none text-xs font-mono border transition-colors ' + 
+                            (isUsernameInvalid() ? 'bg-rose-50/50 border-rose-400 focus:border-rose-500 ring-2 ring-rose-200 text-rose-900' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20')" />
           </div>
         </div>
 
@@ -87,7 +88,8 @@
                    type="password" 
                    required
                    placeholder="••••••••"
-                   class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 text-xs" />
+                   [class]="'w-full pl-9 pr-4 py-2.5 rounded-xl placeholder-slate-400 focus:outline-none text-xs border transition-colors ' + 
+                            (isPasswordInvalid() ? 'bg-rose-50/50 border-rose-400 focus:border-rose-500 ring-2 ring-rose-200 text-rose-900' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20')" />
           </div>
         </div>
 

@@ -43,9 +43,24 @@ export class TicketCreateComponent implements OnInit {
   ubicaciones = signal<Ubicacion[]>([]);
   categorias = signal<CategoriaTicket[]>([]);
 
+  submitted = signal(false);
   loading = signal(false);
   errorMessage = signal<string | null>(null);
   successMessage = signal<string | null>(null);
+
+  isFieldInvalid(field: 'titulo' | 'descripcion' | 'sede' | 'edificio' | 'piso' | 'ubicacion' | 'categoria'): boolean {
+    if (!this.submitted()) return false;
+    switch (field) {
+      case 'titulo': return !this.titulo || this.titulo.trim().length < 5;
+      case 'descripcion': return !this.descripcion || this.descripcion.trim().length < 10;
+      case 'sede': return !this.selectedSedeId;
+      case 'edificio': return !this.selectedEdificioId;
+      case 'piso': return !this.selectedPisoId;
+      case 'ubicacion': return !this.selectedUbicacionId;
+      case 'categoria': return !this.selectedCategoriaId;
+      default: return false;
+    }
+  }
 
   ngOnInit(): void {
     this.loadInitialCatalogs();
@@ -73,7 +88,6 @@ export class TicketCreateComponent implements OnInit {
             this.imagenesUrls.update(list => [...list, compressed]);
           }
         } catch {
-          // Fallback en caso de error
           const reader = new FileReader();
           reader.onload = (e) => {
             const result = e.target?.result as string || '';
@@ -84,7 +98,6 @@ export class TicketCreateComponent implements OnInit {
           reader.readAsDataURL(file);
         }
       });
-      // Reset input value to allow selecting same files again if needed
       input.value = '';
     }
   }
@@ -150,18 +163,35 @@ export class TicketCreateComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (!this.titulo.trim() || !this.descripcion.trim() || !this.selectedUbicacionId) {
-      this.errorMessage.set('Por favor completa el título, descripción y selecciona la ubicación exacta.');
+    this.submitted.set(true);
+    this.errorMessage.set(null);
+
+    if (this.isFieldInvalid('titulo')) {
+      this.errorMessage.set('El título del incidente es obligatorio y debe tener al menos 5 caracteres.');
+      return;
+    }
+
+    if (this.isFieldInvalid('descripcion')) {
+      this.errorMessage.set('La descripción es obligatoria y debe tener al menos 10 caracteres explicando el problema.');
+      return;
+    }
+
+    if (this.isFieldInvalid('sede') || this.isFieldInvalid('edificio') || this.isFieldInvalid('piso') || this.isFieldInvalid('ubicacion')) {
+      this.errorMessage.set('Debes completar la ubicación en cascada (Sede, Edificio, Piso y Sala/Ubicación exacta).');
+      return;
+    }
+
+    if (this.isFieldInvalid('categoria')) {
+      this.errorMessage.set('Debes seleccionar una Categoría para clasificar el tipo de incidente.');
       return;
     }
 
     this.loading.set(true);
-    this.errorMessage.set(null);
 
     this.ticketService.createTicket({
-      titulo: this.titulo,
-      descripcion: this.descripcion,
-      ubicacion: this.selectedUbicacionId,
+      titulo: this.titulo.trim(),
+      descripcion: this.descripcion.trim(),
+      ubicacion: this.selectedUbicacionId!,
       categoria: this.selectedCategoriaId || undefined,
       urgencia: this.urgencia,
       afecta_clase: this.afectaClase,
@@ -180,7 +210,8 @@ export class TicketCreateComponent implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        this.errorMessage.set('Error al crear el ticket. Revisa los campos e intenta nuevamente.');
+        const detail = err.error?.detail || err.error?.message || 'Error al crear el ticket. Revisa los campos e intenta nuevamente.';
+        this.errorMessage.set(detail);
       }
     });
   }

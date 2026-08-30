@@ -153,9 +153,12 @@ export class MantencionDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  registroError = signal<string | null>(null);
+
   openAvanceModal(ticket: Ticket): void {
     this.isAvanceDiario.set(true);
     this.selectedTicket.set(ticket);
+    this.registroError.set(null);
     
     if (ticket.sesion_activa?.inicio) {
       this.horasTrabajadas = this.getHorasCalculadas(ticket.sesion_activa.inicio);
@@ -173,6 +176,7 @@ export class MantencionDashboardComponent implements OnInit, OnDestroy {
   openRegisterModal(ticket: Ticket): void {
     this.isAvanceDiario.set(false);
     this.selectedTicket.set(ticket);
+    this.registroError.set(null);
 
     if (ticket.sesion_activa?.inicio) {
       this.horasTrabajadas = this.getHorasCalculadas(ticket.sesion_activa.inicio);
@@ -189,6 +193,7 @@ export class MantencionDashboardComponent implements OnInit, OnDestroy {
 
   closeRegisterModal(): void {
     this.selectedTicket.set(null);
+    this.registroError.set(null);
   }
 
   addMaterialRow(): void {
@@ -246,8 +251,8 @@ export class MantencionDashboardComponent implements OnInit, OnDestroy {
     const ticket = this.selectedTicket();
     if (!ticket) return;
 
-    if (!this.inviableMotivo.trim()) {
-      this.inviableError.set('Debes ingresar la justificación técnica por la cual no es posible efectuar la reparación.');
+    if (!this.inviableMotivo.trim() || this.inviableMotivo.trim().length < 8) {
+      this.inviableError.set('Debes ingresar una justificación técnica detallada (al menos 8 caracteres) explicando la inviabilidad.');
       return;
     }
 
@@ -307,7 +312,12 @@ export class MantencionDashboardComponent implements OnInit, OnDestroy {
 
   submitInasistencia(): void {
     if (!this.inasiMotivo.trim() || !this.inasiFechaDesde || !this.inasiFechaHasta) {
-      this.inasistenciaError.set('Por favor completa todos los campos requeridos antes de enviar.');
+      this.inasistenciaError.set('Por favor completa el motivo y ambas fechas.');
+      return;
+    }
+
+    if (this.inasiFechaHasta < this.inasiFechaDesde) {
+      this.inasistenciaError.set('La fecha "Hasta" no puede ser anterior a la fecha "Desde".');
       return;
     }
 
@@ -316,7 +326,7 @@ export class MantencionDashboardComponent implements OnInit, OnDestroy {
     this.submittingInasistencia.set(true);
 
     this.ticketService.createInasistencia({
-      motivo: this.inasiMotivo,
+      motivo: this.inasiMotivo.trim(),
       fecha_desde: this.inasiFechaDesde,
       fecha_hasta: this.inasiFechaHasta
     }).subscribe({
@@ -339,13 +349,30 @@ export class MantencionDashboardComponent implements OnInit, OnDestroy {
     const ticket = this.selectedTicket();
     if (!ticket) return;
 
-    const validMateriales = this.materiales()
+    this.registroError.set(null);
+
+    if (!this.observacionesTecnicas.trim() || this.observacionesTecnicas.trim().length < 5) {
+      this.registroError.set('Por favor ingresa un informe técnico describiendo el trabajo efectuado (mínimo 5 caracteres).');
+      return;
+    }
+
+    // Validar filas de materiales si tienen datos parciales
+    const mats = this.materiales();
+    for (let i = 0; i < mats.length; i++) {
+      const m = mats[i];
+      if (m.nombre_material.trim() && (m.cantidad <= 0 || !m.cantidad)) {
+        this.registroError.set(`El insumo "${m.nombre_material}" debe tener una cantidad mayor a 0.`);
+        return;
+      }
+    }
+
+    const validMateriales = mats
       .filter(m => m.nombre_material.trim().length > 0)
       .map(m => ({ nombre: m.nombre_material, cantidad: m.cantidad, unidad: m.unidad }));
 
     const payload = {
       horas_trabajadas: this.horasTrabajadas,
-      observaciones_tecnicas: this.observacionesTecnicas || (this.isAvanceDiario() ? 'Avance de mantenimiento registrado.' : 'Mantenimiento preventivo/correctivo ejecutado exitosamente.'),
+      observaciones_tecnicas: this.observacionesTecnicas.trim(),
       materiales: validMateriales,
       imagen_url: this.imagenUrl().trim() || undefined
     };
@@ -357,18 +384,26 @@ export class MantencionDashboardComponent implements OnInit, OnDestroy {
         next: () => {
           this.submitting.set(false);
           this.closeRegisterModal();
+          this.showToast('success', `Avance registrado exitosamente para el folio ${ticket.folio}.`);
           this.loadTickets();
         },
-        error: () => this.submitting.set(false)
+        error: (err) => {
+          this.submitting.set(false);
+          this.registroError.set(err?.error?.error || 'Error al registrar el avance.');
+        }
       });
     } else {
       this.ticketService.registrarMantencion(ticket.id, payload).subscribe({
         next: () => {
           this.submitting.set(false);
           this.closeRegisterModal();
+          this.showToast('success', `Ticket ${ticket.folio} finalizado y marcado como reparado.`);
           this.loadTickets();
         },
-        error: () => this.submitting.set(false)
+        error: (err) => {
+          this.submitting.set(false);
+          this.registroError.set(err?.error?.error || 'Error al finalizar la reparación.');
+        }
       });
     }
   }

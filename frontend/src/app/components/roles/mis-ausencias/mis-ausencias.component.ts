@@ -69,12 +69,17 @@ export class MisAusenciasComponent implements OnInit {
       return;
     }
 
+    if (this.inasiFechaHasta < this.inasiFechaDesde) {
+      this.errorMessage.set('La fecha "Hasta" no puede ser anterior a la fecha "Desde".');
+      return;
+    }
+
     this.errorMessage.set(null);
     this.successMessage.set(null);
     this.submitting.set(true);
 
     this.ticketService.createInasistencia({
-      motivo: this.inasiMotivo,
+      motivo: this.inasiMotivo.trim(),
       fecha_desde: this.inasiFechaDesde,
       fecha_hasta: this.inasiFechaHasta
     }).subscribe({

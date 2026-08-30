@@ -92,17 +92,21 @@ export class GuardiaDashboardComponent implements OnInit {
     this.imagenesPreview.update(prev => prev.filter((_, i) => i !== index));
   }
 
+  validationError = signal<string | null>(null);
+
   openValidationModal(ticket: Ticket): void {
     this.selectedTicket.set(ticket);
     this.checklistElectrico = ticket.riesgo_electrico || false;
     this.checklistEstructural = ticket.riesgo_estructural || false;
     this.checklistAccesibilidad = ticket.riesgo_accesibilidad || false;
     this.observacion = '';
+    this.validationError.set(null);
     this.imagenesPreview.set([]);
   }
 
   closeValidationModal(): void {
     this.selectedTicket.set(null);
+    this.validationError.set(null);
     this.imagenesPreview.set([]);
   }
 
@@ -142,7 +146,12 @@ export class GuardiaDashboardComponent implements OnInit {
 
   submitInasistencia(): void {
     if (!this.inasiMotivo.trim() || !this.inasiFechaDesde || !this.inasiFechaHasta) {
-      this.inasistenciaError.set('Por favor completa todos los campos requeridos antes de enviar.');
+      this.inasistenciaError.set('Por favor completa el motivo y ambas fechas.');
+      return;
+    }
+
+    if (this.inasiFechaHasta < this.inasiFechaDesde) {
+      this.inasistenciaError.set('La fecha "Hasta" no puede ser anterior a la fecha "Desde".');
       return;
     }
 
@@ -151,7 +160,7 @@ export class GuardiaDashboardComponent implements OnInit {
     this.submittingInasistencia.set(true);
 
     this.ticketService.createInasistencia({
-      motivo: this.inasiMotivo,
+      motivo: this.inasiMotivo.trim(),
       fecha_desde: this.inasiFechaDesde,
       fecha_hasta: this.inasiFechaHasta
     }).subscribe({
@@ -174,8 +183,10 @@ export class GuardiaDashboardComponent implements OnInit {
     const ticket = this.selectedTicket();
     if (!ticket) return;
 
-    if (!valido && !this.observacion.trim()) {
-      alert('Para rechazar un ticket o declararlo como falsa alarma, debes ingresar un motivo en las observaciones.');
+    this.validationError.set(null);
+
+    if (!valido && (!this.observacion.trim() || this.observacion.trim().length < 8)) {
+      this.validationError.set('Para rechazar un ticket o declararlo como falsa alarma, debes ingresar un motivo explicativo de al menos 8 caracteres.');
       return;
     }
 
@@ -184,7 +195,7 @@ export class GuardiaDashboardComponent implements OnInit {
       checklist_electrico: this.checklistElectrico,
       checklist_estructural: this.checklistEstructural,
       checklist_accesibilidad: this.checklistAccesibilidad,
-      observacion: this.observacion || (valido ? 'Inspección realizada en terreno sin observaciones críticas.' : 'Ticket rechazado / Falsa alarma comprobada en terreno.'),
+      observacion: this.observacion.trim() || (valido ? 'Inspección realizada en terreno sin observaciones críticas.' : 'Ticket rechazado / Falsa alarma comprobada en terreno.'),
       valido: valido,
       imagenes_urls: this.imagenesPreview()
     }).subscribe({
@@ -193,7 +204,11 @@ export class GuardiaDashboardComponent implements OnInit {
         this.closeValidationModal();
         this.loadTickets();
       },
-      error: () => this.submitting.set(false)
+      error: (err) => {
+        this.submitting.set(false);
+        const msg = err?.error?.detail || 'Error al validar el ticket. Intenta nuevamente.';
+        this.validationError.set(msg);
+      }
     });
   }
 

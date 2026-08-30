@@ -20,6 +20,7 @@ export class GestorInasistenciasComponent implements OnInit {
   // Modales personalizados
   selectedInasistencia = signal<any | null>(null);
   modalAction = signal<'aprobar' | 'rechazar' | 'reasignar' | null>(null);
+  modalError = signal<string | null>(null);
   observacion = '';
   devolverTickets = true;
 
@@ -41,6 +42,7 @@ export class GestorInasistenciasComponent implements OnInit {
   openDecisionModal(ina: any, action: 'aprobar' | 'rechazar'): void {
     this.selectedInasistencia.set(ina);
     this.modalAction.set(action);
+    this.modalError.set(null);
     this.observacion = '';
     this.devolverTickets = true;
   }
@@ -48,11 +50,13 @@ export class GestorInasistenciasComponent implements OnInit {
   openReasignarModal(ina: any): void {
     this.selectedInasistencia.set(ina);
     this.modalAction.set('reasignar');
+    this.modalError.set(null);
   }
 
   closeModal(): void {
     this.selectedInasistencia.set(null);
     this.modalAction.set(null);
+    this.modalError.set(null);
     this.observacion = '';
   }
 
@@ -61,8 +65,10 @@ export class GestorInasistenciasComponent implements OnInit {
     const action = this.modalAction();
     if (!ina || !action) return;
 
-    if (action === 'rechazar' && !this.observacion.trim()) {
-      alert('Debes ingresar un motivo para rechazar la inasistencia.');
+    this.modalError.set(null);
+
+    if (action === 'rechazar' && (!this.observacion.trim() || this.observacion.trim().length < 5)) {
+      this.modalError.set('Debes ingresar un motivo explicativo de al menos 5 caracteres para rechazar la inasistencia.');
       return;
     }
 

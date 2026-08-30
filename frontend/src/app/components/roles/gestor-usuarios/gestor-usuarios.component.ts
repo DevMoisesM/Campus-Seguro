@@ -133,12 +133,18 @@ export class GestorUsuariosComponent implements OnInit {
   }
 
   submitCreateUser(): void {
-    if (!this.newUser.first_name || !this.newUser.last_name || !this.newUser.correo_institucional || !this.newUser.password) {
+    if (!this.newUser.first_name.trim() || !this.newUser.last_name.trim() || !this.newUser.correo_institucional.trim() || !this.newUser.password.trim()) {
       this.modalError.set('Por favor completa todos los campos obligatorios (*).');
       return;
     }
 
-    if (this.newUser.password.length < 6) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.newUser.correo_institucional.trim())) {
+      this.modalError.set('El correo institucional no tiene un formato válido.');
+      return;
+    }
+
+    if (this.newUser.password.trim().length < 6) {
       this.modalError.set('La contraseña debe tener al menos 6 caracteres.');
       return;
     }

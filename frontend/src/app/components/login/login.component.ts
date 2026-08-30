@@ -16,8 +16,17 @@ export class LoginComponent implements OnInit {
 
   username = '';
   password = '';
+  submitted = signal(false);
   loading = signal(false);
   errorMessage = signal<string | null>(null);
+
+  isUsernameInvalid(): boolean {
+    return this.submitted() && !this.username.trim();
+  }
+
+  isPasswordInvalid(): boolean {
+    return this.submitted() && !this.password.trim();
+  }
 
   // Cuentas de prueba rápidas con colores distintivos por rol (Modo Claro)
   testAccounts = [
@@ -41,8 +50,9 @@ export class LoginComponent implements OnInit {
   }
 
   onSubmit() {
-    if (!this.username || !this.password) {
-      this.errorMessage.set('Por favor ingresa usuario y contraseña');
+    this.submitted.set(true);
+    if (!this.username.trim() || !this.password.trim()) {
+      this.errorMessage.set('Por favor ingresa tu usuario/correo y contraseña.');
       return;
     }
 
