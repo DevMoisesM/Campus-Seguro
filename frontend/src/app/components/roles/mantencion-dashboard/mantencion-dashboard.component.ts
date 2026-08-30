@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -13,7 +13,7 @@ import { compressImage } from '../../../utils/image-compressor.util';
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './mantencion-dashboard.component.html'
 })
-export class MantencionDashboardComponent implements OnInit {
+export class MantencionDashboardComponent implements OnInit, OnDestroy {
   ticketService = inject(TicketService);
   authService = inject(AuthService);
 
@@ -23,10 +23,18 @@ export class MantencionDashboardComponent implements OnInit {
 
   catalogoMateriales = signal<MaterialCatalog[]>([]);
 
+  // Notificaciones Toast Reactivas
+  toastNotification = signal<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Reloj / Temporizador en Vivo
+  currentTime = signal(new Date());
+  private timerInterval: any;
+
   // Modal de Registro / Avance de Mantenimiento y Pañol
   selectedTicket = signal<Ticket | null>(null);
   isAvanceDiario = signal(false);
   horasTrabajadas = 1;
+  tiempoCalculadoTexto = signal<string>('');
   observacionesTecnicas = '';
   imagenUrl = signal<string>('');
   
@@ -57,6 +65,23 @@ export class MantencionDashboardComponent implements OnInit {
     this.loadTickets();
     this.loadMaterialesCatalog();
     this.loadMisInasistencias();
+    // Actualizar temporizador cada segundo para badges reactivos
+    this.timerInterval = setInterval(() => {
+      this.currentTime.set(new Date());
+    }, 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+  }
+
+  showToast(type: 'success' | 'error', message: string): void {
+    this.toastNotification.set({ type, message });
+    setTimeout(() => {
+      this.toastNotification.set(null);
+    }, 4000);
   }
 
   loadTickets(): void {
@@ -84,21 +109,62 @@ export class MantencionDashboardComponent implements OnInit {
     }
   }
 
+  hasActiveSession(ticket: Ticket): boolean {
+    return !!ticket.sesion_activa;
+  }
+
+  getTiempoTranscurrido(inicioIso?: string): string {
+    if (!inicioIso) return '00:00:00';
+    const start = new Date(inicioIso).getTime();
+    const now = this.currentTime().getTime();
+    const diffSecs = Math.max(0, Math.floor((now - start) / 1000));
+
+    const hours = Math.floor(diffSecs / 3600);
+    const minutes = Math.floor((diffSecs % 3600) / 60);
+    const seconds = diffSecs % 60;
+
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    if (hours > 0) {
+      return `${hours}h ${pad(minutes)}m ${pad(seconds)}s`;
+    }
+    return `${pad(minutes)}m ${pad(seconds)}s`;
+  }
+
+  getHorasCalculadas(inicioIso?: string): number {
+    if (!inicioIso) return 1.0;
+    const start = new Date(inicioIso).getTime();
+    const now = new Date().getTime();
+    const diffHours = (now - start) / (1000 * 60 * 60);
+    return Math.max(0.1, Number(diffHours.toFixed(1)));
+  }
+
   iniciarTrabajo(ticket: Ticket): void {
     this.submitting.set(true);
-    this.ticketService.derivarMantencion(ticket.id).subscribe({
-      next: () => {
+    this.ticketService.iniciarTrabajo(ticket.id).subscribe({
+      next: (res) => {
         this.submitting.set(false);
+        this.showToast('success', `Trabajo iniciado en terreno. Cronómetro activo para el folio ${ticket.folio}`);
         this.loadTickets();
       },
-      error: () => this.submitting.set(false)
+      error: () => {
+        this.submitting.set(false);
+        this.showToast('error', 'No fue posible iniciar la jornada de trabajo.');
+      }
     });
   }
 
   openAvanceModal(ticket: Ticket): void {
     this.isAvanceDiario.set(true);
     this.selectedTicket.set(ticket);
-    this.horasTrabajadas = 1;
+    
+    if (ticket.sesion_activa?.inicio) {
+      this.horasTrabajadas = this.getHorasCalculadas(ticket.sesion_activa.inicio);
+      this.tiempoCalculadoTexto.set(this.getTiempoTranscurrido(ticket.sesion_activa.inicio));
+    } else {
+      this.horasTrabajadas = 1;
+      this.tiempoCalculadoTexto.set('');
+    }
+
     this.observacionesTecnicas = '';
     this.imagenUrl.set('');
     this.materiales.set([{ nombre_material: '', cantidad: 1, unidad: 'unidades' }]);
@@ -107,7 +173,15 @@ export class MantencionDashboardComponent implements OnInit {
   openRegisterModal(ticket: Ticket): void {
     this.isAvanceDiario.set(false);
     this.selectedTicket.set(ticket);
-    this.horasTrabajadas = 1;
+
+    if (ticket.sesion_activa?.inicio) {
+      this.horasTrabajadas = this.getHorasCalculadas(ticket.sesion_activa.inicio);
+      this.tiempoCalculadoTexto.set(this.getTiempoTranscurrido(ticket.sesion_activa.inicio));
+    } else {
+      this.horasTrabajadas = 1;
+      this.tiempoCalculadoTexto.set('');
+    }
+
     this.observacionesTecnicas = '';
     this.imagenUrl.set('');
     this.materiales.set([{ nombre_material: '', cantidad: 1, unidad: 'unidades' }]);
@@ -151,18 +225,21 @@ export class MantencionDashboardComponent implements OnInit {
   inviableMotivo = '';
   subestadoRechazo = 'requiere_proveedor_externo';
   inviableImagenUrl = signal<string>('');
+  inviableError = signal<string | null>(null);
 
   openInviableModal(ticket: Ticket): void {
     this.selectedTicket.set(ticket);
     this.inviableMotivo = '';
     this.subestadoRechazo = 'requiere_proveedor_externo';
     this.inviableImagenUrl.set('');
+    this.inviableError.set(null);
     this.showInviableModal.set(true);
   }
 
   closeInviableModal(): void {
     this.showInviableModal.set(false);
     this.selectedTicket.set(null);
+    this.inviableError.set(null);
   }
 
   submitInviable(): void {
@@ -170,11 +247,12 @@ export class MantencionDashboardComponent implements OnInit {
     if (!ticket) return;
 
     if (!this.inviableMotivo.trim()) {
-      alert('Debes ingresar la justificación técnica por la cual no es posible efectuar la reparación.');
+      this.inviableError.set('Debes ingresar la justificación técnica por la cual no es posible efectuar la reparación.');
       return;
     }
 
     this.submitting.set(true);
+    this.inviableError.set(null);
     this.ticketService.declararInviable(ticket.id, {
       motivo: this.inviableMotivo.trim(),
       subestado_rechazo: this.subestadoRechazo,
@@ -183,9 +261,13 @@ export class MantencionDashboardComponent implements OnInit {
       next: () => {
         this.submitting.set(false);
         this.closeInviableModal();
+        this.showToast('success', `Ticket ${ticket.folio} derivado / declarado no reparable.`);
         this.loadTickets();
       },
-      error: () => this.submitting.set(false)
+      error: (err) => {
+        this.submitting.set(false);
+        this.inviableError.set(err?.error?.error || 'Error al derivar el ticket.');
+      }
     });
   }
 

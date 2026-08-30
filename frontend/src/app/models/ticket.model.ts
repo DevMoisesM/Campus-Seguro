@@ -56,6 +56,7 @@ export interface SesionTrabajo {
   mantenedor_nombre?: string;
   inicio: string;
   fin?: string;
+  horas_hombre?: number;
   observaciones?: string;
   tipo?: 'avance' | 'final';
   es_final?: boolean;
@@ -113,6 +114,15 @@ export interface Ticket {
   evidencias?: EvidenciaFotografica[];
   materiales_utilizados?: MaterialUtilizado[];
   sesiones_trabajo?: SesionTrabajo[];
+  sesion_activa?: {
+    id: number;
+    inicio: string;
+    mantenedor_id: number;
+    mantenedor_nombre: string;
+    tipo?: string;
+    observaciones?: string;
+  } | null;
+  total_horas_hombre?: number;
 }
 
 export interface TicketCreateData {

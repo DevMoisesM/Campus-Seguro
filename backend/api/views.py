@@ -585,29 +585,81 @@ class TicketViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
-    def registrar_avance(self, request, pk=None):
+    def iniciar_trabajo(self, request, pk=None):
         """
-        Acción del Mantenedor para registrar un avance diario (jornada de trabajo) sin cerrar el ticket.
+        Acción del Mantenedor para iniciar la jornada de trabajo / cronómetro en terreno.
+        Crea una SesionTrabajo activa con inicio=now y fin=null.
         """
         ticket = self.get_object()
-        horas = float(request.data.get('horas_trabajadas', 1))
+
+        # Si el ticket aún está en estado 'validado', pasarlo a 'en_mantencion'
+        estado_en_mantencion = EstadoCatalogo.objects.filter(entidad='ticket', codigo='en_mantencion').first()
+        if estado_en_mantencion and ticket.estado.codigo != 'en_mantencion':
+            ticket.estado = estado_en_mantencion
+            ticket.save()
+
+        # Si el ticket no tenía técnico asignado, asignarlo a quien inicia el trabajo
+        if not ticket.asignado_a:
+            ticket.asignado_a = request.user
+            ticket.save()
+
+        # Verificar si ya existe una sesión activa sin cerrar
+        sesion_activa = ticket.sesiones_trabajo.filter(fin__isnull=True, mantenedor=request.user).first()
+        if not sesion_activa:
+            sesion_activa = SesionTrabajo.objects.create(
+                ticket=ticket,
+                mantenedor=request.user,
+                inicio=timezone.now(),
+                fin=None,
+                tipo='avance',
+                es_final=False
+            )
+            LogAuditoria.objects.create(
+                ticket=ticket,
+                usuario=request.user,
+                accion='Jornada de trabajo iniciada en terreno (Cronómetro activo)',
+                estado_nuevo='En Mantenimiento',
+                detalle=f'Técnico {request.user.get_full_name()} comenzó la sesión de mantenimiento.'
+            )
+
+        return Response({
+            'status': 'ok',
+            'mensaje': 'Jornada de trabajo iniciada con éxito.',
+            'sesion_id': sesion_activa.id,
+            'inicio': sesion_activa.inicio
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def registrar_avance(self, request, pk=None):
+        """
+        Acción del Mantenedor para registrar un avance diario (cierra la sesión activa o crea una con la duración calculada).
+        """
+        ticket = self.get_object()
         observaciones = request.data.get('observaciones_tecnicas', request.data.get('observacion', 'Avance diario de mantenimiento.'))
         materiales = request.data.get('materiales', [])
         imagen_url = request.data.get('imagen_url')
 
-        inicio_dt = timezone.now() - timezone.timedelta(hours=horas)
-        fin_dt = timezone.now()
-
-        # Registrar sesión de trabajo de la jornada
-        sesion_obj = SesionTrabajo.objects.create(
-            ticket=ticket,
-            mantenedor=request.user,
-            inicio=inicio_dt,
-            fin=fin_dt,
-            observaciones=f"[Avance Diario] {observaciones}",
-            tipo='avance',
-            es_final=False
-        )
+        # Buscar si hay una sesión activa abierta
+        sesion_obj = ticket.sesiones_trabajo.filter(fin__isnull=True, mantenedor=request.user).first()
+        if sesion_obj:
+            sesion_obj.fin = timezone.now()
+            sesion_obj.observaciones = f"[Avance Diario] {observaciones}"
+            sesion_obj.tipo = 'avance'
+            sesion_obj.es_final = False
+            sesion_obj.save()
+        else:
+            # Fallback si no había sesión iniciada previamente
+            horas = float(request.data.get('horas_trabajadas', 1))
+            inicio_dt = timezone.now() - timezone.timedelta(hours=horas)
+            sesion_obj = SesionTrabajo.objects.create(
+                ticket=ticket,
+                mantenedor=request.user,
+                inicio=inicio_dt,
+                fin=timezone.now(),
+                observaciones=f"[Avance Diario] {observaciones}",
+                tipo='avance',
+                es_final=False
+            )
 
         # Registrar materiales consumidos en la jornada
         for mat in materiales:
@@ -635,42 +687,60 @@ class TicketViewSet(viewsets.ModelViewSet):
             ticket.estado = estado_en_mantencion
             ticket.save()
 
+        hh = sesion_obj.horas_hombre
+
         LogAuditoria.objects.create(
             ticket=ticket,
             usuario=request.user,
-            accion=f'Avance diario registrado ({horas} HH)',
+            accion=f'Avance diario registrado ({hh} HH)',
             estado_nuevo=estado_en_mantencion.nombre_display if estado_en_mantencion else 'En Mantenimiento',
             detalle=observaciones
         )
 
-        return Response({'status': 'ok', 'mensaje': f'Avance diario de {horas} HH registrado con éxito.'}, status=status.HTTP_200_OK)
+        return Response({
+            'status': 'ok',
+            'mensaje': f'Avance diario de {hh} Horas-Hombre registrado con éxito.',
+            'horas_hombre': hh
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def registrar_mantencion(self, request, pk=None):
         """
-        Acción del Mantenedor para registrar el trabajo realizado, materiales usados y evidencia.
+        Acción del Mantenedor para registrar el fin de la reparación (cierra sesión activa como informe final).
         """
         ticket = self.get_object()
         observacion = request.data.get('observaciones_tecnicas') or request.data.get('observacion', '')
         materiales = request.data.get('materiales', [])
         imagen_url = request.data.get('imagen_url')
 
-        # Registrar sesión de trabajo final de reparación
-        sesion_obj = SesionTrabajo.objects.create(
-            ticket=ticket,
-            mantenedor=request.user,
-            observaciones=observacion,
-            fin=timezone.now(),
-            tipo='final',
-            es_final=True
-        )
+        # Buscar si hay una sesión activa abierta
+        sesion_obj = ticket.sesiones_trabajo.filter(fin__isnull=True, mantenedor=request.user).first()
+        if sesion_obj:
+            sesion_obj.fin = timezone.now()
+            sesion_obj.observaciones = observacion
+            sesion_obj.tipo = 'final'
+            sesion_obj.es_final = True
+            sesion_obj.save()
+        else:
+            # Fallback si no había sesión iniciada previamente
+            horas = float(request.data.get('horas_trabajadas', 1))
+            inicio_dt = timezone.now() - timezone.timedelta(hours=horas)
+            sesion_obj = SesionTrabajo.objects.create(
+                ticket=ticket,
+                mantenedor=request.user,
+                inicio=inicio_dt,
+                fin=timezone.now(),
+                observaciones=observacion,
+                tipo='final',
+                es_final=True
+            )
 
         # Registrar materiales
         for mat in materiales:
             MaterialUtilizado.objects.create(
                 ticket=ticket,
                 sesion=sesion_obj,
-                nombre_material=mat.get('nombre', 'Material'),
+                nombre_material=mat.get('nombre', mat.get('nombre_material', 'Material')),
                 cantidad=mat.get('cantidad', 1),
                 unidad=mat.get('unidad', 'unidades')
             )
@@ -690,15 +760,21 @@ class TicketViewSet(viewsets.ModelViewSet):
             ticket.estado = estado_reparado
             ticket.save()
 
+        hh = sesion_obj.horas_hombre
+
         LogAuditoria.objects.create(
             ticket=ticket,
             usuario=request.user,
-            accion='Trabajo de mantención registrado (Reparado)',
+            accion=f'Trabajo de mantención finalizado ({hh} HH)',
             estado_nuevo='Reparado',
             detalle=observacion
         )
 
-        return Response({'status': 'ok'}, status=status.HTTP_200_OK)
+        return Response({
+            'status': 'ok',
+            'mensaje': f'Mantenimiento finalizado con éxito ({hh} HH registradas).',
+            'horas_hombre': hh
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def declarar_inviable(self, request, pk=None):
@@ -712,15 +788,24 @@ class TicketViewSet(viewsets.ModelViewSet):
         if not motivo or not motivo.strip():
             return Response({'error': 'Debe especificar el motivo técnico por el cual no se puede reparar.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Registrar sesión de trabajo de cierre inviable
-        sesion_obj = SesionTrabajo.objects.create(
-            ticket=ticket,
-            mantenedor=request.user,
-            observaciones=f"[DECLARADO NO REPARABLE / INVIABLE] {motivo}",
-            fin=timezone.now(),
-            tipo='final',
-            es_final=True
-        )
+        # Si había sesión activa, cerrarla
+        sesion_obj = ticket.sesiones_trabajo.filter(fin__isnull=True, mantenedor=request.user).first()
+        if sesion_obj:
+            sesion_obj.fin = timezone.now()
+            sesion_obj.observaciones = f"[DECLARADO NO REPARABLE / INVIABLE] {motivo}"
+            sesion_obj.tipo = 'final'
+            sesion_obj.es_final = True
+            sesion_obj.save()
+        else:
+            sesion_obj = SesionTrabajo.objects.create(
+                ticket=ticket,
+                mantenedor=request.user,
+                inicio=timezone.now(),
+                fin=timezone.now(),
+                observaciones=f"[DECLARADO NO REPARABLE / INVIABLE] {motivo}",
+                tipo='final',
+                es_final=True
+            )
 
         if imagen_url:
             EvidenciaFotografica.objects.create(
@@ -888,20 +973,33 @@ class TicketViewSet(viewsets.ModelViewSet):
             for g in guardias_qs
         ]
 
-        # Rendimiento de Mantenedores
+        # Rendimiento de Mantenedores (Cálculo real de Horas-Hombre acumuladas)
         mantencion_qs = SesionTrabajo.objects.filter(
             inicio__gte=desde,
             inicio__lte=hasta
-        ).values('mantenedor__first_name', 'mantenedor__last_name').annotate(
-            total_ordenes=Count('ticket_id', distinct=True)
-        )
+        ).select_related('mantenedor', 'ticket')
+
+        tecnicos_dict = {}
+        for s in mantencion_qs:
+            m_id = s.mantenedor_id
+            nombre = f"{s.mantenedor.first_name} {s.mantenedor.last_name}".strip() or s.mantenedor.username
+            if m_id not in tecnicos_dict:
+                tecnicos_dict[m_id] = {
+                    'nombre': nombre,
+                    'ordenes_ids': set(),
+                    'hh_totales': 0.0
+                }
+            tecnicos_dict[m_id]['ordenes_ids'].add(s.ticket_id)
+            if s.inicio and s.fin:
+                tecnicos_dict[m_id]['hh_totales'] += s.horas_hombre
+
         rendimiento_mantencion = [
             {
-                'nombre': f"{m['mantenedor__first_name']} {m['mantenedor__last_name']}".strip() or 'Mantenedor',
-                'ordenes_completadas': m['total_ordenes'],
-                'hh_totales': m['total_ordenes'] * 1.5 # Estimación promedio
+                'nombre': v['nombre'],
+                'ordenes_completadas': len(v['ordenes_ids']),
+                'hh_totales': round(v['hh_totales'], 1)
             }
-            for m in mantencion_qs
+            for v in tecnicos_dict.values()
         ]
 
         # Cruce Checklist Guardia vs Riesgos Declarados

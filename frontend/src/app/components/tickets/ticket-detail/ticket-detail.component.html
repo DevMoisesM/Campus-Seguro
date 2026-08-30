@@ -119,8 +119,13 @@
               <i [class]="'fa-solid ' + step.icon"></i>
             </div>
             <span class="text-[11px] sm:text-xs font-bold leading-tight line-clamp-1">{{ step.label }}</span>
-            <span class="text-[9px] sm:text-[10px] font-mono mt-1 font-semibold">
-              {{ isStepCompleted(step.code) ? '✓ Completado' : 'Pendiente' }}
+            <span [class]="'text-[9px] sm:text-[10px] font-mono mt-1 font-semibold inline-flex items-center gap-1 ' + (isStepCompleted(step.code) ? 'text-emerald-700' : 'text-slate-500')">
+              @if (isStepCompleted(step.code)) {
+                <i class="fa-solid fa-check text-[10px]"></i>
+                <span>Completado</span>
+              } @else {
+                <span>Pendiente</span>
+              }
             </span>
           </div>
         }
@@ -190,14 +195,17 @@
               <span class="font-bold">Observaciones:</span> {{ ticket()?.validacion_guardia?.observacion }}
             </p>
             <div class="flex flex-wrap gap-2 pt-2">
-              <span class="px-2 py-0.5 rounded text-[11px] font-bold" [ngClass]="ticket()?.validacion_guardia?.checklist_electrico ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'">
-                Checklist Eléctrico {{ ticket()?.validacion_guardia?.checklist_electrico ? '✓' : '✗' }}
+              <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold inline-flex items-center gap-1.5 border" [ngClass]="ticket()?.validacion_guardia?.checklist_electrico ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'">
+                <i [class]="ticket()?.validacion_guardia?.checklist_electrico ? 'fa-solid fa-circle-check text-emerald-600' : 'fa-solid fa-circle-xmark text-slate-400'"></i>
+                <span>Checklist Eléctrico</span>
               </span>
-              <span class="px-2 py-0.5 rounded text-[11px] font-bold" [ngClass]="ticket()?.validacion_guardia?.checklist_estructural ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'">
-                Checklist Estructural {{ ticket()?.validacion_guardia?.checklist_estructural ? '✓' : '✗' }}
+              <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold inline-flex items-center gap-1.5 border" [ngClass]="ticket()?.validacion_guardia?.checklist_estructural ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'">
+                <i [class]="ticket()?.validacion_guardia?.checklist_estructural ? 'fa-solid fa-circle-check text-emerald-600' : 'fa-solid fa-circle-xmark text-slate-400'"></i>
+                <span>Checklist Estructural</span>
               </span>
-              <span class="px-2 py-0.5 rounded text-[11px] font-bold" [ngClass]="ticket()?.validacion_guardia?.checklist_accesibilidad ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'">
-                Checklist Accesibilidad {{ ticket()?.validacion_guardia?.checklist_accesibilidad ? '✓' : '✗' }}
+              <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold inline-flex items-center gap-1.5 border" [ngClass]="ticket()?.validacion_guardia?.checklist_accesibilidad ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'">
+                <i [class]="ticket()?.validacion_guardia?.checklist_accesibilidad ? 'fa-solid fa-circle-check text-emerald-600' : 'fa-solid fa-circle-xmark text-slate-400'"></i>
+                <span>Checklist Accesibilidad</span>
               </span>
             </div>
           </div>
@@ -228,6 +236,34 @@
                   </div>
                 </div>
               }
+            </div>
+          </div>
+        }
+
+        <!-- Sesión de Trabajo Activa en Terreno (En Curso) -->
+        @if (ticket()?.sesion_activa) {
+          <div class="bg-emerald-50 border border-emerald-300 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-lg font-bold shadow-xs shrink-0">
+                <i class="fa-solid fa-stopwatch"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-emerald-950 uppercase tracking-wider font-mono">Trabajo en Terreno en Curso</span>
+                  <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                </div>
+                <p class="text-xs text-emerald-800 mt-0.5">
+                  El mantenedor <strong>{{ ticket()?.sesion_activa?.mantenedor_nombre }}</strong> inició labores a las <strong>{{ ticket()?.sesion_activa?.inicio | date:'HH:mm' }} hrs</strong>.
+                </p>
+              </div>
+            </div>
+            <div class="self-end sm:self-center">
+              <span class="px-3 py-1 rounded-full bg-emerald-600 text-white font-mono font-bold text-xs uppercase shadow-2xs">
+                Cronómetro Activo
+              </span>
             </div>
           </div>
         }

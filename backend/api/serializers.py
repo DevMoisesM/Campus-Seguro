@@ -269,10 +269,11 @@ class SesionTrabajoSerializer(serializers.ModelSerializer):
     mantenedor_nombre = serializers.ReadOnlyField(source='mantenedor.get_full_name')
     materiales = MaterialUtilizadoSerializer(many=True, read_only=True)
     evidencias = EvidenciaFotograficaSerializer(many=True, read_only=True)
+    horas_hombre = serializers.ReadOnlyField()
 
     class Meta:
         model = SesionTrabajo
-        fields = ['id', 'ticket', 'mantenedor', 'mantenedor_nombre', 'inicio', 'fin', 'observaciones', 'tipo', 'es_final', 'materiales', 'evidencias']
+        fields = ['id', 'ticket', 'mantenedor', 'mantenedor_nombre', 'inicio', 'fin', 'horas_hombre', 'observaciones', 'tipo', 'es_final', 'materiales', 'evidencias']
 
 
 class LogAuditoriaSerializer(serializers.ModelSerializer):
@@ -306,7 +307,7 @@ class TicketCreateUpdateSerializer(serializers.ModelSerializer):
 
 class TicketDetailSerializer(serializers.ModelSerializer):
     """
-    Serializador de lectura completa con todas las relaciones anidadas.
+    Serializador de lectura completa con todas las relaciones anidadas y cálculo automático de sesiones de trabajo.
     """
     ubicacion = UbicacionSerializer(read_only=True)
     estado = EstadoCatalogoSerializer(read_only=True)
@@ -320,6 +321,8 @@ class TicketDetailSerializer(serializers.ModelSerializer):
     evidencias = EvidenciaFotograficaSerializer(many=True, read_only=True)
     materiales_utilizados = MaterialUtilizadoSerializer(many=True, read_only=True)
     sesiones_trabajo = SesionTrabajoSerializer(many=True, read_only=True)
+    sesion_activa = serializers.SerializerMethodField()
+    total_horas_hombre = serializers.SerializerMethodField()
 
     class Meta:
         model = Ticket
@@ -328,8 +331,26 @@ class TicketDetailSerializer(serializers.ModelSerializer):
             'ubicacion', 'urgencia', 'estado', 'subestado_rechazo', 'creado_por', 'guardia_asignado', 'validado_por', 'asignado_a',
             'afecta_clase', 'riesgo_electrico', 'riesgo_estructural', 'riesgo_accesibilidad',
             'created_at', 'updated_at', 'cerrado_at', 'validacion_guardia',
-            'evidencias', 'materiales_utilizados', 'sesiones_trabajo'
+            'evidencias', 'materiales_utilizados', 'sesiones_trabajo', 'sesion_activa', 'total_horas_hombre'
         ]
+
+    def get_sesion_activa(self, obj):
+        sesion = obj.sesiones_trabajo.filter(fin__isnull=True).order_by('-inicio').first()
+        if sesion:
+            return {
+                'id': sesion.id,
+                'inicio': sesion.inicio,
+                'mantenedor_id': sesion.mantenedor.id,
+                'mantenedor_nombre': sesion.mantenedor.get_full_name(),
+                'tipo': sesion.tipo,
+                'observaciones': sesion.observaciones
+            }
+        return None
+
+    def get_total_horas_hombre(self, obj):
+        total = sum(s.horas_hombre for s in obj.sesiones_trabajo.all() if s.inicio and s.fin)
+        return round(total, 2)
+
 
 
 class InasistenciaSerializer(serializers.ModelSerializer):
