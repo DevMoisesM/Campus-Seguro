@@ -208,6 +208,7 @@ export interface TicketMetrics {
       reparados: number;
       en_proceso: number;
       no_reparables: number;
+      hh_totales?: number;
       reasignados: number;
       inasistencias: number;
     }>;

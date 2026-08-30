@@ -1046,34 +1046,68 @@ class TicketViewSet(viewsets.ModelViewSet):
         calidad_guardias_foto = round((val_con_foto / val_total * 100), 1) if val_total > 0 else 0.0
 
         # Métricas de Mantención (Pestaña 3)
+        sesiones_periodo = SesionTrabajo.objects.filter(
+            ticket__in=qs,
+            fin__isnull=False
+        ).select_related('mantenedor', 'ticket')
+
         trabajos_completados = reparados + cerrados
-        hh_totales = round(trabajos_completados * 2.2, 1)
-        hh_promedio = round(hh_totales / trabajos_completados, 1) if trabajos_completados > 0 else 0.0
+        hh_totales_calc = sum(s.horas_hombre for s in sesiones_periodo)
+        hh_totales = round(hh_totales_calc, 1)
+        hh_promedio = round(hh_totales / trabajos_completados, 1) if trabajos_completados > 0 else (round(hh_totales / len(sesiones_periodo), 1) if len(sesiones_periodo) > 0 else 0.0)
+
         no_reparados = qs.filter(estado__codigo='rechazado').filter(Q(subestado_rechazo__in=['requiere_proveedor_externo', 'otro']) | Q(asignado_a__isnull=False)).count()
         tasa_no_reparacion = round((no_reparados / total_periodo * 100), 1) if total_periodo > 0 else 0.0
-        tiempo_prom_trabajo_min = 45 # Promedio simulado en terreno
+
+        if len(sesiones_periodo) > 0:
+            total_segundos = sum((s.fin - s.inicio).total_seconds() for s in sesiones_periodo if s.inicio and s.fin)
+            tiempo_prom_trabajo_min = int(round(total_segundos / len(sesiones_periodo) / 60))
+        else:
+            tiempo_prom_trabajo_min = 0
+
         requirio_apoyo_cnt = qs.filter(afecta_clase=True).count()
         escalados_cnt = qs.filter(urgencia='critica').count()
-        calidad_foto_final = round(((cerrados) / total_periodo * 100), 1) if total_periodo > 0 else 0.0
 
-        # Tablero de control de tickets por técnico
-        tecnicos_all = Usuario.objects.filter(rol__codigo='mantencion')
+        tickets_completados_qs = qs.filter(estado__codigo__in=['reparado', 'cerrado'])
+        if tickets_completados_qs.exists():
+            con_foto_final = tickets_completados_qs.filter(evidencias__fase='reparacion').distinct().count()
+            calidad_foto_final = round((con_foto_final / tickets_completados_qs.count() * 100), 1)
+        else:
+            calidad_foto_final = 0.0
+
+        # Tablero de control de tickets por técnico (Filtrado por período y sede vía qs)
+        tecnicos_all = Usuario.objects.filter(rol__codigo='mantencion', is_active=True)
         tablero_tecnicos = []
         for t in tecnicos_all:
-            repar = Ticket.objects.filter(asignado_a=t, estado__codigo='reparado').count()
-            en_proc = Ticket.objects.filter(asignado_a=t, estado__codigo='en_mantencion').count()
-            no_rep = Ticket.objects.filter(asignado_a=t, estado__codigo='rechazado').count()
+            repar = qs.filter(asignado_a=t, estado__codigo__in=['reparado', 'cerrado']).count()
+            en_proc = qs.filter(asignado_a=t, estado__codigo='en_mantencion').count()
+            no_rep = qs.filter(asignado_a=t, estado__codigo='rechazado').count()
+            
+            # HH reales acumuladas por este mantenedor en el período seleccionado
+            sesiones_tec = [s for s in sesiones_periodo if s.mantenedor_id == t.id]
+            hh_tec = round(sum(s.horas_hombre for s in sesiones_tec), 1)
+
             nombre_tec = t.get_full_name() or t.username
             reasig = LogAuditoria.objects.filter(
+                ticket__in=qs
+            ).filter(
                 Q(accion__icontains=f'de {nombre_tec}') | Q(accion__icontains=f'a {nombre_tec}') | Q(accion__icontains=f'inasistencia de {nombre_tec}')
             ).filter(accion__icontains='reasignad').count()
-            inasist = Inasistencia.objects.filter(usuario=t, estado='aprobada').count()
+
+            inasist = Inasistencia.objects.filter(
+                usuario=t,
+                estado='aprobada',
+                fecha_desde__lte=hasta.date(),
+                fecha_hasta__gte=desde.date()
+            ).count()
+
             tablero_tecnicos.append({
                 'id': t.id,
                 'nombre': nombre_tec,
                 'reparados': repar,
                 'en_proceso': en_proc,
                 'no_reparables': no_rep,
+                'hh_totales': hh_tec,
                 'reasignados': reasig,
                 'inasistencias': inasist
             })
