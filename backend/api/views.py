@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.utils import timezone
-from django.db.models import Count, Q, F
+from django.db.models import Count, Q, F, Sum
 from django.shortcuts import get_object_or_404
 
 from .models import (
@@ -663,12 +663,24 @@ class TicketViewSet(viewsets.ModelViewSet):
 
         # Registrar materiales consumidos en la jornada
         for mat in materiales:
+            nombre = mat.get('nombre', mat.get('nombre_material', 'Material'))
+            cant = int(mat.get('cantidad', 1) or 1)
+            unidad = mat.get('unidad', 'unidades')
+            
+            # Asociar categoría desde el catálogo y descontar stock disponible
+            mat_obj = Material.objects.filter(nombre__iexact=nombre).first()
+            categoria_obj = mat_obj.categoria if mat_obj else None
+            if mat_obj and mat_obj.stock_disponible >= cant:
+                mat_obj.stock_disponible -= cant
+                mat_obj.save(update_fields=['stock_disponible'])
+
             MaterialUtilizado.objects.create(
                 ticket=ticket,
                 sesion=sesion_obj,
-                nombre_material=mat.get('nombre', mat.get('nombre_material', 'Material')),
-                cantidad=mat.get('cantidad', 1),
-                unidad=mat.get('unidad', 'unidades')
+                nombre_material=nombre,
+                categoria=categoria_obj,
+                cantidad=cant,
+                unidad=unidad
             )
 
         # Registrar evidencia de avance si existe
@@ -737,12 +749,24 @@ class TicketViewSet(viewsets.ModelViewSet):
 
         # Registrar materiales
         for mat in materiales:
+            nombre = mat.get('nombre', mat.get('nombre_material', 'Material'))
+            cant = int(mat.get('cantidad', 1) or 1)
+            unidad = mat.get('unidad', 'unidades')
+
+            # Asociar categoría desde el catálogo y descontar stock disponible
+            mat_obj = Material.objects.filter(nombre__iexact=nombre).first()
+            categoria_obj = mat_obj.categoria if mat_obj else None
+            if mat_obj and mat_obj.stock_disponible >= cant:
+                mat_obj.stock_disponible -= cant
+                mat_obj.save(update_fields=['stock_disponible'])
+
             MaterialUtilizado.objects.create(
                 ticket=ticket,
                 sesion=sesion_obj,
-                nombre_material=mat.get('nombre', mat.get('nombre_material', 'Material')),
-                cantidad=mat.get('cantidad', 1),
-                unidad=mat.get('unidad', 'unidades')
+                nombre_material=nombre,
+                categoria=categoria_obj,
+                cantidad=cant,
+                unidad=unidad
             )
 
         # Registrar evidencia
@@ -943,14 +967,13 @@ class TicketViewSet(viewsets.ModelViewSet):
             ).count()
             por_sede.append({'id': s.id, 'nombre': s.nombre, 'total': cnt})
 
-        # Top 5 Materiales del Pañol consumidos
+        # Top 5 Materiales del Pañol consumidos (sumando cantidades reales de tickets del período/sede)
         top_mats_qs = MaterialUtilizado.objects.filter(
-            ticket__created_at__gte=desde,
-            ticket__created_at__lte=hasta
-        ).values('nombre_material', 'unidad').annotate(total_cant=Count('id')).order_by('-total_cant')[:5]
+            ticket__in=qs
+        ).values('nombre_material', 'unidad').annotate(total_cant=Sum('cantidad')).order_by('-total_cant')[:5]
 
         top_materiales = [
-            {'nombre': m['nombre_material'], 'cantidad': m['total_cant'], 'unidad': m['unidad']}
+            {'nombre': m['nombre_material'], 'cantidad': m['total_cant'] or 0, 'unidad': m['unidad']}
             for m in top_mats_qs
         ]
 
@@ -1113,23 +1136,64 @@ class TicketViewSet(viewsets.ModelViewSet):
             })
 
         # Métricas de Materiales (Pestaña 4)
-        mat_distintos = MaterialUtilizado.objects.filter(ticket__created_at__gte=desde, ticket__created_at__lte=hasta).values('nombre_material').distinct().count()
-        cat_consumidas = MaterialUtilizado.objects.filter(ticket__created_at__gte=desde, ticket__created_at__lte=hasta, categoria__isnull=False).values('categoria').distinct().count()
-        top_compras_qs = Material.objects.all()[:6]
-        top_compras_inteligentes = [
-            {
-                'id': m.id,
-                'codigo': f"MAT-CAT-{m.id:03d}",
-                'nombre': m.nombre,
-                'categoria': m.categoria.nombre_display if m.categoria else 'General',
-                'veces_usado': MaterialUtilizado.objects.filter(nombre_material=m.nombre).count(),
-                'en_tickets': MaterialUtilizado.objects.filter(nombre_material=m.nombre).values('ticket').distinct().count(),
-                'total_consumido': m.stock_disponible,
-                'unidad': m.unidad_defecto,
-                'demanda': 'Normal'
-            }
-            for m in top_compras_qs
-        ]
+        qs_mats = MaterialUtilizado.objects.filter(ticket__in=qs)
+        mat_distintos = qs_mats.values('nombre_material').distinct().count()
+
+        # Categorías distintas consumidas (resueltas tanto por clave foránea como por catálogo)
+        nombres_usados = list(qs_mats.values_list('nombre_material', flat=True).distinct())
+        cat_ids_desde_catalogo = set(
+            Material.objects.filter(nombre__in=nombres_usados, categoria__isnull=False).values_list('categoria_id', flat=True)
+        )
+        cat_ids_directos = set(
+            qs_mats.filter(categoria__isnull=False).values_list('categoria_id', flat=True)
+        )
+        cat_consumidas = len(cat_ids_desde_catalogo.union(cat_ids_directos))
+
+        # Agregación real de consumo por material en el período
+        mats_consumidos = qs_mats.values(
+            'nombre_material', 'unidad'
+        ).annotate(
+            veces_usado=Count('id'),
+            en_tickets=Count('ticket_id', distinct=True),
+            total_consumido=Sum('cantidad')
+        ).order_by('-total_consumido')
+
+        top_compras_inteligentes = []
+        if mats_consumidos.exists():
+            for idx, item in enumerate(mats_consumidos[:10]):
+                mat_obj = Material.objects.filter(nombre__iexact=item['nombre_material']).first()
+                categoria_nombre = mat_obj.categoria.nombre_display if (mat_obj and mat_obj.categoria) else 'General'
+                codigo = f"MAT-{mat_obj.id:03d}" if mat_obj else f"MAT-{idx+1:03d}"
+                stock_actual = mat_obj.stock_disponible if mat_obj else 0
+                cant = item['total_consumido'] or 0
+                demanda = 'Alta' if cant >= 10 else ('Media' if cant >= 3 else 'Normal')
+
+                top_compras_inteligentes.append({
+                    'id': mat_obj.id if mat_obj else idx + 1,
+                    'codigo': codigo,
+                    'nombre': item['nombre_material'],
+                    'categoria': categoria_nombre,
+                    'veces_usado': item['veces_usado'],
+                    'en_tickets': item['en_tickets'],
+                    'total_consumido': cant,
+                    'stock_disponible': stock_actual,
+                    'unidad': item['unidad'] or (mat_obj.unidad_defecto if mat_obj else 'unidades'),
+                    'demanda': demanda
+                })
+        else:
+            for m in Material.objects.filter(activo=True)[:6]:
+                top_compras_inteligentes.append({
+                    'id': m.id,
+                    'codigo': f"MAT-{m.id:03d}",
+                    'nombre': m.nombre,
+                    'categoria': m.categoria.nombre_display if m.categoria else 'General',
+                    'veces_usado': 0,
+                    'en_tickets': 0,
+                    'total_consumido': 0,
+                    'stock_disponible': m.stock_disponible,
+                    'unidad': m.unidad_defecto,
+                    'demanda': 'Sin consumo'
+                })
 
         # Métricas de Comunidad (Pestaña 6)
         funcionarios_cnt = Usuario.objects.filter(rol__codigo__in=['guardia', 'mantencion', 'gestor']).count()
@@ -1199,8 +1263,8 @@ class TicketViewSet(viewsets.ModelViewSet):
                 'tablero_tecnicos': tablero_tecnicos
             },
             'materiales_metrics': {
-                'materiales_distintos': mat_distintos if mat_distintos > 0 else 6,
-                'categorias_consumidas': cat_consumidas if cat_consumidas > 0 else 4,
+                'materiales_distintos': mat_distintos,
+                'categorias_consumidas': cat_consumidas,
                 'top_compras_inteligentes': top_compras_inteligentes
             },
             'comunidad_metrics': {

@@ -224,6 +224,7 @@ export interface TicketMetrics {
       veces_usado: number;
       en_tickets: number;
       total_consumido: number;
+      stock_disponible?: number;
       unidad: string;
       demanda: string;
     }>;
