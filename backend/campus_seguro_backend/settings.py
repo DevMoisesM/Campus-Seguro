@@ -176,6 +176,14 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+# Cache Configuration (para Rate Limiting / Throttling)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'campus-seguro-throttle-cache',
+    }
+}
+
 # Django REST Framework Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -185,6 +193,16 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '120/minute',
+        'user': '1000/minute',
+        'login': '5/minute',       # Protección Anti Fuerza Bruta (Máx 5 intentos/min por IP)
+        'register': '3/minute',    # Protección Anti Spam de Cuentas (Máx 3 registros/min por IP)
+    },
 }
 
 # SimpleJWT Configuration

@@ -22,6 +22,21 @@ from .serializers import (
     SesionTrabajoSerializer, MaterialUtilizadoSerializer, EvidenciaFotograficaSerializer, LogAuditoriaSerializer, InasistenciaSerializer
 )
 
+from rest_framework.throttling import AnonRateThrottle
+
+# ═══════════════════════════════════════════════════════════════
+# 0. SEGURIDAD & RATE LIMITING (ANTI FUERZA BRUTA)
+# ═══════════════════════════════════════════════════════════════
+
+class LoginRateThrottle(AnonRateThrottle):
+    """Límite estricto de intentos de inicio de sesión por IP para neutralizar ataques de fuerza bruta."""
+    scope = 'login'
+
+class RegisterRateThrottle(AnonRateThrottle):
+    """Límite de solicitudes de registro de cuentas por IP para evitar spam automatizado."""
+    scope = 'register'
+
+
 # ═══════════════════════════════════════════════════════════════
 # 1. AUTENTICACIÓN JWT & PERFIL
 # ═══════════════════════════════════════════════════════════════
@@ -29,8 +44,10 @@ from .serializers import (
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
     Endpoint de Iniciar Sesión JWT. Retorna access_token, refresh_token y datos del usuario.
+    Protegido contra ataques de fuerza bruta (máximo 5 intentos por minuto por IP).
     """
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = [LoginRateThrottle]
 
 
 class UserProfileView(APIView):
@@ -113,11 +130,12 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         serializer = UsuarioSerializer(usuario)
         return Response(serializer.data, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny], throttle_classes=[RegisterRateThrottle])
     def register(self, request):
         """
         Registro público de nuevos usuarios (Comunidad / Estudiantes).
         Acepta cualquier email válido, genera cuenta activa con rol 'usuario' y retorna tokens JWT.
+        Protegido contra spam y bots automatizados (máximo 3 registros por minuto por IP).
         """
         username = request.data.get('username', '').strip()
         email = request.data.get('email', '').strip()

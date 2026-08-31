@@ -67,7 +67,9 @@ export class LoginComponent implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        if (err.status === 0) {
+        if (err.status === 429) {
+          this.errorMessage.set('Demasiados intentos fallidos consecutivos. Por seguridad de tu cuenta, por favor espera 1 minuto antes de volver a intentar.');
+        } else if (err.status === 0) {
           this.errorMessage.set('No se pudo conectar con el servidor backend (puerto 8000). Asegúrate de iniciar Django con runserver.');
         } else if (err.status === 401) {
           this.errorMessage.set(err?.error?.detail || 'Credenciales incorrectas. Verifica tu usuario y contraseña.');

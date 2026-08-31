@@ -96,8 +96,12 @@ export class RegisterComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        const backendError = err.error?.error || err.error?.message || err.error?.username?.[0] || err.error?.email?.[0] || 'Error al procesar el registro. Intenta nuevamente.';
-        this.errorMessage.set(backendError);
+        if (err.status === 429) {
+          this.errorMessage.set('Demasiadas solicitudes de registro desde esta conexión. Por favor espera unos momentos antes de reintentar.');
+        } else {
+          const backendError = err.error?.error || err.error?.message || err.error?.username?.[0] || err.error?.email?.[0] || 'Error al procesar el registro. Intenta nuevamente.';
+          this.errorMessage.set(backendError);
+        }
       }
     });
   }
