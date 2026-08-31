@@ -427,14 +427,41 @@ class TicketViewSet(viewsets.ModelViewSet):
         )
 
     # ═══════════════════════════════════════════════════════════
-    # ACCIONES OPERACIONALES POR ROL
+    # ACCIONES OPERACIONALES POR ROL (ANTI-IDOR PROTECTED)
     # ═══════════════════════════════════════════════════════════
+
+    def update(self, request, *args, **kwargs):
+        ticket = self.get_object()
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            if ticket.creado_por_id != user.id or (ticket.estado and ticket.estado.codigo != 'enviado'):
+                return Response({'error': 'No tienes permiso para modificar este ticket una vez que ha iniciado su atención operativa.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        ticket = self.get_object()
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            if ticket.creado_por_id != user.id or (ticket.estado and ticket.estado.codigo != 'enviado'):
+                return Response({'error': 'No tienes permiso para modificar este ticket una vez que ha iniciado su atención operativa.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede eliminar tickets del sistema.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'])
     def validar_guardia(self, request, pk=None):
         """
         Acción del Guardia para inspeccionar y validar un ticket en terreno.
+        Protegido por rol (Guardia o Gestor).
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['guardia', 'gestor', 'admin'])):
+            return Response({'error': 'Solo el personal de Guardia o Gestor tiene autorización para validar incidentes en terreno.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
         observacion = request.data.get('observacion', '')
         valido = request.data.get('valido', True)
@@ -555,7 +582,12 @@ class TicketViewSet(viewsets.ModelViewSet):
     def derivar_mantencion(self, request, pk=None):
         """
         Acción del Gestor para asignar o reasignar un ticket a un mantenedor específico.
+        Protegido por rol (solo Gestor o Admin).
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede asignar o reasignar tickets.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
         if ticket.estado and ticket.estado.codigo in ['rechazado', 'cerrado']:
             return Response({'error': f'No se puede asignar ni derivar a mantención un ticket en estado {ticket.estado.codigo}.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -607,8 +639,17 @@ class TicketViewSet(viewsets.ModelViewSet):
         """
         Acción del Mantenedor para iniciar la jornada de trabajo / cronómetro en terreno.
         Crea una SesionTrabajo activa con inicio=now y fin=null.
+        Protegido con Anti-IDOR (solo el técnico asignado o gestor).
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['mantencion', 'gestor', 'admin'])):
+            return Response({'error': 'Solo el personal de Mantención o Gestor puede iniciar trabajos en terreno.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
+
+        # Anti-IDOR: Si el ticket ya está asignado a otro técnico específico
+        if user.rol and user.rol.codigo == 'mantencion' and ticket.asignado_a and ticket.asignado_a.id != user.id:
+            return Response({'error': 'No tienes autorización para iniciar trabajo en este ticket porque está asignado a otro técnico.'}, status=status.HTTP_403_FORBIDDEN)
 
         # Si el ticket aún está en estado 'validado', pasarlo a 'en_mantencion'
         estado_en_mantencion = EstadoCatalogo.objects.filter(entidad='ticket', codigo='en_mantencion').first()
@@ -646,13 +687,22 @@ class TicketViewSet(viewsets.ModelViewSet):
             'sesion_id': sesion_activa.id,
             'inicio': sesion_activa.inicio
         }, status=status.HTTP_200_OK)
-
     @action(detail=True, methods=['post'])
     def registrar_avance(self, request, pk=None):
         """
         Acción del Mantenedor para registrar un avance diario (cierra la sesión activa o crea una con la duración calculada).
+        Protegido con Anti-IDOR (solo el técnico asignado o gestor).
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['mantencion', 'gestor', 'admin'])):
+            return Response({'error': 'Solo el personal de Mantención o Gestor puede registrar avances de trabajo.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
+
+        # Anti-IDOR: Si el ticket está asignado a otro técnico
+        if user.rol and user.rol.codigo == 'mantencion' and ticket.asignado_a and ticket.asignado_a.id != user.id:
+            return Response({'error': 'No tienes autorización para registrar avances en este ticket porque está asignado a otro técnico.'}, status=status.HTTP_403_FORBIDDEN)
+
         observaciones = request.data.get('observaciones_tecnicas', request.data.get('observacion', 'Avance diario de mantenimiento.'))
         materiales = request.data.get('materiales', [])
         imagen_url = request.data.get('imagen_url')
@@ -737,8 +787,18 @@ class TicketViewSet(viewsets.ModelViewSet):
     def registrar_mantencion(self, request, pk=None):
         """
         Acción del Mantenedor para registrar el fin de la reparación (cierra sesión activa como informe final).
+        Protegido con Anti-IDOR (solo el técnico asignado o gestor).
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['mantencion', 'gestor', 'admin'])):
+            return Response({'error': 'Solo el personal de Mantención o Gestor puede finalizar la reparación de un ticket.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
+
+        # Anti-IDOR: Si el ticket está asignado a otro técnico
+        if user.rol and user.rol.codigo == 'mantencion' and ticket.asignado_a and ticket.asignado_a.id != user.id:
+            return Response({'error': 'No tienes autorización para finalizar este ticket porque está asignado a otro técnico.'}, status=status.HTTP_403_FORBIDDEN)
+
         observacion = request.data.get('observaciones_tecnicas') or request.data.get('observacion', '')
         materiales = request.data.get('materiales', [])
         imagen_url = request.data.get('imagen_url')
@@ -822,8 +882,18 @@ class TicketViewSet(viewsets.ModelViewSet):
     def declarar_inviable(self, request, pk=None):
         """
         Acción del Mantenedor o Gestor para declarar un ticket como No Reparable / Inviable / Cancelado.
+        Protegido con Anti-IDOR (solo el técnico asignado o gestor).
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['mantencion', 'gestor', 'admin'])):
+            return Response({'error': 'Solo el personal de Mantención o Gestor puede declarar inviable un ticket.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
+
+        # Anti-IDOR: Si el ticket está asignado a otro técnico
+        if user.rol and user.rol.codigo == 'mantencion' and ticket.asignado_a and ticket.asignado_a.id != user.id:
+            return Response({'error': 'No tienes autorización para declarar inviable este ticket porque está asignado a otro técnico.'}, status=status.HTTP_403_FORBIDDEN)
+
         motivo = request.data.get('motivo') or request.data.get('observaciones_tecnicas') or request.data.get('observacion')
         imagen_url = request.data.get('imagen_url')
 
@@ -878,6 +948,14 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def cerrar_ticket(self, request, pk=None):
+        """
+        Aprobación y Cierre definitivo del Ticket.
+        Protegido por rol: Solo el Gestor o Administrador.
+        """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede cerrar definitivamente un ticket.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
         estado_cerrado = EstadoCatalogo.objects.filter(entidad='ticket', codigo='cerrado').first()
 
@@ -889,7 +967,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         LogAuditoria.objects.create(
             ticket=ticket,
             usuario=request.user,
-            accion='Ticket Cerrado',
+            accion='Ticket Cerrado Definitivamente',
             estado_nuevo='Cerrado'
         )
 
@@ -1319,6 +1397,10 @@ class InasistenciaViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def aprobar(self, request, pk=None):
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede aprobar solicitudes de inasistencia.'}, status=status.HTTP_403_FORBIDDEN)
+
         inasistencia = self.get_object()
         inasistencia.estado = 'aprobada'
         inasistencia.observacion_gestor = request.data.get('observacion', '')
@@ -1339,6 +1421,10 @@ class InasistenciaViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def rechazar(self, request, pk=None):
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede rechazar solicitudes de inasistencia.'}, status=status.HTTP_403_FORBIDDEN)
+
         inasistencia = self.get_object()
         inasistencia.estado = 'rechazada'
         inasistencia.observacion_gestor = request.data.get('observacion', '')
@@ -1350,6 +1436,10 @@ class InasistenciaViewSet(viewsets.ModelViewSet):
         """
         Desasigna o reasigna todos los tickets activos de un trabajador con inasistencia.
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede reasignar órdenes de trabajo.'}, status=status.HTTP_403_FORBIDDEN)
+
         inasistencia = self.get_object()
         nuevo_mantenedor_id = request.data.get('nuevo_mantenedor_id')
         estado_validado = EstadoCatalogo.objects.filter(entidad='ticket', codigo='validado').first()
