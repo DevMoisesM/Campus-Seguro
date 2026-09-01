@@ -376,6 +376,14 @@ class SesionTrabajo(models.Model):
     class Meta:
         verbose_name = "Sesión de Trabajo"
         verbose_name_plural = "Sesiones de Trabajo"
+        ordering = ["inicio"]
+
+    @property
+    def horas_hombre(self):
+        if self.inicio and self.fin:
+            diff = (self.fin - self.inicio).total_seconds() / 3600.0
+            return round(max(diff, 0.05), 2)
+        return 0.0
 
 
 class MaterialUtilizado(models.Model):

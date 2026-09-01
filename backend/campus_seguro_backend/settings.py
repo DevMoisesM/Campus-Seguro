@@ -176,6 +176,14 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+# Cache Configuration (para Rate Limiting / Throttling)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'campus-seguro-throttle-cache',
+    }
+}
+
 # Django REST Framework Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -185,6 +193,16 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '120/minute',
+        'user': '1000/minute',
+        'login': '5/minute',       # Protección Anti Fuerza Bruta (Máx 5 intentos/min por IP)
+        'register': '3/minute',    # Protección Anti Spam de Cuentas (Máx 3 registros/min por IP)
+    },
 }
 
 # SimpleJWT Configuration
@@ -200,4 +218,37 @@ SIMPLE_JWT = {
 # Límite máximo de carga en memoria para peticiones con imágenes Base64 / archivos (25 MB)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
+
+# ═══════════════════════════════════════════════════════════════
+# CABECERAS Y DIRECTIVAS DE CIBERSEGURIDAD HTTP (OWASP HARDENING)
+# ═══════════════════════════════════════════════════════════════
+
+# Protección Anti-Clickjacking (Impide incrustación de la app en iframes externos)
+X_FRAME_OPTIONS = 'DENY'
+
+# Protección Anti-MIME-Sniffing (Fuerza al navegador a respetar Content-Type declarado)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Filtro XSS integrado en navegadores compatibles
+SECURE_BROWSER_XSS_FILTER = True
+
+# Política de Referrer estricta (Previene fuga de rutas y parámetros internos en peticiones salientes)
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# Seguridad de Cookies de Sesión y CSRF
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False  # Permitir lectura en clientes SPA/Angular
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Directivas HTTPS y HSTS para Producción (cuando DEBUG=False)
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 año de transporte HTTPS estricto
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 

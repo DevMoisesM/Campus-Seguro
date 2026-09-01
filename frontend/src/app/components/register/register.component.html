@@ -82,7 +82,8 @@
                    type="text" 
                    required
                    placeholder="ej: Carlos"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 text-xs" />
+                   [class]="'w-full px-3 py-2 rounded-xl placeholder-slate-400 focus:outline-none text-xs border transition-colors ' + 
+                            (isFieldInvalid('firstName') ? 'bg-rose-50/50 border-rose-400 focus:border-rose-500 ring-2 ring-rose-200 text-rose-900' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20')" />
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">Apellido *</label>
@@ -92,7 +93,8 @@
                    type="text" 
                    required
                    placeholder="ej: Valdés"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 text-xs" />
+                   [class]="'w-full px-3 py-2 rounded-xl placeholder-slate-400 focus:outline-none text-xs border transition-colors ' + 
+                            (isFieldInvalid('lastName') ? 'bg-rose-50/50 border-rose-400 focus:border-rose-500 ring-2 ring-rose-200 text-rose-900' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20')" />
           </div>
         </div>
 
@@ -110,7 +112,8 @@
                      type="text" 
                      required
                      placeholder="ej: carlos.valdes"
-                     class="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 text-xs font-mono" />
+                     [class]="'w-full pl-8 pr-3 py-2 rounded-xl placeholder-slate-400 focus:outline-none text-xs font-mono border transition-colors ' + 
+                              (isFieldInvalid('username') ? 'bg-rose-50/50 border-rose-400 focus:border-rose-500 ring-2 ring-rose-200 text-rose-900' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20')" />
             </div>
           </div>
 
@@ -126,7 +129,8 @@
                      type="email" 
                      required
                      placeholder="ej: carlos@gmail.com"
-                     class="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 text-xs font-mono" />
+                     [class]="'w-full pl-8 pr-3 py-2 rounded-xl placeholder-slate-400 focus:outline-none text-xs font-mono border transition-colors ' + 
+                              (isFieldInvalid('email') ? 'bg-rose-50/50 border-rose-400 focus:border-rose-500 ring-2 ring-rose-200 text-rose-900' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20')" />
             </div>
           </div>
         </div>
@@ -167,7 +171,8 @@
                      [type]="showPassword() ? 'text' : 'password'" 
                      required
                      placeholder="Mínimo 6 caracteres"
-                     class="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 text-xs" />
+                     [class]="'w-full pl-8 pr-3 py-2 rounded-xl placeholder-slate-400 focus:outline-none text-xs border transition-colors ' + 
+                              (isFieldInvalid('password') ? 'bg-rose-50/50 border-rose-400 focus:border-rose-500 ring-2 ring-rose-200 text-rose-900' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20')" />
             </div>
           </div>
 
@@ -183,7 +188,8 @@
                      [type]="showPassword() ? 'text' : 'password'" 
                      required
                      placeholder="Repite la contraseña"
-                     class="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20 text-xs" />
+                     [class]="'w-full pl-8 pr-3 py-2 rounded-xl placeholder-slate-400 focus:outline-none text-xs border transition-colors ' + 
+                              (isFieldInvalid('confirmPassword') ? 'bg-rose-50/50 border-rose-400 focus:border-rose-500 ring-2 ring-rose-200 text-rose-900' : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-[#FFB800] focus:ring-2 focus:ring-[#FFB800]/20')" />
             </div>
           </div>
         </div>

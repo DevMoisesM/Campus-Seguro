@@ -56,6 +56,7 @@ export interface SesionTrabajo {
   mantenedor_nombre?: string;
   inicio: string;
   fin?: string;
+  horas_hombre?: number;
   observaciones?: string;
   tipo?: 'avance' | 'final';
   es_final?: boolean;
@@ -113,6 +114,15 @@ export interface Ticket {
   evidencias?: EvidenciaFotografica[];
   materiales_utilizados?: MaterialUtilizado[];
   sesiones_trabajo?: SesionTrabajo[];
+  sesion_activa?: {
+    id: number;
+    inicio: string;
+    mantenedor_id: number;
+    mantenedor_nombre: string;
+    tipo?: string;
+    observaciones?: string;
+  } | null;
+  total_horas_hombre?: number;
 }
 
 export interface TicketCreateData {
@@ -198,6 +208,7 @@ export interface TicketMetrics {
       reparados: number;
       en_proceso: number;
       no_reparables: number;
+      hh_totales?: number;
       reasignados: number;
       inasistencias: number;
     }>;
@@ -213,6 +224,7 @@ export interface TicketMetrics {
       veces_usado: number;
       en_tickets: number;
       total_consumido: number;
+      stock_disponible?: number;
       unidad: string;
       demanda: string;
     }>;

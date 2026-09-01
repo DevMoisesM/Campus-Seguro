@@ -1,5 +1,20 @@
 <div class="space-y-6">
 
+  <!-- Notificación Toast Reactiva -->
+  @if (toastNotification()) {
+    <div [class]="toastNotification()?.type === 'success' 
+      ? 'p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs flex items-center justify-between shadow-md animate-fade-in' 
+      : 'p-4 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-center justify-between shadow-md animate-fade-in'">
+      <div class="flex items-center gap-3">
+        <i [class]="toastNotification()?.type === 'success' ? 'fa-solid fa-circle-check text-emerald-600 text-lg' : 'fa-solid fa-circle-exclamation text-rose-600 text-lg'"></i>
+        <span class="font-bold text-sm">{{ toastNotification()?.message }}</span>
+      </div>
+      <button (click)="toastNotification.set(null)" class="text-slate-400 hover:text-slate-700">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  }
+
   <!-- Banner Hero Mantención -->
   <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 rounded-2xl p-6 lg:p-8 relative overflow-hidden shadow-md text-white">
     <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-blue-500/20 blur-[80px] rounded-full pointer-events-none"></div>
@@ -15,7 +30,7 @@
           </span>
         </div>
         <p class="text-slate-300 text-sm max-w-xl">
-          Gestión de reparaciones activas, consumo de insumos del pañol y cierre de incidentes.
+          Gestión de reparaciones activas, consumo de insumos del pañol y control automático de tiempos.
         </p>
       </div>
 
@@ -69,7 +84,7 @@
     <div class="flex items-center justify-between mb-6">
       <div>
         <h3 class="text-lg font-extrabold text-slate-900 tracking-tight">Órdenes de Trabajo Asignadas</h3>
-        <p class="text-xs text-slate-500">Inicia el trabajo en terreno o registra los materiales utilizados del pañol para finalizar</p>
+        <p class="text-xs text-slate-500">Inicia el trabajo en terreno con el cronómetro automático o registra avances e insumos del pañol</p>
       </div>
     </div>
 
@@ -117,18 +132,37 @@
               </p>
             </div>
 
+            <!-- Indicador de Sesión Activa / Cronómetro en Vivo -->
+            @if (hasActiveSession(t)) {
+              <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="relative flex h-2.5 w-2.5">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <span class="text-[11px] font-bold text-emerald-900">Trabajo en curso</span>
+                </div>
+                <span class="text-xs font-mono font-black text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                  <i class="fa-solid fa-clock text-[10px]"></i>
+                  <span>{{ getTiempoTranscurrido(t.sesion_activa?.inicio) }}</span>
+                </span>
+              </div>
+            }
+
             <div class="flex flex-col gap-2 pt-1">
-              @if (t.estado.codigo === 'validado') {
+              <!-- CASO 1: NO TIENE SESIÓN ACTIVA -> MOSTRAR BOTÓN INICIAR / REANUDAR -->
+              @if (!hasActiveSession(t) && (t.estado.codigo === 'validado' || t.estado.codigo === 'en_mantencion')) {
                 <button (click)="iniciarTrabajo(t)" 
                         [disabled]="submitting()" 
                         type="button" 
-                        class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                        class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer">
                   <i class="fa-solid fa-play text-xs"></i>
-                  <span>Iniciar Mantención</span>
+                  <span>{{ (t.sesiones_trabajo?.length || 0) > 0 ? 'Reanudar Jornada de Trabajo' : 'Comenzar Trabajo en Terreno' }}</span>
                 </button>
               }
 
-              @if (t.estado.codigo === 'en_mantencion' || t.estado.codigo === 'validado') {
+              <!-- CASO 2: SESIÓN ACTIVA EN CURSO -> MOSTRAR BOTONES DE ACCIÓN TÉCNICA -->
+              @if (hasActiveSession(t)) {
                 <div class="grid grid-cols-2 gap-2">
                   <button (click)="openAvanceModal(t)" 
                           type="button" 
@@ -156,7 +190,7 @@
               <a [routerLink]="['/mantencion/tickets', t.id]" 
                  class="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-1">
                 <i class="fa-solid fa-eye text-xs"></i>
-                <span>Ver</span>
+                <span>Ver Detalles</span>
               </a>
             </div>
           </div>
@@ -200,39 +234,52 @@
                   </span>
                 </td>
                 <td class="px-4 py-3.5">
-                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 border border-slate-200 text-slate-800">
-                    <span class="w-2 h-2 rounded-full" [style.background-color]="t.estado.color_hex || '#3b82f6'"></span>
-                    {{ t.estado.nombre_display }}
-                  </span>
+                  <div class="space-y-1">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 border border-slate-200 text-slate-800">
+                      <span class="w-2 h-2 rounded-full" [style.background-color]="t.estado.color_hex || '#3b82f6'"></span>
+                      {{ t.estado.nombre_display }}
+                    </span>
+                    @if (hasActiveSession(t)) {
+                      <div class="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        <span class="relative flex h-2 w-2">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <span>{{ getTiempoTranscurrido(t.sesion_activa?.inicio) }}</span>
+                      </div>
+                    }
+                  </div>
                 </td>
                 <td class="px-4 py-3.5 text-right">
                   <div class="flex items-center justify-end gap-1.5">
                     
-                    @if (t.estado.codigo === 'validado') {
+                    <!-- CASO 1: NO TIENE SESIÓN ACTIVA -> BOTÓN COMENZAR / REANUDAR -->
+                    @if (!hasActiveSession(t) && (t.estado.codigo === 'validado' || t.estado.codigo === 'en_mantencion')) {
                       <button (click)="iniciarTrabajo(t)" 
                               [disabled]="submitting()" 
                               type="button" 
-                              class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1 cursor-pointer">
+                              class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer">
                         <i class="fa-solid fa-play text-[10px]"></i>
-                        <span>Iniciar Mantención</span>
+                        <span>{{ (t.sesiones_trabajo?.length || 0) > 0 ? 'Reanudar Jornada' : 'Comenzar Trabajo' }}</span>
                       </button>
                     }
 
-                    @if (t.estado.codigo === 'en_mantencion' || t.estado.codigo === 'validado') {
+                    <!-- CASO 2: TIENE SESIÓN ACTIVA -> BOTONES DE ACCIÓN TÉCNICA -->
+                    @if (hasActiveSession(t)) {
                       <button (click)="openAvanceModal(t)" 
                               type="button" 
                               class="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 transition-colors inline-flex items-center gap-1 cursor-pointer"
-                              title="Registrar avance sin cerrar el ticket">
+                              title="Registrar avance y pausar cronómetro de hoy">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        <span>Avance Diario</span>
+                        <span>Avance</span>
                       </button>
 
                       <button (click)="openRegisterModal(t)" 
                               type="button" 
                               class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1 cursor-pointer"
-                              title="Marcar incidente como 100% reparado">
+                              title="Finalizar reparación y guardar tiempo total">
                         <i class="fa-solid fa-circle-check"></i>
-                        <span>Finalizar Reparación</span>
+                        <span>Finalizar</span>
                       </button>
 
                       <button (click)="openInviableModal(t)" 
@@ -280,13 +327,31 @@
           <p><span class="font-bold text-slate-800">Ubicación:</span> {{ selectedTicket()?.ubicacion?.nombre }} ({{ selectedTicket()?.ubicacion?.edificio_nombre }})</p>
         </div>
 
+        @if (registroError()) {
+          <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2 shadow-2xs">
+            <i class="fa-solid fa-circle-exclamation text-rose-600 text-base shrink-0"></i>
+            <span>{{ registroError() }}</span>
+          </div>
+        }
+
+        <!-- Banner de Cronómetro Automático -->
+        @if (tiempoCalculadoTexto()) {
+          <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs flex items-center justify-between">
+            <div class="flex items-center gap-2 text-indigo-900 font-semibold">
+              <i class="fa-solid fa-stopwatch text-indigo-600 text-base"></i>
+              <span>Tiempo cronometrado automáticamente: <strong class="font-mono text-indigo-700">{{ tiempoCalculadoTexto() }}</strong></span>
+            </div>
+            <span class="font-mono font-black text-indigo-800 bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200">{{ horasTrabajadas }} HH</span>
+          </div>
+        }
+
         <!-- Insumos y Materiales Retirados del Pañol -->
         <div class="space-y-3">
           <div class="flex items-center justify-between">
             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
               Materiales Consumidos del Pañol:
             </label>
-            <button (click)="addMaterialRow()" type="button" class="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-1">
+            <button (click)="addMaterialRow()" type="button" class="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-1 cursor-pointer">
               <i class="fa-solid fa-plus"></i>
               <span>Añadir Insumo</span>
             </button>
@@ -316,29 +381,28 @@
                        title="Unidad de medida"
                        class="w-24 px-2 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900" />
 
-                <button (click)="removeMaterialRow($index)" type="button" class="text-rose-500 hover:text-rose-700 p-2">
+                <button (click)="removeMaterialRow($index)" type="button" class="text-rose-500 hover:text-rose-700 p-2 cursor-pointer">
                   <i class="fa-solid fa-trash text-xs"></i>
                 </button>
               </div>
             }
           </div>
 
-          <!-- Horas Trabajadas y Observaciones -->
-          <div class="grid grid-cols-3 gap-3 pt-2">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">Horas Invertidas</label>
-              <input [(ngModel)]="horasTrabajadas" type="number" min="0.5" step="0.5" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900" />
-            </div>
-            <div class="col-span-2">
-              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">Informe Técnico de Cierre</label>
-              <input [(ngModel)]="observacionesTecnicas" type="text" placeholder="ej: Cambio de enchufe y pruebas de voltaje ok" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900" />
-            </div>
+          <!-- Informe Técnico / Observaciones del Trabajo Realizado -->
+          <div class="pt-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">
+              Informe Técnico del Trabajo Realizado *
+            </label>
+            <textarea [(ngModel)]="observacionesTecnicas" 
+                      rows="2" 
+                      placeholder="Describe el trabajo efectuado (ej: Reemplazo de balastro y tubos LED, pruebas de encendido conformes)..." 
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500"></textarea>
           </div>
 
           <!-- Evidencia Fotográfica de Reparación -->
           <div class="pt-2">
             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">
-              Adjuntar Foto de Reparación Finalizada (Opcional)
+              Adjuntar Foto de Reparación (Opcional)
             </label>
             <div class="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-3 bg-slate-50 text-center relative group">
               <input type="file" 
@@ -356,7 +420,7 @@
                   <img [src]="imagenUrl()" alt="Foto reparación" class="w-12 h-12 object-cover rounded-lg border border-slate-300 flex-shrink-0" />
                   <span class="text-xs font-bold text-emerald-700">Foto de reparación adjunta</span>
                 </div>
-                <button (click)="removeFile()" type="button" class="text-rose-600 hover:text-rose-800 text-xs font-bold px-2 py-1 bg-rose-50 rounded border border-rose-200">
+                <button (click)="removeFile()" type="button" class="text-rose-600 hover:text-rose-800 text-xs font-bold px-2 py-1 bg-rose-50 rounded border border-rose-200 cursor-pointer">
                   <i class="fa-solid fa-trash mr-1"></i> Quitar
                 </button>
               </div>
@@ -366,13 +430,13 @@
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-          <button (click)="closeRegisterModal()" type="button" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200">
+          <button (click)="closeRegisterModal()" type="button" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 cursor-pointer">
             Cancelar
           </button>
           <button [disabled]="submitting()" 
                   (click)="submitRegistro()" 
                   type="button" 
-                  [class]="isAvanceDiario() ? 'px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2' : 'px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2'">
+                  [class]="isAvanceDiario() ? 'px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer' : 'px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer'">
             @if (submitting()) {
               <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
             }
@@ -509,6 +573,13 @@
         <div class="bg-rose-50 p-3 rounded-xl border border-rose-200 text-xs text-rose-900 font-medium leading-relaxed">
           <strong>Atención:</strong> Al declarar este incidente como No Reparable, el ticket pasará al estado <span class="font-bold font-mono">RECHAZADO</span> y se notificará la imposibilidad técnica al usuario reportante y al Gestor.
         </div>
+
+        @if (inviableError()) {
+          <div class="p-3 rounded-xl bg-rose-100 border border-rose-300 text-rose-900 text-xs font-bold flex items-center gap-2">
+            <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
+            <span>{{ inviableError() }}</span>
+          </div>
+        }
 
         <div class="space-y-3 text-xs">
           <div>

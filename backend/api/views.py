@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.utils import timezone
-from django.db.models import Count, Q, F
+from django.db.models import Count, Q, F, Sum
 from django.shortcuts import get_object_or_404
 
 from .models import (
@@ -21,6 +21,22 @@ from .serializers import (
     TicketCreateUpdateSerializer, TicketDetailSerializer, ValidacionGuardiaSerializer,
     SesionTrabajoSerializer, MaterialUtilizadoSerializer, EvidenciaFotograficaSerializer, LogAuditoriaSerializer, InasistenciaSerializer
 )
+from .validators import validate_evidence_image
+
+from rest_framework.throttling import AnonRateThrottle
+
+# ═══════════════════════════════════════════════════════════════
+# 0. SEGURIDAD & RATE LIMITING (ANTI FUERZA BRUTA)
+# ═══════════════════════════════════════════════════════════════
+
+class LoginRateThrottle(AnonRateThrottle):
+    """Límite estricto de intentos de inicio de sesión por IP para neutralizar ataques de fuerza bruta."""
+    scope = 'login'
+
+class RegisterRateThrottle(AnonRateThrottle):
+    """Límite de solicitudes de registro de cuentas por IP para evitar spam automatizado."""
+    scope = 'register'
+
 
 # ═══════════════════════════════════════════════════════════════
 # 1. AUTENTICACIÓN JWT & PERFIL
@@ -29,8 +45,10 @@ from .serializers import (
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
     Endpoint de Iniciar Sesión JWT. Retorna access_token, refresh_token y datos del usuario.
+    Protegido contra ataques de fuerza bruta (máximo 5 intentos por minuto por IP).
     """
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = [LoginRateThrottle]
 
 
 class UserProfileView(APIView):
@@ -113,11 +131,12 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         serializer = UsuarioSerializer(usuario)
         return Response(serializer.data, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny], throttle_classes=[RegisterRateThrottle])
     def register(self, request):
         """
         Registro público de nuevos usuarios (Comunidad / Estudiantes).
         Acepta cualquier email válido, genera cuenta activa con rol 'usuario' y retorna tokens JWT.
+        Protegido contra spam y bots automatizados (máximo 3 registros por minuto por IP).
         """
         username = request.data.get('username', '').strip()
         email = request.data.get('email', '').strip()
@@ -390,12 +409,14 @@ class TicketViewSet(viewsets.ModelViewSet):
 
         for url in all_urls:
             if url and isinstance(url, str) and url.strip():
-                EvidenciaFotografica.objects.create(
-                    ticket=ticket,
-                    fase='reporte',
-                    imagen_url=url.strip(),
-                    creado_por=self.request.user
-                )
+                sanitized_url = validate_evidence_image(url.strip())
+                if sanitized_url:
+                    EvidenciaFotografica.objects.create(
+                        ticket=ticket,
+                        fase='reporte',
+                        imagen_url=sanitized_url,
+                        creado_por=self.request.user
+                    )
 
         detalle_creacion = f"Asignado a ronda de inspección de {guardia_seleccionado.get_full_name()}" if guardia_seleccionado else "Sin guardias disponibles en turno (todos ausentes); derivado a contingencia del Gestor"
 
@@ -409,14 +430,41 @@ class TicketViewSet(viewsets.ModelViewSet):
         )
 
     # ═══════════════════════════════════════════════════════════
-    # ACCIONES OPERACIONALES POR ROL
+    # ACCIONES OPERACIONALES POR ROL (ANTI-IDOR PROTECTED)
     # ═══════════════════════════════════════════════════════════
+
+    def update(self, request, *args, **kwargs):
+        ticket = self.get_object()
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            if ticket.creado_por_id != user.id or (ticket.estado and ticket.estado.codigo != 'enviado'):
+                return Response({'error': 'No tienes permiso para modificar este ticket una vez que ha iniciado su atención operativa.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        ticket = self.get_object()
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            if ticket.creado_por_id != user.id or (ticket.estado and ticket.estado.codigo != 'enviado'):
+                return Response({'error': 'No tienes permiso para modificar este ticket una vez que ha iniciado su atención operativa.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede eliminar tickets del sistema.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'])
     def validar_guardia(self, request, pk=None):
         """
         Acción del Guardia para inspeccionar y validar un ticket en terreno.
+        Protegido por rol (Guardia o Gestor).
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['guardia', 'gestor', 'admin'])):
+            return Response({'error': 'Solo el personal de Guardia o Gestor tiene autorización para validar incidentes en terreno.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
         observacion = request.data.get('observacion', '')
         valido = request.data.get('valido', True)
@@ -433,20 +481,22 @@ class TicketViewSet(viewsets.ModelViewSet):
             }
         )
 
-        # Evidencia Fotográfica de la Inspección de Guardia
+        # Evidencia Fotográfica de la Inspección de Guardia (Sanitizada)
         imagen_url = request.data.get('imagen_url')
         imagenes_urls = request.data.get('imagenes_urls', [])
         if imagen_url and not imagenes_urls:
             imagenes_urls = [imagen_url]
 
         for img in imagenes_urls:
-            if img:
-                EvidenciaFotografica.objects.create(
-                    ticket=ticket,
-                    fase='inspeccion',
-                    imagen_url=img,
-                    creado_por=request.user
-                )
+            if img and isinstance(img, str) and img.strip():
+                sanitized_img = validate_evidence_image(img.strip())
+                if sanitized_img:
+                    EvidenciaFotografica.objects.create(
+                        ticket=ticket,
+                        fase='inspeccion',
+                        imagen_url=sanitized_img,
+                        creado_por=request.user
+                    )
 
         nuevo_codigo = 'validado' if valido else 'rechazado'
         nuevo_estado = EstadoCatalogo.objects.filter(entidad='ticket', codigo=nuevo_codigo).first()
@@ -537,7 +587,12 @@ class TicketViewSet(viewsets.ModelViewSet):
     def derivar_mantencion(self, request, pk=None):
         """
         Acción del Gestor para asignar o reasignar un ticket a un mantenedor específico.
+        Protegido por rol (solo Gestor o Admin).
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede asignar o reasignar tickets.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
         if ticket.estado and ticket.estado.codigo in ['rechazado', 'cerrado']:
             return Response({'error': f'No se puede asignar ni derivar a mantención un ticket en estado {ticket.estado.codigo}.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -585,49 +640,133 @@ class TicketViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
+    def iniciar_trabajo(self, request, pk=None):
+        """
+        Acción del Mantenedor para iniciar la jornada de trabajo / cronómetro en terreno.
+        Crea una SesionTrabajo activa con inicio=now y fin=null.
+        Protegido con Anti-IDOR (solo el técnico asignado o gestor).
+        """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['mantencion', 'gestor', 'admin'])):
+            return Response({'error': 'Solo el personal de Mantención o Gestor puede iniciar trabajos en terreno.'}, status=status.HTTP_403_FORBIDDEN)
+
+        ticket = self.get_object()
+
+        # Anti-IDOR: Si el ticket ya está asignado a otro técnico específico
+        if user.rol and user.rol.codigo == 'mantencion' and ticket.asignado_a and ticket.asignado_a.id != user.id:
+            return Response({'error': 'No tienes autorización para iniciar trabajo en este ticket porque está asignado a otro técnico.'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Si el ticket aún está en estado 'validado', pasarlo a 'en_mantencion'
+        estado_en_mantencion = EstadoCatalogo.objects.filter(entidad='ticket', codigo='en_mantencion').first()
+        if estado_en_mantencion and ticket.estado.codigo != 'en_mantencion':
+            ticket.estado = estado_en_mantencion
+            ticket.save()
+
+        # Si el ticket no tenía técnico asignado, asignarlo a quien inicia el trabajo
+        if not ticket.asignado_a:
+            ticket.asignado_a = request.user
+            ticket.save()
+
+        # Verificar si ya existe una sesión activa sin cerrar
+        sesion_activa = ticket.sesiones_trabajo.filter(fin__isnull=True, mantenedor=request.user).first()
+        if not sesion_activa:
+            sesion_activa = SesionTrabajo.objects.create(
+                ticket=ticket,
+                mantenedor=request.user,
+                inicio=timezone.now(),
+                fin=None,
+                tipo='avance',
+                es_final=False
+            )
+            LogAuditoria.objects.create(
+                ticket=ticket,
+                usuario=request.user,
+                accion='Jornada de trabajo iniciada en terreno (Cronómetro activo)',
+                estado_nuevo='En Mantenimiento',
+                detalle=f'Técnico {request.user.get_full_name()} comenzó la sesión de mantenimiento.'
+            )
+
+        return Response({
+            'status': 'ok',
+            'mensaje': 'Jornada de trabajo iniciada con éxito.',
+            'sesion_id': sesion_activa.id,
+            'inicio': sesion_activa.inicio
+        }, status=status.HTTP_200_OK)
+    @action(detail=True, methods=['post'])
     def registrar_avance(self, request, pk=None):
         """
-        Acción del Mantenedor para registrar un avance diario (jornada de trabajo) sin cerrar el ticket.
+        Acción del Mantenedor para registrar un avance diario (cierra la sesión activa o crea una con la duración calculada).
+        Protegido con Anti-IDOR (solo el técnico asignado o gestor).
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['mantencion', 'gestor', 'admin'])):
+            return Response({'error': 'Solo el personal de Mantención o Gestor puede registrar avances de trabajo.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
-        horas = float(request.data.get('horas_trabajadas', 1))
+
+        # Anti-IDOR: Si el ticket está asignado a otro técnico
+        if user.rol and user.rol.codigo == 'mantencion' and ticket.asignado_a and ticket.asignado_a.id != user.id:
+            return Response({'error': 'No tienes autorización para registrar avances en este ticket porque está asignado a otro técnico.'}, status=status.HTTP_403_FORBIDDEN)
+
         observaciones = request.data.get('observaciones_tecnicas', request.data.get('observacion', 'Avance diario de mantenimiento.'))
         materiales = request.data.get('materiales', [])
         imagen_url = request.data.get('imagen_url')
 
-        inicio_dt = timezone.now() - timezone.timedelta(hours=horas)
-        fin_dt = timezone.now()
-
-        # Registrar sesión de trabajo de la jornada
-        sesion_obj = SesionTrabajo.objects.create(
-            ticket=ticket,
-            mantenedor=request.user,
-            inicio=inicio_dt,
-            fin=fin_dt,
-            observaciones=f"[Avance Diario] {observaciones}",
-            tipo='avance',
-            es_final=False
-        )
+        # Buscar si hay una sesión activa abierta
+        sesion_obj = ticket.sesiones_trabajo.filter(fin__isnull=True, mantenedor=request.user).first()
+        if sesion_obj:
+            sesion_obj.fin = timezone.now()
+            sesion_obj.observaciones = f"[Avance Diario] {observaciones}"
+            sesion_obj.tipo = 'avance'
+            sesion_obj.es_final = False
+            sesion_obj.save()
+        else:
+            # Fallback si no había sesión iniciada previamente
+            horas = float(request.data.get('horas_trabajadas', 1))
+            inicio_dt = timezone.now() - timezone.timedelta(hours=horas)
+            sesion_obj = SesionTrabajo.objects.create(
+                ticket=ticket,
+                mantenedor=request.user,
+                inicio=inicio_dt,
+                fin=timezone.now(),
+                observaciones=f"[Avance Diario] {observaciones}",
+                tipo='avance',
+                es_final=False
+            )
 
         # Registrar materiales consumidos en la jornada
         for mat in materiales:
+            nombre = mat.get('nombre', mat.get('nombre_material', 'Material'))
+            cant = int(mat.get('cantidad', 1) or 1)
+            unidad = mat.get('unidad', 'unidades')
+            
+            # Asociar categoría desde el catálogo y descontar stock disponible
+            mat_obj = Material.objects.filter(nombre__iexact=nombre).first()
+            categoria_obj = mat_obj.categoria if mat_obj else None
+            if mat_obj and mat_obj.stock_disponible >= cant:
+                mat_obj.stock_disponible -= cant
+                mat_obj.save(update_fields=['stock_disponible'])
+
             MaterialUtilizado.objects.create(
                 ticket=ticket,
                 sesion=sesion_obj,
-                nombre_material=mat.get('nombre', mat.get('nombre_material', 'Material')),
-                cantidad=mat.get('cantidad', 1),
-                unidad=mat.get('unidad', 'unidades')
+                nombre_material=nombre,
+                categoria=categoria_obj,
+                cantidad=cant,
+                unidad=unidad
             )
 
-        # Registrar evidencia de avance si existe
-        if imagen_url:
-            EvidenciaFotografica.objects.create(
-                ticket=ticket,
-                sesion=sesion_obj,
-                fase='reparacion',
-                imagen_url=imagen_url,
-                creado_por=request.user
-            )
+        # Registrar evidencia de avance si existe (Sanitizada)
+        if imagen_url and isinstance(imagen_url, str) and imagen_url.strip():
+            sanitized_img = validate_evidence_image(imagen_url.strip())
+            if sanitized_img:
+                EvidenciaFotografica.objects.create(
+                    ticket=ticket,
+                    sesion=sesion_obj,
+                    fase='reparacion',
+                    imagen_url=sanitized_img,
+                    creado_por=request.user
+                )
 
         # Asegurar que el estado siga siendo 'en_mantencion'
         estado_en_mantencion = EstadoCatalogo.objects.filter(entidad='ticket', codigo='en_mantencion').first()
@@ -635,101 +774,171 @@ class TicketViewSet(viewsets.ModelViewSet):
             ticket.estado = estado_en_mantencion
             ticket.save()
 
+        hh = sesion_obj.horas_hombre
+
         LogAuditoria.objects.create(
             ticket=ticket,
             usuario=request.user,
-            accion=f'Avance diario registrado ({horas} HH)',
+            accion=f'Avance diario registrado ({hh} HH)',
             estado_nuevo=estado_en_mantencion.nombre_display if estado_en_mantencion else 'En Mantenimiento',
             detalle=observaciones
         )
 
-        return Response({'status': 'ok', 'mensaje': f'Avance diario de {horas} HH registrado con éxito.'}, status=status.HTTP_200_OK)
+        return Response({
+            'status': 'ok',
+            'mensaje': f'Avance diario de {hh} Horas-Hombre registrado con éxito.',
+            'horas_hombre': hh
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def registrar_mantencion(self, request, pk=None):
         """
-        Acción del Mantenedor para registrar el trabajo realizado, materiales usados y evidencia.
+        Acción del Mantenedor para registrar el fin de la reparación (cierra sesión activa como informe final).
+        Protegido con Anti-IDOR (solo el técnico asignado o gestor).
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['mantencion', 'gestor', 'admin'])):
+            return Response({'error': 'Solo el personal de Mantención o Gestor puede finalizar la reparación de un ticket.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
+
+        # Anti-IDOR: Si el ticket está asignado a otro técnico
+        if user.rol and user.rol.codigo == 'mantencion' and ticket.asignado_a and ticket.asignado_a.id != user.id:
+            return Response({'error': 'No tienes autorización para finalizar este ticket porque está asignado a otro técnico.'}, status=status.HTTP_403_FORBIDDEN)
+
         observacion = request.data.get('observaciones_tecnicas') or request.data.get('observacion', '')
         materiales = request.data.get('materiales', [])
         imagen_url = request.data.get('imagen_url')
 
-        # Registrar sesión de trabajo final de reparación
-        sesion_obj = SesionTrabajo.objects.create(
-            ticket=ticket,
-            mantenedor=request.user,
-            observaciones=observacion,
-            fin=timezone.now(),
-            tipo='final',
-            es_final=True
-        )
+        # Buscar si hay una sesión activa abierta
+        sesion_obj = ticket.sesiones_trabajo.filter(fin__isnull=True, mantenedor=request.user).first()
+        if sesion_obj:
+            sesion_obj.fin = timezone.now()
+            sesion_obj.observaciones = observacion
+            sesion_obj.tipo = 'final'
+            sesion_obj.es_final = True
+            sesion_obj.save()
+        else:
+            # Fallback si no había sesión iniciada previamente
+            horas = float(request.data.get('horas_trabajadas', 1))
+            inicio_dt = timezone.now() - timezone.timedelta(hours=horas)
+            sesion_obj = SesionTrabajo.objects.create(
+                ticket=ticket,
+                mantenedor=request.user,
+                inicio=inicio_dt,
+                fin=timezone.now(),
+                observaciones=observacion,
+                tipo='final',
+                es_final=True
+            )
 
         # Registrar materiales
         for mat in materiales:
+            nombre = mat.get('nombre', mat.get('nombre_material', 'Material'))
+            cant = int(mat.get('cantidad', 1) or 1)
+            unidad = mat.get('unidad', 'unidades')
+
+            # Asociar categoría desde el catálogo y descontar stock disponible
+            mat_obj = Material.objects.filter(nombre__iexact=nombre).first()
+            categoria_obj = mat_obj.categoria if mat_obj else None
+            if mat_obj and mat_obj.stock_disponible >= cant:
+                mat_obj.stock_disponible -= cant
+                mat_obj.save(update_fields=['stock_disponible'])
+
             MaterialUtilizado.objects.create(
                 ticket=ticket,
                 sesion=sesion_obj,
-                nombre_material=mat.get('nombre', 'Material'),
-                cantidad=mat.get('cantidad', 1),
-                unidad=mat.get('unidad', 'unidades')
+                nombre_material=nombre,
+                categoria=categoria_obj,
+                cantidad=cant,
+                unidad=unidad
             )
 
-        # Registrar evidencia
-        if imagen_url:
-            EvidenciaFotografica.objects.create(
-                ticket=ticket,
-                sesion=sesion_obj,
-                fase='reparacion',
-                imagen_url=imagen_url,
-                creado_por=request.user
-            )
+        # Registrar evidencia final (Sanitizada)
+        if imagen_url and isinstance(imagen_url, str) and imagen_url.strip():
+            sanitized_img = validate_evidence_image(imagen_url.strip())
+            if sanitized_img:
+                EvidenciaFotografica.objects.create(
+                    ticket=ticket,
+                    sesion=sesion_obj,
+                    fase='reparacion',
+                    imagen_url=sanitized_img,
+                    creado_por=request.user
+                )
 
         estado_reparado = EstadoCatalogo.objects.filter(entidad='ticket', codigo='reparado').first()
         if estado_reparado:
             ticket.estado = estado_reparado
             ticket.save()
 
+        hh = sesion_obj.horas_hombre
+
         LogAuditoria.objects.create(
             ticket=ticket,
             usuario=request.user,
-            accion='Trabajo de mantención registrado (Reparado)',
+            accion=f'Trabajo de mantención finalizado ({hh} HH)',
             estado_nuevo='Reparado',
             detalle=observacion
         )
 
-        return Response({'status': 'ok'}, status=status.HTTP_200_OK)
+        return Response({
+            'status': 'ok',
+            'mensaje': f'Mantenimiento finalizado con éxito ({hh} HH registradas).',
+            'horas_hombre': hh
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def declarar_inviable(self, request, pk=None):
         """
         Acción del Mantenedor o Gestor para declarar un ticket como No Reparable / Inviable / Cancelado.
+        Protegido con Anti-IDOR (solo el técnico asignado o gestor).
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['mantencion', 'gestor', 'admin'])):
+            return Response({'error': 'Solo el personal de Mantención o Gestor puede declarar inviable un ticket.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
+
+        # Anti-IDOR: Si el ticket está asignado a otro técnico
+        if user.rol and user.rol.codigo == 'mantencion' and ticket.asignado_a and ticket.asignado_a.id != user.id:
+            return Response({'error': 'No tienes autorización para declarar inviable este ticket porque está asignado a otro técnico.'}, status=status.HTTP_403_FORBIDDEN)
+
         motivo = request.data.get('motivo') or request.data.get('observaciones_tecnicas') or request.data.get('observacion')
         imagen_url = request.data.get('imagen_url')
 
         if not motivo or not motivo.strip():
             return Response({'error': 'Debe especificar el motivo técnico por el cual no se puede reparar.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Registrar sesión de trabajo de cierre inviable
-        sesion_obj = SesionTrabajo.objects.create(
-            ticket=ticket,
-            mantenedor=request.user,
-            observaciones=f"[DECLARADO NO REPARABLE / INVIABLE] {motivo}",
-            fin=timezone.now(),
-            tipo='final',
-            es_final=True
-        )
-
-        if imagen_url:
-            EvidenciaFotografica.objects.create(
+        # Si había sesión activa, cerrarla
+        sesion_obj = ticket.sesiones_trabajo.filter(fin__isnull=True, mantenedor=request.user).first()
+        if sesion_obj:
+            sesion_obj.fin = timezone.now()
+            sesion_obj.observaciones = f"[DECLARADO NO REPARABLE / INVIABLE] {motivo}"
+            sesion_obj.tipo = 'final'
+            sesion_obj.es_final = True
+            sesion_obj.save()
+        else:
+            sesion_obj = SesionTrabajo.objects.create(
                 ticket=ticket,
-                sesion=sesion_obj,
-                fase='reparacion',
-                imagen_url=imagen_url,
-                creado_por=request.user
+                mantenedor=request.user,
+                inicio=timezone.now(),
+                fin=timezone.now(),
+                observaciones=f"[DECLARADO NO REPARABLE / INVIABLE] {motivo}",
+                tipo='final',
+                es_final=True
             )
+
+        # Registrar evidencia de inviabilidad si existe (Sanitizada)
+        if imagen_url and isinstance(imagen_url, str) and imagen_url.strip():
+            sanitized_img = validate_evidence_image(imagen_url.strip())
+            if sanitized_img:
+                EvidenciaFotografica.objects.create(
+                    ticket=ticket,
+                    sesion=sesion_obj,
+                    fase='reparacion',
+                    imagen_url=sanitized_img,
+                    creado_por=request.user
+                )
 
         subestado = request.data.get('subestado_rechazo') or 'requiere_proveedor_externo'
 
@@ -751,6 +960,14 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def cerrar_ticket(self, request, pk=None):
+        """
+        Aprobación y Cierre definitivo del Ticket.
+        Protegido por rol: Solo el Gestor o Administrador.
+        """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede cerrar definitivamente un ticket.'}, status=status.HTTP_403_FORBIDDEN)
+
         ticket = self.get_object()
         estado_cerrado = EstadoCatalogo.objects.filter(entidad='ticket', codigo='cerrado').first()
 
@@ -762,7 +979,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         LogAuditoria.objects.create(
             ticket=ticket,
             usuario=request.user,
-            accion='Ticket Cerrado',
+            accion='Ticket Cerrado Definitivamente',
             estado_nuevo='Cerrado'
         )
 
@@ -858,14 +1075,13 @@ class TicketViewSet(viewsets.ModelViewSet):
             ).count()
             por_sede.append({'id': s.id, 'nombre': s.nombre, 'total': cnt})
 
-        # Top 5 Materiales del Pañol consumidos
+        # Top 5 Materiales del Pañol consumidos (sumando cantidades reales de tickets del período/sede)
         top_mats_qs = MaterialUtilizado.objects.filter(
-            ticket__created_at__gte=desde,
-            ticket__created_at__lte=hasta
-        ).values('nombre_material', 'unidad').annotate(total_cant=Count('id')).order_by('-total_cant')[:5]
+            ticket__in=qs
+        ).values('nombre_material', 'unidad').annotate(total_cant=Sum('cantidad')).order_by('-total_cant')[:5]
 
         top_materiales = [
-            {'nombre': m['nombre_material'], 'cantidad': m['total_cant'], 'unidad': m['unidad']}
+            {'nombre': m['nombre_material'], 'cantidad': m['total_cant'] or 0, 'unidad': m['unidad']}
             for m in top_mats_qs
         ]
 
@@ -888,20 +1104,33 @@ class TicketViewSet(viewsets.ModelViewSet):
             for g in guardias_qs
         ]
 
-        # Rendimiento de Mantenedores
+        # Rendimiento de Mantenedores (Cálculo real de Horas-Hombre acumuladas)
         mantencion_qs = SesionTrabajo.objects.filter(
             inicio__gte=desde,
             inicio__lte=hasta
-        ).values('mantenedor__first_name', 'mantenedor__last_name').annotate(
-            total_ordenes=Count('ticket_id', distinct=True)
-        )
+        ).select_related('mantenedor', 'ticket')
+
+        tecnicos_dict = {}
+        for s in mantencion_qs:
+            m_id = s.mantenedor_id
+            nombre = f"{s.mantenedor.first_name} {s.mantenedor.last_name}".strip() or s.mantenedor.username
+            if m_id not in tecnicos_dict:
+                tecnicos_dict[m_id] = {
+                    'nombre': nombre,
+                    'ordenes_ids': set(),
+                    'hh_totales': 0.0
+                }
+            tecnicos_dict[m_id]['ordenes_ids'].add(s.ticket_id)
+            if s.inicio and s.fin:
+                tecnicos_dict[m_id]['hh_totales'] += s.horas_hombre
+
         rendimiento_mantencion = [
             {
-                'nombre': f"{m['mantenedor__first_name']} {m['mantenedor__last_name']}".strip() or 'Mantenedor',
-                'ordenes_completadas': m['total_ordenes'],
-                'hh_totales': m['total_ordenes'] * 1.5 # Estimación promedio
+                'nombre': v['nombre'],
+                'ordenes_completadas': len(v['ordenes_ids']),
+                'hh_totales': round(v['hh_totales'], 1)
             }
-            for m in mantencion_qs
+            for v in tecnicos_dict.values()
         ]
 
         # Cruce Checklist Guardia vs Riesgos Declarados
@@ -948,56 +1177,131 @@ class TicketViewSet(viewsets.ModelViewSet):
         calidad_guardias_foto = round((val_con_foto / val_total * 100), 1) if val_total > 0 else 0.0
 
         # Métricas de Mantención (Pestaña 3)
+        sesiones_periodo = SesionTrabajo.objects.filter(
+            ticket__in=qs,
+            fin__isnull=False
+        ).select_related('mantenedor', 'ticket')
+
         trabajos_completados = reparados + cerrados
-        hh_totales = round(trabajos_completados * 2.2, 1)
-        hh_promedio = round(hh_totales / trabajos_completados, 1) if trabajos_completados > 0 else 0.0
+        hh_totales_calc = sum(s.horas_hombre for s in sesiones_periodo)
+        hh_totales = round(hh_totales_calc, 1)
+        hh_promedio = round(hh_totales / trabajos_completados, 1) if trabajos_completados > 0 else (round(hh_totales / len(sesiones_periodo), 1) if len(sesiones_periodo) > 0 else 0.0)
+
         no_reparados = qs.filter(estado__codigo='rechazado').filter(Q(subestado_rechazo__in=['requiere_proveedor_externo', 'otro']) | Q(asignado_a__isnull=False)).count()
         tasa_no_reparacion = round((no_reparados / total_periodo * 100), 1) if total_periodo > 0 else 0.0
-        tiempo_prom_trabajo_min = 45 # Promedio simulado en terreno
+
+        if len(sesiones_periodo) > 0:
+            total_segundos = sum((s.fin - s.inicio).total_seconds() for s in sesiones_periodo if s.inicio and s.fin)
+            tiempo_prom_trabajo_min = int(round(total_segundos / len(sesiones_periodo) / 60))
+        else:
+            tiempo_prom_trabajo_min = 0
+
         requirio_apoyo_cnt = qs.filter(afecta_clase=True).count()
         escalados_cnt = qs.filter(urgencia='critica').count()
-        calidad_foto_final = round(((cerrados) / total_periodo * 100), 1) if total_periodo > 0 else 0.0
 
-        # Tablero de control de tickets por técnico
-        tecnicos_all = Usuario.objects.filter(rol__codigo='mantencion')
+        tickets_completados_qs = qs.filter(estado__codigo__in=['reparado', 'cerrado'])
+        if tickets_completados_qs.exists():
+            con_foto_final = tickets_completados_qs.filter(evidencias__fase='reparacion').distinct().count()
+            calidad_foto_final = round((con_foto_final / tickets_completados_qs.count() * 100), 1)
+        else:
+            calidad_foto_final = 0.0
+
+        # Tablero de control de tickets por técnico (Filtrado por período y sede vía qs)
+        tecnicos_all = Usuario.objects.filter(rol__codigo='mantencion', is_active=True)
         tablero_tecnicos = []
         for t in tecnicos_all:
-            repar = Ticket.objects.filter(asignado_a=t, estado__codigo='reparado').count()
-            en_proc = Ticket.objects.filter(asignado_a=t, estado__codigo='en_mantencion').count()
-            no_rep = Ticket.objects.filter(asignado_a=t, estado__codigo='rechazado').count()
+            repar = qs.filter(asignado_a=t, estado__codigo__in=['reparado', 'cerrado']).count()
+            en_proc = qs.filter(asignado_a=t, estado__codigo='en_mantencion').count()
+            no_rep = qs.filter(asignado_a=t, estado__codigo='rechazado').count()
+            
+            # HH reales acumuladas por este mantenedor en el período seleccionado
+            sesiones_tec = [s for s in sesiones_periodo if s.mantenedor_id == t.id]
+            hh_tec = round(sum(s.horas_hombre for s in sesiones_tec), 1)
+
             nombre_tec = t.get_full_name() or t.username
             reasig = LogAuditoria.objects.filter(
+                ticket__in=qs
+            ).filter(
                 Q(accion__icontains=f'de {nombre_tec}') | Q(accion__icontains=f'a {nombre_tec}') | Q(accion__icontains=f'inasistencia de {nombre_tec}')
             ).filter(accion__icontains='reasignad').count()
-            inasist = Inasistencia.objects.filter(usuario=t, estado='aprobada').count()
+
+            inasist = Inasistencia.objects.filter(
+                usuario=t,
+                estado='aprobada',
+                fecha_desde__lte=hasta.date(),
+                fecha_hasta__gte=desde.date()
+            ).count()
+
             tablero_tecnicos.append({
                 'id': t.id,
                 'nombre': nombre_tec,
                 'reparados': repar,
                 'en_proceso': en_proc,
                 'no_reparables': no_rep,
+                'hh_totales': hh_tec,
                 'reasignados': reasig,
                 'inasistencias': inasist
             })
 
         # Métricas de Materiales (Pestaña 4)
-        mat_distintos = MaterialUtilizado.objects.filter(ticket__created_at__gte=desde, ticket__created_at__lte=hasta).values('nombre_material').distinct().count()
-        cat_consumidas = MaterialUtilizado.objects.filter(ticket__created_at__gte=desde, ticket__created_at__lte=hasta, categoria__isnull=False).values('categoria').distinct().count()
-        top_compras_qs = Material.objects.all()[:6]
-        top_compras_inteligentes = [
-            {
-                'id': m.id,
-                'codigo': f"MAT-CAT-{m.id:03d}",
-                'nombre': m.nombre,
-                'categoria': m.categoria.nombre_display if m.categoria else 'General',
-                'veces_usado': MaterialUtilizado.objects.filter(nombre_material=m.nombre).count(),
-                'en_tickets': MaterialUtilizado.objects.filter(nombre_material=m.nombre).values('ticket').distinct().count(),
-                'total_consumido': m.stock_disponible,
-                'unidad': m.unidad_defecto,
-                'demanda': 'Normal'
-            }
-            for m in top_compras_qs
-        ]
+        qs_mats = MaterialUtilizado.objects.filter(ticket__in=qs)
+        mat_distintos = qs_mats.values('nombre_material').distinct().count()
+
+        # Categorías distintas consumidas (resueltas tanto por clave foránea como por catálogo)
+        nombres_usados = list(qs_mats.values_list('nombre_material', flat=True).distinct())
+        cat_ids_desde_catalogo = set(
+            Material.objects.filter(nombre__in=nombres_usados, categoria__isnull=False).values_list('categoria_id', flat=True)
+        )
+        cat_ids_directos = set(
+            qs_mats.filter(categoria__isnull=False).values_list('categoria_id', flat=True)
+        )
+        cat_consumidas = len(cat_ids_desde_catalogo.union(cat_ids_directos))
+
+        # Agregación real de consumo por material en el período
+        mats_consumidos = qs_mats.values(
+            'nombre_material', 'unidad'
+        ).annotate(
+            veces_usado=Count('id'),
+            en_tickets=Count('ticket_id', distinct=True),
+            total_consumido=Sum('cantidad')
+        ).order_by('-total_consumido')
+
+        top_compras_inteligentes = []
+        if mats_consumidos.exists():
+            for idx, item in enumerate(mats_consumidos[:10]):
+                mat_obj = Material.objects.filter(nombre__iexact=item['nombre_material']).first()
+                categoria_nombre = mat_obj.categoria.nombre_display if (mat_obj and mat_obj.categoria) else 'General'
+                codigo = f"MAT-{mat_obj.id:03d}" if mat_obj else f"MAT-{idx+1:03d}"
+                stock_actual = mat_obj.stock_disponible if mat_obj else 0
+                cant = item['total_consumido'] or 0
+                demanda = 'Alta' if cant >= 10 else ('Media' if cant >= 3 else 'Normal')
+
+                top_compras_inteligentes.append({
+                    'id': mat_obj.id if mat_obj else idx + 1,
+                    'codigo': codigo,
+                    'nombre': item['nombre_material'],
+                    'categoria': categoria_nombre,
+                    'veces_usado': item['veces_usado'],
+                    'en_tickets': item['en_tickets'],
+                    'total_consumido': cant,
+                    'stock_disponible': stock_actual,
+                    'unidad': item['unidad'] or (mat_obj.unidad_defecto if mat_obj else 'unidades'),
+                    'demanda': demanda
+                })
+        else:
+            for m in Material.objects.filter(activo=True)[:6]:
+                top_compras_inteligentes.append({
+                    'id': m.id,
+                    'codigo': f"MAT-{m.id:03d}",
+                    'nombre': m.nombre,
+                    'categoria': m.categoria.nombre_display if m.categoria else 'General',
+                    'veces_usado': 0,
+                    'en_tickets': 0,
+                    'total_consumido': 0,
+                    'stock_disponible': m.stock_disponible,
+                    'unidad': m.unidad_defecto,
+                    'demanda': 'Sin consumo'
+                })
 
         # Métricas de Comunidad (Pestaña 6)
         funcionarios_cnt = Usuario.objects.filter(rol__codigo__in=['guardia', 'mantencion', 'gestor']).count()
@@ -1067,8 +1371,8 @@ class TicketViewSet(viewsets.ModelViewSet):
                 'tablero_tecnicos': tablero_tecnicos
             },
             'materiales_metrics': {
-                'materiales_distintos': mat_distintos if mat_distintos > 0 else 6,
-                'categorias_consumidas': cat_consumidas if cat_consumidas > 0 else 4,
+                'materiales_distintos': mat_distintos,
+                'categorias_consumidas': cat_consumidas,
                 'top_compras_inteligentes': top_compras_inteligentes
             },
             'comunidad_metrics': {
@@ -1105,6 +1409,10 @@ class InasistenciaViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def aprobar(self, request, pk=None):
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede aprobar solicitudes de inasistencia.'}, status=status.HTTP_403_FORBIDDEN)
+
         inasistencia = self.get_object()
         inasistencia.estado = 'aprobada'
         inasistencia.observacion_gestor = request.data.get('observacion', '')
@@ -1125,6 +1433,10 @@ class InasistenciaViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def rechazar(self, request, pk=None):
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede rechazar solicitudes de inasistencia.'}, status=status.HTTP_403_FORBIDDEN)
+
         inasistencia = self.get_object()
         inasistencia.estado = 'rechazada'
         inasistencia.observacion_gestor = request.data.get('observacion', '')
@@ -1136,6 +1448,10 @@ class InasistenciaViewSet(viewsets.ModelViewSet):
         """
         Desasigna o reasigna todos los tickets activos de un trabajador con inasistencia.
         """
+        user = request.user
+        if not (user.is_superuser or (user.rol and user.rol.codigo in ['gestor', 'admin'])):
+            return Response({'error': 'Solo el Gestor de Operaciones o Administrador puede reasignar órdenes de trabajo.'}, status=status.HTTP_403_FORBIDDEN)
+
         inasistencia = self.get_object()
         nuevo_mantenedor_id = request.data.get('nuevo_mantenedor_id')
         estado_validado = EstadoCatalogo.objects.filter(entidad='ticket', codigo='validado').first()

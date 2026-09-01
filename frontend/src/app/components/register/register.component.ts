@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -24,10 +24,31 @@ export class RegisterComponent {
   confirmPassword = signal('');
   showPassword = signal(false);
 
+  submitted = signal(false);
   loading = signal(false);
   errorMessage = signal('');
 
+  isFieldInvalid(field: 'firstName' | 'lastName' | 'username' | 'email' | 'password' | 'confirmPassword'): boolean {
+    if (!this.submitted()) return false;
+    switch (field) {
+      case 'firstName': return !this.firstName().trim();
+      case 'lastName': return !this.lastName().trim();
+      case 'username': return !this.username().trim();
+      case 'email': {
+        const mail = this.email().trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return !mail || !emailRegex.test(mail);
+      }
+      case 'password': return !this.password().trim() || this.password().trim().length < 6;
+      case 'confirmPassword': return !this.confirmPassword().trim() || this.confirmPassword().trim() !== this.password().trim();
+      default: return false;
+    }
+  }
+
   onSubmit(): void {
+    this.submitted.set(true);
+    this.errorMessage.set('');
+
     const first = this.firstName().trim();
     const last = this.lastName().trim();
     const user = this.username().trim();
@@ -37,10 +58,14 @@ export class RegisterComponent {
     const rutVal = this.rut().trim();
     const telVal = this.telefono().trim();
 
-    this.errorMessage.set('');
-
     if (!first || !last || !user || !mail || !pass) {
       this.errorMessage.set('Por favor completa todos los campos requeridos (*).');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(mail)) {
+      this.errorMessage.set('El correo electrónico no tiene un formato válido.');
       return;
     }
 
@@ -71,8 +96,12 @@ export class RegisterComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        const backendError = err.error?.error || err.error?.message || 'Error al procesar el registro. Intenta nuevamente.';
-        this.errorMessage.set(backendError);
+        if (err.status === 429) {
+          this.errorMessage.set('Demasiadas solicitudes de registro desde esta conexión. Por favor espera unos momentos antes de reintentar.');
+        } else {
+          const backendError = err.error?.error || err.error?.message || err.error?.username?.[0] || err.error?.email?.[0] || 'Error al procesar el registro. Intenta nuevamente.';
+          this.errorMessage.set(backendError);
+        }
       }
     });
   }

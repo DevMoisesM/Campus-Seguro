@@ -16,8 +16,17 @@ export class LoginComponent implements OnInit {
 
   username = '';
   password = '';
+  submitted = signal(false);
   loading = signal(false);
   errorMessage = signal<string | null>(null);
+
+  isUsernameInvalid(): boolean {
+    return this.submitted() && !this.username.trim();
+  }
+
+  isPasswordInvalid(): boolean {
+    return this.submitted() && !this.password.trim();
+  }
 
   // Cuentas de prueba rápidas con colores distintivos por rol (Modo Claro)
   testAccounts = [
@@ -41,8 +50,9 @@ export class LoginComponent implements OnInit {
   }
 
   onSubmit() {
-    if (!this.username || !this.password) {
-      this.errorMessage.set('Por favor ingresa usuario y contraseña');
+    this.submitted.set(true);
+    if (!this.username.trim() || !this.password.trim()) {
+      this.errorMessage.set('Por favor ingresa tu usuario/correo y contraseña.');
       return;
     }
 
@@ -57,7 +67,9 @@ export class LoginComponent implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        if (err.status === 0) {
+        if (err.status === 429) {
+          this.errorMessage.set('Demasiados intentos fallidos consecutivos. Por seguridad de tu cuenta, por favor espera 1 minuto antes de volver a intentar.');
+        } else if (err.status === 0) {
           this.errorMessage.set('No se pudo conectar con el servidor backend (puerto 8000). Asegúrate de iniciar Django con runserver.');
         } else if (err.status === 401) {
           this.errorMessage.set(err?.error?.detail || 'Credenciales incorrectas. Verifica tu usuario y contraseña.');

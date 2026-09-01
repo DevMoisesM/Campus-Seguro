@@ -433,6 +433,7 @@
                   <th class="py-3 px-4 text-center">Reparados</th>
                   <th class="py-3 px-4 text-center">En Proceso</th>
                   <th class="py-3 px-4 text-center">No Reparables</th>
+                  <th class="py-3 px-4 text-center">HH Invertidas</th>
                   <th class="py-3 px-4 text-center">Reasignados</th>
                   <th class="py-3 px-4 text-center">Inasistencias</th>
                 </tr>
@@ -444,6 +445,11 @@
                     <td class="py-3 px-4 text-center"><span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-mono font-bold text-xs inline-flex items-center justify-center">{{ tec.reparados }}</span></td>
                     <td class="py-3 px-4 text-center"><span class="w-6 h-6 rounded-full bg-blue-100 text-blue-800 font-mono font-bold text-xs inline-flex items-center justify-center">{{ tec.en_proceso }}</span></td>
                     <td class="py-3 px-4 text-center"><span class="w-6 h-6 rounded-full bg-rose-100 text-rose-800 font-mono font-bold text-xs inline-flex items-center justify-center">{{ tec.no_reparables }}</span></td>
+                    <td class="py-3 px-4 text-center">
+                      <span class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-mono font-bold text-xs border border-indigo-200">
+                        {{ tec.hh_totales || 0 }} hrs
+                      </span>
+                    </td>
                     <td class="py-3 px-4 text-center"><span class="w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-mono font-bold text-xs inline-flex items-center justify-center">{{ tec.reasignados }}</span></td>
                     <td class="py-3 px-4 text-center"><span class="w-6 h-6 rounded-full bg-purple-100 text-purple-800 font-mono font-bold text-xs inline-flex items-center justify-center">{{ tec.inasistencias }}</span></td>
                   </tr>
@@ -493,9 +499,11 @@
                   <th class="py-3 px-4">Código</th>
                   <th class="py-3 px-4">Material</th>
                   <th class="py-3 px-4">Categoría</th>
+                  <th class="py-3 px-4 text-center">Demanda</th>
                   <th class="py-3 px-4 text-center">Veces Usado</th>
                   <th class="py-3 px-4 text-center">En Tickets</th>
                   <th class="py-3 px-4 text-right">Total Consumido</th>
+                  <th class="py-3 px-4 text-right">Stock Pañol</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 text-xs font-medium">
@@ -505,9 +513,19 @@
                     <td class="py-3 px-4 font-mono text-slate-500">{{ m.codigo }}</td>
                     <td class="py-3 px-4 font-bold text-slate-900">{{ m.nombre }}</td>
                     <td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 font-bold text-[10px] border border-amber-200">{{ m.categoria }}</span></td>
+                    <td class="py-3 px-4 text-center">
+                      <span [class]="'px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ' + 
+                                     (m.demanda === 'Alta' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 
+                                      m.demanda === 'Media' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 
+                                      m.demanda === 'Normal' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 
+                                      'bg-slate-100 text-slate-500')">
+                        {{ m.demanda }}
+                      </span>
+                    </td>
                     <td class="py-3 px-4 text-center font-mono font-bold text-slate-800">{{ m.veces_usado }}</td>
                     <td class="py-3 px-4 text-center font-mono text-slate-600">{{ m.en_tickets }}</td>
                     <td class="py-3 px-4 text-right font-mono font-bold text-emerald-600">{{ m.total_consumido }} {{ m.unidad }}</td>
+                    <td class="py-3 px-4 text-right font-mono font-semibold text-slate-600">{{ m.stock_disponible ?? 0 }} {{ m.unidad }}</td>
                   </tr>
                 }
               </tbody>

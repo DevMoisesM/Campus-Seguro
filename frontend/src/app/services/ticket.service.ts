@@ -103,6 +103,13 @@ export class TicketService {
     return this.derivarMantencion(ticketId, mantenedorId, data);
   }
 
+  iniciarTrabajo(ticketId: number): Observable<{ status: string; mensaje: string; sesion_id?: number; inicio?: string }> {
+    return this.http.post<{ status: string; mensaje: string; sesion_id?: number; inicio?: string }>(
+      `${this.apiUrl}/tickets/${ticketId}/iniciar_trabajo/`,
+      {}
+    );
+  }
+
   registrarMantencion(ticketId: number, data: {
     observaciones_tecnicas?: string;
     observacion?: string;
