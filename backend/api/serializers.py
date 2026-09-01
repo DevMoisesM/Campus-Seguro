@@ -6,6 +6,7 @@ from .models import (
     Especialidad, CategoriaTicket, CategoriaMaterial, Material, Ticket,
     ValidacionGuardia, SesionTrabajo, MaterialUtilizado, EvidenciaFotografica, LogAuditoria, Inasistencia
 )
+from .validators import validate_evidence_image
 
 # ═══════════════════════════════════════════════════════════════
 # 1. AUTENTICACIÓN JWT PERSONALIZADA
@@ -244,6 +245,9 @@ class EvidenciaFotograficaSerializer(serializers.ModelSerializer):
         model = EvidenciaFotografica
         fields = ['id', 'ticket', 'fase', 'imagen_url', 'creado_por', 'creado_por_nombre', 'created_at']
 
+    def validate_imagen_url(self, value):
+        return validate_evidence_image(value)
+
 
 class ValidacionGuardiaSerializer(serializers.ModelSerializer):
     guardia_nombre = serializers.ReadOnlyField(source='guardia.get_full_name')
@@ -302,6 +306,9 @@ class TicketCreateUpdateSerializer(serializers.ModelSerializer):
             'riesgo_estructural', 'riesgo_accesibilidad', 'imagen_url'
         ]
         read_only_fields = ['folio']
+
+    def validate_imagen_url(self, value):
+        return validate_evidence_image(value)
 
 
 

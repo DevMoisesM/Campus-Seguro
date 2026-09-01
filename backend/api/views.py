@@ -21,6 +21,7 @@ from .serializers import (
     TicketCreateUpdateSerializer, TicketDetailSerializer, ValidacionGuardiaSerializer,
     SesionTrabajoSerializer, MaterialUtilizadoSerializer, EvidenciaFotograficaSerializer, LogAuditoriaSerializer, InasistenciaSerializer
 )
+from .validators import validate_evidence_image
 
 from rest_framework.throttling import AnonRateThrottle
 
@@ -408,12 +409,14 @@ class TicketViewSet(viewsets.ModelViewSet):
 
         for url in all_urls:
             if url and isinstance(url, str) and url.strip():
-                EvidenciaFotografica.objects.create(
-                    ticket=ticket,
-                    fase='reporte',
-                    imagen_url=url.strip(),
-                    creado_por=self.request.user
-                )
+                sanitized_url = validate_evidence_image(url.strip())
+                if sanitized_url:
+                    EvidenciaFotografica.objects.create(
+                        ticket=ticket,
+                        fase='reporte',
+                        imagen_url=sanitized_url,
+                        creado_por=self.request.user
+                    )
 
         detalle_creacion = f"Asignado a ronda de inspección de {guardia_seleccionado.get_full_name()}" if guardia_seleccionado else "Sin guardias disponibles en turno (todos ausentes); derivado a contingencia del Gestor"
 
@@ -478,20 +481,22 @@ class TicketViewSet(viewsets.ModelViewSet):
             }
         )
 
-        # Evidencia Fotográfica de la Inspección de Guardia
+        # Evidencia Fotográfica de la Inspección de Guardia (Sanitizada)
         imagen_url = request.data.get('imagen_url')
         imagenes_urls = request.data.get('imagenes_urls', [])
         if imagen_url and not imagenes_urls:
             imagenes_urls = [imagen_url]
 
         for img in imagenes_urls:
-            if img:
-                EvidenciaFotografica.objects.create(
-                    ticket=ticket,
-                    fase='inspeccion',
-                    imagen_url=img,
-                    creado_por=request.user
-                )
+            if img and isinstance(img, str) and img.strip():
+                sanitized_img = validate_evidence_image(img.strip())
+                if sanitized_img:
+                    EvidenciaFotografica.objects.create(
+                        ticket=ticket,
+                        fase='inspeccion',
+                        imagen_url=sanitized_img,
+                        creado_por=request.user
+                    )
 
         nuevo_codigo = 'validado' if valido else 'rechazado'
         nuevo_estado = EstadoCatalogo.objects.filter(entidad='ticket', codigo=nuevo_codigo).first()
@@ -751,15 +756,17 @@ class TicketViewSet(viewsets.ModelViewSet):
                 unidad=unidad
             )
 
-        # Registrar evidencia de avance si existe
-        if imagen_url:
-            EvidenciaFotografica.objects.create(
-                ticket=ticket,
-                sesion=sesion_obj,
-                fase='reparacion',
-                imagen_url=imagen_url,
-                creado_por=request.user
-            )
+        # Registrar evidencia de avance si existe (Sanitizada)
+        if imagen_url and isinstance(imagen_url, str) and imagen_url.strip():
+            sanitized_img = validate_evidence_image(imagen_url.strip())
+            if sanitized_img:
+                EvidenciaFotografica.objects.create(
+                    ticket=ticket,
+                    sesion=sesion_obj,
+                    fase='reparacion',
+                    imagen_url=sanitized_img,
+                    creado_por=request.user
+                )
 
         # Asegurar que el estado siga siendo 'en_mantencion'
         estado_en_mantencion = EstadoCatalogo.objects.filter(entidad='ticket', codigo='en_mantencion').first()
@@ -847,15 +854,17 @@ class TicketViewSet(viewsets.ModelViewSet):
                 unidad=unidad
             )
 
-        # Registrar evidencia
-        if imagen_url:
-            EvidenciaFotografica.objects.create(
-                ticket=ticket,
-                sesion=sesion_obj,
-                fase='reparacion',
-                imagen_url=imagen_url,
-                creado_por=request.user
-            )
+        # Registrar evidencia final (Sanitizada)
+        if imagen_url and isinstance(imagen_url, str) and imagen_url.strip():
+            sanitized_img = validate_evidence_image(imagen_url.strip())
+            if sanitized_img:
+                EvidenciaFotografica.objects.create(
+                    ticket=ticket,
+                    sesion=sesion_obj,
+                    fase='reparacion',
+                    imagen_url=sanitized_img,
+                    creado_por=request.user
+                )
 
         estado_reparado = EstadoCatalogo.objects.filter(entidad='ticket', codigo='reparado').first()
         if estado_reparado:
@@ -919,14 +928,17 @@ class TicketViewSet(viewsets.ModelViewSet):
                 es_final=True
             )
 
-        if imagen_url:
-            EvidenciaFotografica.objects.create(
-                ticket=ticket,
-                sesion=sesion_obj,
-                fase='reparacion',
-                imagen_url=imagen_url,
-                creado_por=request.user
-            )
+        # Registrar evidencia de inviabilidad si existe (Sanitizada)
+        if imagen_url and isinstance(imagen_url, str) and imagen_url.strip():
+            sanitized_img = validate_evidence_image(imagen_url.strip())
+            if sanitized_img:
+                EvidenciaFotografica.objects.create(
+                    ticket=ticket,
+                    sesion=sesion_obj,
+                    fase='reparacion',
+                    imagen_url=sanitized_img,
+                    creado_por=request.user
+                )
 
         subestado = request.data.get('subestado_rechazo') or 'requiere_proveedor_externo'
 
